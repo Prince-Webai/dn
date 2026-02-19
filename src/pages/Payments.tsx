@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Plus, CreditCard, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import Modal from '../components/Modal';
 import { useToast } from '../context/ToastContext';
 

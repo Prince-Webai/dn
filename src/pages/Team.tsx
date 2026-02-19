@@ -17,6 +17,14 @@ const Team = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [newEngineer, setNewEngineer] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        role: 'Engineer',
+        status: 'active' as 'active' | 'inactive'
+    });
 
     useEffect(() => {
         fetchEngineers();

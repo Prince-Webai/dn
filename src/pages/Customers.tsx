@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, MapPin, Phone, Users, ArrowLeft, FileText, Package, Briefcase, DollarSign } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Package, Briefcase, DollarSign } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';

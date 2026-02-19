@@ -27,7 +27,7 @@ const Dashboard = () => {
             setLoading(true);
 
             // Fetch Data via Service
-            const [invoices, jobs, inventoryArray] = await Promise.all([
+            const [invoices, , inventoryArray] = await Promise.all([
                 dataService.getInvoices(),
                 dataService.getJobs('in_progress'), // Active jobs
                 dataService.getInventory()

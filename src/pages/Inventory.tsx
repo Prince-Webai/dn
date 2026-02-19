@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Package, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Search, Package, CheckCircle, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { InventoryItem } from '../types';
 import Modal from '../components/Modal';

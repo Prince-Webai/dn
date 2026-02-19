@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Job, JobItem, InventoryItem } from '../types';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const JobDetails = () => {
     const { id } = useParams<{ id: string }>();
@@ -10,7 +12,6 @@ const JobDetails = () => {
     const [job, setJob] = useState<Job | null>(null);
     const [items, setItems] = useState<JobItem[]>([]);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
-    const [loading, setLoading] = useState(true);
     const [newItem, setNewItem] = useState({
         description: '',
         quantity: 1,

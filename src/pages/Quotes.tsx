@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Download, CheckCircle, Clock } from 'lucide-react';
+import { Plus, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Quote, Customer } from '../types';
 import Modal from '../components/Modal';
@@ -11,7 +11,6 @@ const Quotes = () => {
     const { showToast } = useToast();
     const [quotes, setQuotes] = useState<Quote[]>([]);
     const [customers, setCustomers] = useState<Customer[]>([]);
-    const [loading, setLoading] = useState(true);
     const [isNewQuoteOpen, setIsNewQuoteOpen] = useState(false);
 
     // New Quote Form State
@@ -30,7 +29,6 @@ const Quotes = () => {
 
     const fetchQuotes = async () => {
         try {
-            setLoading(true);
             const { data, error } = await supabase
                 .from('quotes')
                 .select('*, customers(*), quote_items(*)')
@@ -48,13 +46,11 @@ const Quotes = () => {
             setQuotes(data || []);
         } catch (error) {
             console.error('Error fetching quotes:', error);
-        } finally {
-            setLoading(false);
         }
     };
 
     const fetchCustomers = async () => {
-        const { data } = await supabase.from('customers').select('id, name');
+        const { data } = await supabase.from('customers').select('*');
         setCustomers(data || []);
     };
 

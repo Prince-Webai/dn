@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileText, Printer, Download, Plus, AlertCircle, CheckCircle, Clock, Calculator, Receipt, Trash2 } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Calculator, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, JobItem, Statement } from '../types';
 import Modal from '../components/Modal';
@@ -263,8 +263,6 @@ const Invoices = () => {
                 // Re-construct one-time invoice data
                 // This is harder because we didn't save breakdown, just totals and description.
                 // We'll do a best-effort regeneration using the stored totals.
-                const net = (invoice.subtotal || 0);
-                const vat = (invoice.vat_amount || 0);
 
                 generateOneTimeInvoice({
                     customerName: invoice.guest_name,

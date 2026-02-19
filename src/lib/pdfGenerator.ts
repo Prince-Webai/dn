@@ -205,43 +205,43 @@ export const generateOneTimeInvoice = (
     // Company Name
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('Condon Dairy Services', 20, 20);
 
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.text('Powered by DeLaval Technology', 20, 28);
 
     // Invoice Title
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(20);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('INVOICE', 150, 20);
 
     // Invoice Number and Date
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.text(`Invoice #: ${invoiceNumber}`, 150, 28);
     doc.text(`Date: ${date}`, 150, 34);
 
     // Customer Details
     doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('Bill To:', 20, 55);
 
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.text(customerName, 20, 62);
     if (email) doc.text(email, 20, 68);
     if (phone) doc.text(phone, 20, 74);
 
     // Description
     doc.setFontSize(12);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('Description:', 20, 90);
 
     doc.setFontSize(10);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     const splitDescription = doc.splitTextToSize(description, 170);
     doc.text(splitDescription, 20, 97);
 
@@ -253,7 +253,7 @@ export const generateOneTimeInvoice = (
     doc.rect(20, yPos, 170, 10, 'F');
 
     doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('Item', 25, yPos + 7);
     doc.text('Quantity', 100, yPos + 7);
     doc.text('Rate', 130, yPos + 7);
@@ -263,7 +263,7 @@ export const generateOneTimeInvoice = (
 
     // Labour
     if (labourHours > 0) {
-        doc.setFont(undefined, 'normal');
+        doc.setFont('helvetica', 'normal');
         doc.text('Labour', 25, yPos + 7);
         doc.text(`${labourHours} hrs`, 100, yPos + 7);
         doc.text(`€${labourRate.toFixed(2)}`, 130, yPos + 7);
@@ -296,16 +296,16 @@ export const generateOneTimeInvoice = (
 
     yPos += 10;
     doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('TOTAL:', 130, yPos);
     doc.text(`€${total.toFixed(2)}`, 160, yPos);
 
     // Payment Terms
     yPos += 20;
     doc.setFontSize(10);
-    doc.setFont(undefined, 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('Payment Terms:', 20, yPos);
-    doc.setFont(undefined, 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.text('Payment due within 30 days', 20, yPos + 7);
 
     // Footer

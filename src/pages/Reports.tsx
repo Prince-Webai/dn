@@ -1,5 +1,5 @@
 
-import React from 'react';
+
 import { BarChart2, TrendingUp, Users, Wrench, AlertCircle, FilePlus } from 'lucide-react';
 
 const Reports = () => {
