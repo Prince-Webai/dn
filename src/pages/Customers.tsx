@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
 import Modal from '../components/Modal';
+import { dataService } from '../services/dataService';
 
 const Customers = () => {
     const [customers, setCustomers] = useState<Customer[]>([]);
@@ -31,9 +32,8 @@ const Customers = () => {
     const fetchCustomers = async () => {
         try {
             setLoading(true);
-            const { data, error } = await supabase.from('customers').select('*').order('name');
-            if (error) throw error;
-            setCustomers(data || []);
+            const data = await dataService.getCustomers();
+            setCustomers(data);
         } catch (error) {
             console.error('Error fetching customers:', error);
         } finally {
@@ -198,10 +198,12 @@ const Customers = () => {
                                 <button
                                     onClick={async () => {
                                         if (window.confirm('Are you sure you want to delete this customer?')) {
-                                            const { error } = await supabase.from('customers').delete().eq('id', selectedCustomer.id);
+                                            const { error } = await dataService.deleteCustomer(selectedCustomer.id);
                                             if (!error) {
                                                 setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
                                                 setSelectedCustomer(null);
+                                            } else {
+                                                alert('Failed to delete customer');
                                             }
                                         }
                                     }}

@@ -1,11 +1,11 @@
-
 import { useEffect, useState } from 'react';
-import { FileText, Printer, Download, Plus, AlertCircle, CheckCircle, Clock, Calculator, Receipt } from 'lucide-react';
+import { FileText, Printer, Download, Plus, AlertCircle, CheckCircle, Clock, Calculator, Receipt, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, JobItem, Statement } from '../types';
 import Modal from '../components/Modal';
 import { generateInvoice, generateStatement, generateOneTimeInvoice } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
+import { dataService } from '../services/dataService';
 
 const Invoices = () => {
     const { showToast } = useToast();
@@ -44,17 +44,17 @@ const Invoices = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
-            // Fetch Invoices
-            const { data: invData } = await supabase.from('invoices').select('*, customers(*)').order('date_issued', { ascending: false });
-            setInvoices(invData || []);
+            // Fetch Invoices via DataService
+            const invData = await dataService.getInvoices();
+            setInvoices(invData);
 
-            // Fetch Statements
+            // Fetch Statements (leaving manual for now or add to service if needed later)
             const { data: stmtData } = await supabase.from('statements').select('*, customers(*), jobs(*)').order('date_generated', { ascending: false });
             setStatements(stmtData || []);
 
-            // Fetch Completed Jobs that don't have invoices yet
-            const { data: jobData } = await supabase.from('jobs').select('*, customers(*)').eq('status', 'completed');
-            setCompletedJobs(jobData || []);
+            // Fetch Completed Jobs via DataService
+            const jobData = await dataService.getJobs('completed');
+            setCompletedJobs(jobData);
         } finally {
             setLoading(false);
         }
@@ -371,13 +371,31 @@ const Invoices = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <button
-                                                        onClick={() => handleDownloadInvoice(inv)}
-                                                        className="text-slate-400 hover:text-delaval-blue transition-colors"
-                                                        title="Download Invoice"
-                                                    >
-                                                        <Download size={18} />
-                                                    </button>
+                                                    <div className="flex gap-3">
+                                                        <button
+                                                            onClick={() => handleDownloadInvoice(inv)}
+                                                            className="text-slate-400 hover:text-delaval-blue transition-colors"
+                                                            title="Download Invoice"
+                                                        >
+                                                            <Download size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={async () => {
+                                                                if (window.confirm('Are you sure you want to delete this invoice?')) {
+                                                                    const { error } = await dataService.deleteInvoice(inv.id);
+                                                                    if (!error) {
+                                                                        setInvoices(invoices.filter(i => i.id !== inv.id));
+                                                                    } else {
+                                                                        alert('Failed to delete invoice');
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="text-slate-400 hover:text-red-600 transition-colors"
+                                                            title="Delete Invoice"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

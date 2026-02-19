@@ -3,9 +3,22 @@ import React, { useState } from 'react';
 import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, DollarSign, PieChart, FileCheck } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
+import Modal from '../components/Modal';
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const location = useLocation();
+    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+    const [userProfile, setUserProfile] = useState({
+        name: 'Admin User',
+        email: 'admin@condondairy.ie'
+    });
+
+    const handleProfileUpdate = (e: React.FormEvent) => {
+        e.preventDefault();
+        // Here you would typically update via Supabase auth
+        setIsProfileModalOpen(false);
+    };
 
     // Prototype Sidebar Structure
     const navSections = [
@@ -64,12 +77,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
                     {/* User Info & Mobile Toggle */}
                     <div className="flex items-center gap-4">
-                        <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-white/15 rounded-full backdrop-blur-md border border-white/10">
+                        <div
+                            onClick={() => {
+                                console.log('Profile clicked');
+                                setIsProfileModalOpen(true);
+                            }}
+                            className="hidden md:flex items-center gap-3 px-4 py-2 bg-white/15 rounded-full backdrop-blur-md border border-white/10 cursor-pointer hover:bg-white/20 transition-colors">
                             <div className="w-9 h-9 rounded-full bg-white text-[#0051A5] flex items-center justify-center font-bold">
                                 <User size={20} />
                             </div>
                             <div className="text-white text-sm font-medium pr-2">
-                                Admin User
+                                {userProfile.name}
                             </div>
                         </div>
 
@@ -140,12 +158,52 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     </div>
                 </aside>
 
-                {/* Page Content */}
                 <main className="min-w-0">
                     {children}
                 </main>
 
             </div>
+
+            {/* Edit Profile Modal */}
+            {isProfileModalOpen && (
+                <Modal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} title="Edit Profile">
+                    <form onSubmit={handleProfileUpdate} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
+                            <input
+                                type="text"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
+                                value={userProfile.name}
+                                onChange={e => setUserProfile({ ...userProfile, name: e.target.value })}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                            <input
+                                type="email"
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
+                                value={userProfile.email}
+                                onChange={e => setUserProfile({ ...userProfile, email: e.target.value })}
+                            />
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6">
+                            <button
+                                type="button"
+                                onClick={() => setIsProfileModalOpen(false)}
+                                className="px-4 py-2 text-slate-600 hover:text-slate-800"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-delaval-blue text-white rounded-lg hover:bg-delaval-blue/90"
+                            >
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </Modal>
+            )}
         </div>
     );
 };

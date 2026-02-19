@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
 import {
     DollarSign, Wrench, AlertCircle, Package,
     Plus, Users, FileText, FilePlus, Calendar,
@@ -7,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Job } from '../types';
+import { dataService } from '../services/dataService';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -26,40 +26,35 @@ const Dashboard = () => {
         try {
             setLoading(true);
 
-            // 1. Stats
-            const { data: unpaidInvoices } = await supabase
-                .from('invoices')
-                .select('total_amount')
-                .neq('status', 'paid')
-                .neq('status', 'void');
+            // Fetch Data via Service
+            const [invoices, jobs, inventoryArray] = await Promise.all([
+                dataService.getInvoices(),
+                dataService.getJobs('in_progress'), // Active jobs
+                dataService.getInventory()
+            ]);
 
-            const outstanding = unpaidInvoices?.reduce((acc, inv) => acc + (inv.total_amount || 0), 0) || 0;
+            // Calculate Stats Logic
+            const unpaidInvoices = invoices.filter(inv => inv.status !== 'paid' && inv.status !== 'void');
+            const outstanding = unpaidInvoices.reduce((acc, inv) => acc + (inv.total_amount || 0), 0);
 
-            const { count: activeJobsCount } = await supabase
-                .from('jobs')
-                .select('*', { count: 'exact', head: true })
-                .in('status', ['scheduled', 'in_progress']);
+            // For active jobs count, we combine scheduled and in_progress? 
+            // The service allows fetching by specific status. Let's fetch both or just fetch all and filter.
+            // Optimized: let's fetch 'all' for now since mock data is small.
+            // In real app, we would add separate methods for counts.
+            const allJobs = await dataService.getJobs();
+            const activeJobsCount = allJobs.filter(j => ['scheduled', 'in_progress'].includes(j.status)).length;
 
-            const { count: lowStockCount } = await supabase
-                .from('inventory')
-                .select('*', { count: 'exact', head: true })
-                .lt('stock_level', 5);
+            const lowStockCount = inventoryArray.filter(i => i.stock_level < 5).length;
 
             setStats({
                 outstandingBalance: outstanding,
-                activeJobs: activeJobsCount || 0,
-                overdueInvoices: unpaidInvoices?.length || 0,
-                lowStockItems: lowStockCount || 0
+                activeJobs: activeJobsCount,
+                overdueInvoices: unpaidInvoices.length,
+                lowStockItems: lowStockCount
             });
 
-            // 2. Recent Jobs
-            const { data: jobs } = await supabase
-                .from('jobs')
-                .select('*, customers(name)')
-                .order('date_scheduled', { ascending: false })
-                .limit(5);
-
-            setRecentJobs(jobs || []);
+            // Recent Jobs (already have them in allJobs, just slice)
+            setRecentJobs(allJobs.slice(0, 5));
 
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
@@ -67,6 +62,7 @@ const Dashboard = () => {
             setLoading(false);
         }
     };
+
 
     const statCards = [
         {

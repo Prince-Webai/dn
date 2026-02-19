@@ -1,10 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
-import { Search, Calendar, User, FileText } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { Search, Calendar, User, FileText, Trash2 } from 'lucide-react';
 import { Job, Customer } from '../types';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
+import { dataService } from '../services/dataService';
 
 const Jobs = () => {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -13,7 +12,7 @@ const Jobs = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [newJob, setNewJob] = useState({
+    const [newJob, setNewJob] = useState<Partial<Job>>({
         customer_id: '',
         engineer_name: '',
         service_type: '',
@@ -23,58 +22,35 @@ const Jobs = () => {
     });
 
     useEffect(() => {
-        fetchJobs();
-        fetchCustomers();
-    }, []);
+        loadData();
+    }, [activeTab]); // Reload when tab changes (server-side filter)
+
+    const loadData = async () => {
+        setLoading(true);
+        await Promise.all([fetchJobs(), fetchCustomers(), fetchEngineers()]);
+        setLoading(false);
+    };
 
     const fetchJobs = async () => {
-        try {
-            setLoading(true);
-            const { data, error } = await supabase
-                .from('jobs')
-                .select('*, customers(*)')
-                .order('date_scheduled', { ascending: false });
-
-            if (error) throw error;
-            setJobs(data || []);
-        } catch (error) {
-            console.error('Error fetching jobs:', error);
-        } finally {
-            setLoading(false);
-        }
+        const data = await dataService.getJobs(activeTab);
+        setJobs(data);
     };
 
     const fetchCustomers = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('customers')
-                .select('*')
-                .order('name');
-
-            if (error) throw error;
-            setCustomers(data || []);
-        } catch (error) {
-            console.error('Error fetching customers:', error);
-        }
+        const data = await dataService.getCustomers();
+        setCustomers(data);
     };
 
     const [engineers, setEngineers] = useState<any[]>([]);
     const fetchEngineers = async () => {
-        const { data } = await supabase.from('engineers').select('*').order('name');
-        setEngineers(data || []);
+        const data = await dataService.getEngineers();
+        setEngineers(data);
     };
-
-    useEffect(() => {
-        fetchEngineers();
-    }, []);
 
     const handleAddJob = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const { data, error } = await supabase
-                .from('jobs')
-                .insert([newJob])
-                .select();
+            const { data, error } = await dataService.createJob(newJob);
 
             if (error) throw error;
 
@@ -116,9 +92,8 @@ const Jobs = () => {
             job.engineer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             job.job_number?.toString().toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesTab = activeTab === 'all' || job.status === activeTab;
-
-        return matchesSearch && matchesTab;
+        // Status filter is now handled by loadData/useEffect
+        return matchesSearch;
     });
 
     const getTabCount = (tab: string) => {
@@ -216,9 +191,27 @@ const Jobs = () => {
                                             {getStatusBadge(job.status)}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <Link to={`/jobs/${job.id}`} className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors inline-block" title="View Details">
-                                                <FileText size={18} />
-                                            </Link>
+                                            <div className="flex gap-2">
+                                                <Link to={`/jobs/${job.id}`} className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors inline-block" title="View Details">
+                                                    <FileText size={18} />
+                                                </Link>
+                                                <button
+                                                    onClick={async () => {
+                                                        if (window.confirm('Are you sure you want to delete this job?')) {
+                                                            const { error } = await dataService.deleteJob(job.id);
+                                                            if (!error) {
+                                                                setJobs(jobs.filter(j => j.id !== job.id));
+                                                            } else {
+                                                                alert('Failed to delete job');
+                                                            }
+                                                        }
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Delete Job"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -293,9 +286,10 @@ const Jobs = () => {
                         <div className="col-span-2">
                             <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
                             <select
+                                required
                                 className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
                                 value={newJob.status}
-                                onChange={e => setNewJob({ ...newJob, status: e.target.value })}
+                                onChange={e => setNewJob({ ...newJob, status: e.target.value as Job['status'] })}
                             >
                                 <option value="scheduled">Scheduled</option>
                                 <option value="in_progress">In Progress</option>
