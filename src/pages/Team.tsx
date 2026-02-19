@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Search, Trash2, Mail, Phone } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface Engineer {
     id: string;
@@ -93,16 +94,31 @@ const Team = () => {
         setIsModalOpen(true);
     };
 
-    const handleDeleteEngineer = async (id: string) => {
-        if (!window.confirm('Are you sure you want to delete this team member?')) return;
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
+    // ... existing save logic ...
+
+    const handleDeleteClick = (id: string) => {
+        setDeleteId(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
         try {
-            const { error } = await supabase.from('engineers').delete().eq('id', id);
+            const { error } = await supabase.from('engineers').delete().eq('id', deleteId);
             if (error) throw error;
-            setEngineers(engineers.filter(eng => eng.id !== id));
+            setEngineers(engineers.filter(eng => eng.id !== deleteId));
+            setIsDeleteModalOpen(false);
+            setDeleteId(null);
         } catch (error: any) {
             console.error('Error deleting engineer:', error);
             alert(`Failed to delete: ${error.message}`);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -113,6 +129,7 @@ const Team = () => {
 
     return (
         <div className="space-y-6">
+            {/* ... Header and Search ... */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold font-display text-slate-900">Team Management</h1>
@@ -177,7 +194,7 @@ const Team = () => {
                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                     </button>
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); handleDeleteEngineer(eng.id); }}
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteClick(eng.id); }}
                                         className="p-2 text-slate-300 hover:text-red-500 transition-colors"
                                         title="Delete"
                                     >
@@ -223,6 +240,17 @@ const Team = () => {
                     </div>
                 </form>
             </Modal>
+
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Delete Team Member"
+                message="Are you sure you want to delete this team member? This action cannot be undone."
+                isDestructive={true}
+                isLoading={isDeleting}
+                confirmText="Delete Member"
+            />
         </div>
     );
 };

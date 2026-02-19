@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Calendar, User, FileText, Trash2 } from 'lucide-react';
+import { Search, Calendar, User, FileText, Trash2, Pencil } from 'lucide-react';
 import { Job, Customer } from '../types';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 import { dataService } from '../services/dataService';
 
 const Jobs = () => {
@@ -47,28 +48,81 @@ const Jobs = () => {
         setEngineers(data);
     };
 
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleEditClick = (job: Job) => {
+        setNewJob({
+            customer_id: job.customer_id,
+            engineer_name: job.engineer_name || '',
+            service_type: job.service_type,
+            status: job.status,
+            date_scheduled: job.date_scheduled,
+            notes: job.notes || ''
+        });
+        setEditingId(job.id);
+        setIsModalOpen(true);
+    };
+
+    const handleDeleteClick = (id: string) => {
+        setDeleteId(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
+        try {
+            const { error } = await dataService.deleteJob(deleteId);
+            if (!error) {
+                setJobs(jobs.filter(j => j.id !== deleteId));
+                setIsDeleteModalOpen(false);
+                setDeleteId(null);
+            } else {
+                alert('Failed to delete job');
+            }
+        } catch (error) {
+            console.error('Error deleting job:', error);
+            alert('Failed to delete job');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     const handleAddJob = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const { data, error } = await dataService.createJob(newJob);
+            if (editingId) {
+                // Update
+                const { error } = await dataService.updateJob(editingId, newJob);
 
-            if (error) throw error;
+                if (error) throw error;
 
-            if (data) {
                 fetchJobs();
-                setIsModalOpen(false);
-                setNewJob({
-                    customer_id: '',
-                    engineer_name: '',
-                    service_type: '',
-                    status: 'scheduled',
-                    date_scheduled: new Date().toISOString().split('T')[0],
-                    notes: ''
-                });
+            } else {
+                // Create
+                const { error } = await dataService.createJob(newJob);
+
+                if (error) throw error;
+                fetchJobs();
             }
+
+            setIsModalOpen(false);
+            setEditingId(null);
+            setNewJob({
+                customer_id: '',
+                engineer_name: '',
+                service_type: '',
+                status: 'scheduled',
+                date_scheduled: new Date().toISOString().split('T')[0],
+                notes: ''
+            });
+
         } catch (error) {
-            console.error('Error adding job:', error);
-            alert('Failed to add job.');
+            console.error('Error saving job:', error);
+            alert('Failed to save job.');
         }
     };
 
@@ -115,7 +169,18 @@ const Jobs = () => {
                     <h2 className="text-lg font-bold text-slate-900">Job List</h2>
                     <div className="flex gap-2 w-full sm:w-auto">
                         <button className="btn btn-secondary text-sm">Export</button>
-                        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary text-sm shadow-md shadow-blue-900/10">
+                        <button onClick={() => {
+                            setEditingId(null);
+                            setNewJob({
+                                customer_id: '',
+                                engineer_name: '',
+                                service_type: '',
+                                status: 'scheduled',
+                                date_scheduled: new Date().toISOString().split('T')[0],
+                                notes: ''
+                            });
+                            setIsModalOpen(true);
+                        }} className="btn btn-primary text-sm shadow-md shadow-blue-900/10">
                             + New Job
                         </button>
                     </div>
@@ -195,17 +260,17 @@ const Jobs = () => {
                                                 <Link to={`/jobs/${job.id}`} className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors inline-block" title="View Details">
                                                     <FileText size={18} />
                                                 </Link>
+
+
                                                 <button
-                                                    onClick={async () => {
-                                                        if (window.confirm('Are you sure you want to delete this job?')) {
-                                                            const { error } = await dataService.deleteJob(job.id);
-                                                            if (!error) {
-                                                                setJobs(jobs.filter(j => j.id !== job.id));
-                                                            } else {
-                                                                alert('Failed to delete job');
-                                                            }
-                                                        }
-                                                    }}
+                                                    onClick={() => handleEditClick(job)}
+                                                    className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Edit Job"
+                                                >
+                                                    <Pencil size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(job.id)}
                                                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                                     title="Delete Job"
                                                 >
@@ -227,7 +292,7 @@ const Jobs = () => {
             <Modal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                title="Create New Job"
+                title={editingId ? "Edit Job" : "Create New Job"}
             >
                 <form onSubmit={handleAddJob} className="space-y-4">
                     <div>
@@ -321,11 +386,22 @@ const Jobs = () => {
                             type="submit"
                             className="px-6 py-2 bg-delaval-blue hover:bg-delaval-dark-blue text-white rounded-lg font-bold shadow-lg shadow-blue-900/10"
                         >
-                            Create Job
+                            {editingId ? 'Save Changes' : 'Create Job'}
                         </button>
                     </div>
                 </form>
             </Modal>
+
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Delete Job"
+                message="Are you sure you want to delete this job? This action cannot be undone."
+                isDestructive={true}
+                isLoading={isDeleting}
+                confirmText="Delete Job"
+            />
         </div >
     );
 };

@@ -95,6 +95,11 @@ export const dataService = {
         return await supabase.from('jobs').insert([job]).select().single();
     },
 
+    async updateJob(id: string, updates: Partial<Job>): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+        return await supabase.from('jobs').update(updates).eq('id', id);
+    },
+
     async deleteJob(id: string): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
         return await supabase.from('jobs').delete().eq('id', id);

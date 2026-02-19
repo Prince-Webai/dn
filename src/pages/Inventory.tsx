@@ -4,6 +4,7 @@ import { Plus, Search, Package, CheckCircle, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { InventoryItem } from '../types';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 
 const Inventory = () => {
     const [items, setItems] = useState<InventoryItem[]>([]);
@@ -21,6 +22,50 @@ const Inventory = () => {
         location: ''
     });
     const [allocations, setAllocations] = useState<any[]>([]); // Using any for now due to complex join, ideally JobItem
+
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (id: string) => {
+        setDeleteId(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
+        try {
+            const { error } = await supabase.from('inventory').delete().eq('id', deleteId);
+            if (!error) {
+                setItems(items.filter(i => i.id !== deleteId));
+                setIsDeleteModalOpen(false);
+                setDeleteId(null);
+            } else {
+                alert('Failed to delete item');
+            }
+        } catch (error) {
+            console.error('Error deleting item:', error);
+            alert('Failed to delete item');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    const handleEditClick = (item: InventoryItem) => {
+        setNewItem({
+            sku: item.sku,
+            name: item.name,
+            category: item.category || '',
+            cost_price: item.cost_price,
+            sell_price: item.sell_price,
+            stock_level: item.stock_level,
+            location: item.location || ''
+        });
+        setEditingId(item.id);
+        setIsModalOpen(true);
+    };
 
     useEffect(() => {
         fetchInventory();
@@ -65,29 +110,44 @@ const Inventory = () => {
     const handleAddItem = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const { data, error } = await supabase
-                .from('inventory')
-                .insert([newItem])
-                .select();
+            if (editingId) {
+                // Update
+                const { error } = await supabase
+                    .from('inventory')
+                    .update(newItem)
+                    .eq('id', editingId);
 
-            if (error) throw error;
+                if (error) throw error;
 
-            if (data) {
-                setItems([...items, data[0]]);
-                setIsModalOpen(false);
-                setNewItem({
-                    sku: '',
-                    name: '',
-                    category: '',
-                    cost_price: 0,
-                    sell_price: 0,
-                    stock_level: 0,
-                    location: ''
-                });
+                setItems(items.map(item => item.id === editingId ? { ...item, ...newItem, id: editingId } : item));
+            } else {
+                // Create
+                const { data, error } = await supabase
+                    .from('inventory')
+                    .insert([newItem])
+                    .select();
+
+                if (error) throw error;
+
+                if (data) {
+                    setItems([...items, data[0]]);
+                }
             }
+
+            setIsModalOpen(false);
+            setEditingId(null);
+            setNewItem({
+                sku: '',
+                name: '',
+                category: '',
+                cost_price: 0,
+                sell_price: 0,
+                stock_level: 0,
+                location: ''
+            });
         } catch (error) {
-            console.error('Error adding item:', error);
-            alert('Failed to add item');
+            console.error('Error saving item:', error);
+            alert('Failed to save item');
         }
     };
 
@@ -242,20 +302,26 @@ const Inventory = () => {
                                                         <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Out of Stock
                                                     </span>
                                                 )}
-                                                <button
-                                                    onClick={async (e) => {
-                                                        e.stopPropagation();
-                                                        if (window.confirm('Delete this item?')) {
-                                                            const { error } = await supabase.from('inventory').delete().eq('id', item.id);
-                                                            if (!error) {
-                                                                setItems(items.filter(i => i.id !== item.id));
-                                                            }
-                                                        }
-                                                    }}
-                                                    className="ml-4 text-xs font-medium text-red-500 hover:text-red-700 hover:underline"
-                                                >
-                                                    Delete
-                                                </button>
+                                                <div className="flex items-center gap-3">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleEditClick(item);
+                                                        }}
+                                                        className="text-xs font-medium text-delaval-blue hover:text-delaval-dark-blue hover:underline"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleDeleteClick(item.id);
+                                                        }}
+                                                        className="text-xs font-medium text-red-500 hover:text-red-700 hover:underline"
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -321,7 +387,7 @@ const Inventory = () => {
                 )}
             </div>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Inventory Item">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Inventory Item" : "Add Inventory Item"}>
                 <form onSubmit={handleAddItem} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
@@ -366,6 +432,17 @@ const Inventory = () => {
                     </div>
                 </form>
             </Modal>
+
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Delete Item"
+                message="Are you sure you want to delete this inventory item? This action cannot be undone."
+                isDestructive={true}
+                isLoading={isDeleting}
+                confirmText="Delete Item"
+            />
         </div>
     );
 };

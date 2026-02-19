@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 import { dataService } from '../services/dataService';
 
 const Customers = () => {
@@ -24,6 +25,38 @@ const Customers = () => {
     });
 
     const [editingId, setEditingId] = useState<string | null>(null);
+
+    const [deleteId, setDeleteId] = useState<string | null>(null);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = () => {
+        if (selectedCustomer) {
+            setDeleteId(selectedCustomer.id);
+            setIsDeleteModalOpen(true);
+        }
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteId) return;
+        setIsDeleting(true);
+        try {
+            const { error } = await dataService.deleteCustomer(deleteId);
+            if (!error) {
+                setCustomers(customers.filter(c => c.id !== deleteId));
+                setSelectedCustomer(null);
+                setIsDeleteModalOpen(false);
+                setDeleteId(null);
+            } else {
+                alert('Failed to delete customer');
+            }
+        } catch (error) {
+            console.error('Error deleting customer:', error);
+            alert('Failed to delete customer');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     useEffect(() => {
         fetchCustomers();
@@ -197,18 +230,10 @@ const Customers = () => {
                                     >
                                         Edit Profile
                                     </button>
+
+
                                     <button
-                                        onClick={async () => {
-                                            if (window.confirm('Are you sure you want to delete this customer?')) {
-                                                const { error } = await dataService.deleteCustomer(selectedCustomer.id);
-                                                if (!error) {
-                                                    setCustomers(customers.filter(c => c.id !== selectedCustomer.id));
-                                                    setSelectedCustomer(null);
-                                                } else {
-                                                    alert('Failed to delete customer');
-                                                }
-                                            }
-                                        }}
+                                        onClick={handleDeleteClick}
                                         className="btn border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition-colors"
                                     >
                                         Delete
@@ -432,6 +457,17 @@ const Customers = () => {
                     </div>
                 </form>
             </Modal>
+
+            <ConfirmModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDelete}
+                title="Delete Customer"
+                message="Are you sure you want to delete this customer? This action cannot be undone."
+                isDestructive={true}
+                isLoading={isDeleting}
+                confirmText="Delete Customer"
+            />
         </div>
     );
 
