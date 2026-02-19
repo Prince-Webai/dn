@@ -1,22 +1,46 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, DollarSign, PieChart, FileCheck } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 import Modal from '../components/Modal';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const location = useLocation();
+    const { user, signOut } = useAuth();
     const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-    const [userProfile, setUserProfile] = useState({
-        name: 'Admin User',
-        email: 'admin@condondairy.ie'
+
+    // Form state for profile editing
+    const [profileForm, setProfileForm] = useState({
+        name: '',
+        email: ''
     });
+
+    // Update form state when user loads
+    useEffect(() => {
+        if (user) {
+            setProfileForm({
+                name: user.user_metadata?.name || user.email?.split('@')[0] || 'Admin User',
+                email: user.email || ''
+            });
+        }
+    }, [user]);
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+            // Navigation to login is handled by ProtectedRoute/AuthContext state change
+        } catch (error) {
+            console.error('Error signing out:', error);
+        }
+    };
 
     const handleProfileUpdate = (e: React.FormEvent) => {
         e.preventDefault();
         // Here you would typically update via Supabase auth
+        // await supabase.auth.updateUser({ data: { name: profileForm.name } })
         setIsProfileModalOpen(false);
     };
 
@@ -51,7 +75,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 { icon: PieChart, label: 'Analytics', path: '/reports' },
                 { icon: Users, label: 'Team & Engineers', path: '/team' },
             ]
-        }
+        },
     ];
 
     const closeSidebar = () => setIsSidebarOpen(false);
@@ -79,7 +103,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <div className="flex items-center gap-4">
                         <div
                             onClick={() => {
-                                console.log('Profile clicked');
                                 setIsProfileModalOpen(true);
                             }}
                             className="hidden md:flex items-center gap-3 px-4 py-2 bg-white/15 rounded-full backdrop-blur-md border border-white/10 cursor-pointer hover:bg-white/20 transition-colors">
@@ -87,7 +110,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                                 <User size={20} />
                             </div>
                             <div className="text-white text-sm font-medium pr-2">
-                                {userProfile.name}
+                                {profileForm.name}
                             </div>
                         </div>
 
@@ -149,7 +172,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                         ))}
 
                         <div className="pt-6 border-t border-slate-100 mt-6">
-                            <button className="w-full flex items-center gap-3 px-3 py-3 text-slate-600 hover:bg-slate-50 hover:text-red-600 rounded-xl font-medium transition-colors">
+                            <button
+                                onClick={handleSignOut}
+                                className="w-full flex items-center gap-3 px-3 py-3 text-slate-600 hover:bg-slate-50 hover:text-red-600 rounded-xl font-medium transition-colors"
+                            >
                                 <LogOut size={20} />
                                 Sign Out
                             </button>
@@ -173,17 +199,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                             <input
                                 type="text"
                                 className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                value={userProfile.name}
-                                onChange={e => setUserProfile({ ...userProfile, name: e.target.value })}
+                                value={profileForm.name}
+                                onChange={e => setProfileForm({ ...profileForm, name: e.target.value })}
                             />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                             <input
                                 type="email"
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                value={userProfile.email}
-                                onChange={e => setUserProfile({ ...userProfile, email: e.target.value })}
+                                // Emails are usually immutable in basic auth implementations or require re-confirmation
+                                disabled
+                                className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-slate-100 text-slate-500 cursor-not-allowed"
+                                value={profileForm.email}
                             />
                         </div>
                         <div className="flex justify-end gap-3 mt-6">
