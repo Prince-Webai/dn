@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { FileText, Printer, Download, Plus, Clock, Calculator, Trash2, Edit, CreditCard, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, JobItem, Statement } from '../types';
@@ -396,8 +397,11 @@ const Invoices = () => {
                     >
                         <Calculator size={18} className="mr-2" /> One-Time Invoice
                     </button>
-                    <button onClick={() => setIsGenerateOpen(true)} className="btn btn-primary shadow-lg shadow-blue-900/20">
-                        <Plus size={20} className="mr-2" /> Manage Jobs
+                    <button onClick={() => {
+                        setSelectedJob(null);
+                        setIsGenerateOpen(true);
+                    }} className="btn btn-primary shadow-lg shadow-blue-900/20">
+                        <Plus size={20} className="mr-2" /> Create Invoice
                     </button>
                 </div>
             </div>
@@ -611,16 +615,49 @@ const Invoices = () => {
             {/* Generation Modal */}
             <Modal isOpen={isGenerateOpen} onClose={() => setIsGenerateOpen(false)} title="Generate Documents">
                 {!selectedJob ? (
-                    <div className="p-4 text-center">
-                        <p className="text-slate-500 mb-4">Select a completed job from the sidebar to generate an invoice.</p>
-                        <button onClick={() => setIsGenerateOpen(false)} className="btn btn-secondary">Close</button>
+                    <div className="p-4 space-y-4">
+                        <p className="text-slate-500 text-center">Select a pending job to generate documents for:</p>
+
+                        {completedJobs.length > 0 ? (
+                            <div className="space-y-2 max-h-60 overflow-y-auto">
+                                {completedJobs.map(job => (
+                                    <button
+                                        key={job.id}
+                                        onClick={() => handleJobSelect(job)}
+                                        className="w-full text-left p-3 rounded-lg border border-slate-200 hover:border-delaval-blue hover:bg-blue-50 transition-colors flex justify-between items-center group"
+                                    >
+                                        <div>
+                                            <div className="font-bold text-slate-900">{job.customers?.name}</div>
+                                            <div className="text-xs text-slate-500">{job.service_type}</div>
+                                        </div>
+                                        <div className="text-delaval-blue opacity-0 group-hover:opacity-100 transition-opacity text-sm font-bold">
+                                            Select
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-6">
+                                <div className="text-slate-400 mb-3 italic">No completed jobs found pending invoice.</div>
+                                <Link to="/jobs" className="btn btn-primary inline-flex items-center" onClick={() => setIsGenerateOpen(false)}>
+                                    Go to Jobs
+                                </Link>
+                            </div>
+                        )}
+
+                        <div className="pt-2 text-center">
+                            <button onClick={() => setIsGenerateOpen(false)} className="text-slate-400 hover:text-slate-600 text-sm">Cancel</button>
+                        </div>
                     </div>
                 ) : (
                     <div className="space-y-6">
-                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                            <div className="text-xs text-gray-500 uppercase tracking-wide font-bold mb-2">Selected Job</div>
-                            <div className="font-bold text-lg text-slate-900">{selectedJob.customers?.name}</div>
-                            <div className="text-slate-600">{selectedJob.service_type}</div>
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex justify-between items-center">
+                            <div>
+                                <div className="text-xs text-gray-500 uppercase tracking-wide font-bold mb-2">Selected Job</div>
+                                <div className="font-bold text-lg text-slate-900">{selectedJob.customers?.name}</div>
+                                <div className="text-slate-600">{selectedJob.service_type}</div>
+                            </div>
+                            <button onClick={() => setSelectedJob(null)} className="text-xs text-delaval-blue hover:underline">Change Job</button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
