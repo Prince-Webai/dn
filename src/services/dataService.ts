@@ -110,6 +110,11 @@ export const dataService = {
         return await supabase.from('customers').delete().eq('id', id);
     },
 
+    async updateInvoice(id: string, updates: Partial<Invoice>): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+        return await supabase.from('invoices').update(updates).eq('id', id);
+    },
+
     async deleteInvoice(id: string): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
         return await supabase.from('invoices').delete().eq('id', id);

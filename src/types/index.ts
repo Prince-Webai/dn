@@ -66,9 +66,11 @@ export interface Invoice {
     vat_amount: number;
     total_amount: number;
     custom_description?: string;
-    status: 'draft' | 'sent' | 'paid' | 'void';
+    status: 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'overdue';
     pdf_url?: string;
     guest_name?: string; // For one-time invoices
+    amount_paid?: number;
+    payment_date?: string;
     customers?: Customer;
 }
 

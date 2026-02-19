@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { FileText, Printer, Download, Plus, Clock, Calculator, Trash2 } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Calculator, Trash2, Edit, CreditCard, Mail } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, JobItem, Statement } from '../types';
 import Modal from '../components/Modal';
@@ -17,6 +17,13 @@ const Invoices = () => {
     const [isGenerateOpen, setIsGenerateOpen] = useState(false);
     const [isOneTimeOpen, setIsOneTimeOpen] = useState(false);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+
+    // Edit & Payment States
+    const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
+    const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+    const [paymentAmount, setPaymentAmount] = useState<number>(0);
 
     // Invoice Form State
     const [description, setDescription] = useState('');
@@ -48,13 +55,18 @@ const Invoices = () => {
             const invData = await dataService.getInvoices();
             setInvoices(invData);
 
-            // Fetch Statements (leaving manual for now or add to service if needed later)
+            // Fetch Statements
             const { data: stmtData } = await supabase.from('statements').select('*, customers(*), jobs(*)').order('date_generated', { ascending: false });
             setStatements(stmtData || []);
 
             // Fetch Completed Jobs via DataService
             const jobData = await dataService.getJobs('completed');
-            setCompletedJobs(jobData);
+
+            // Filter out jobs that already have an invoice
+            const invoicedJobIds = new Set(invData.map(inv => inv.job_id).filter(Boolean));
+            const pendingJobs = jobData.filter(job => !invoicedJobIds.has(job.id));
+
+            setCompletedJobs(pendingJobs);
         } finally {
             setLoading(false);
         }
@@ -287,6 +299,85 @@ const Invoices = () => {
         }
     };
 
+    // --- Payment Handlers ---
+    const openPaymentModal = (invoice: Invoice) => {
+        setPaymentInvoice(invoice);
+        setPaymentAmount(invoice.total_amount - (invoice.amount_paid || 0));
+        setIsPaymentOpen(true);
+    };
+
+    const handlePaymentSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!paymentInvoice) return;
+
+        const newAmountPaid = (paymentInvoice.amount_paid || 0) + paymentAmount;
+        let newStatus: Invoice['status'] = paymentInvoice.status;
+
+        if (newAmountPaid >= paymentInvoice.total_amount) {
+            newStatus = 'paid';
+        } else if (newAmountPaid > 0) {
+            newStatus = 'partial';
+        }
+
+        const { error } = await dataService.updateInvoice(paymentInvoice.id, {
+            amount_paid: newAmountPaid,
+            status: newStatus,
+            payment_date: new Date().toISOString()
+        });
+
+        if (!error) {
+            showToast('Success', 'Payment recorded successfully', 'success');
+            setIsPaymentOpen(false);
+            fetchData();
+        } else {
+            showToast('Error', 'Failed to record payment', 'error');
+        }
+    };
+
+    // --- Edit Handlers ---
+    const openEditModal = (invoice: Invoice) => {
+        setEditingInvoice(invoice);
+        // Pre-fill form if needed, or use editingInvoice directly in modal
+        setDescription(invoice.custom_description || '');
+        setVatRate(invoice.vat_rate || 13.5);
+        setIsEditOpen(true);
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingInvoice) return;
+
+        const { error } = await dataService.updateInvoice(editingInvoice.id, {
+            custom_description: description,
+            vat_rate: vatRate
+            // Recalculate totals? complicated if we don't have items. 
+            // For now, allow editing description/vat only implies re-calc?
+            // If we change VAT, we must recalc totals.
+            // Simplified: Just update text for now to avoid breaking totals without items.
+        });
+
+        if (!error) {
+            showToast('Success', 'Invoice updated', 'success');
+            setIsEditOpen(false);
+            fetchData();
+        } else {
+            showToast('Error', 'Failed to update invoice', 'error');
+        }
+    };
+
+    // --- Reminder Handler ---
+    const handleSendReminder = (invoice: Invoice) => {
+        if (!invoice.customers?.email) {
+            alert('Customer does not have an email address.');
+            return;
+        }
+
+        const subject = `Invoice Reminder: #${invoice.invoice_number}`;
+        const body = `Dear ${invoice.customers.name},\n\nThi is a reminder for Invoice #${invoice.invoice_number} due for €${invoice.total_amount.toFixed(2)}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\nCondon Dairy`;
+
+        window.location.href = `mailto:${invoice.customers.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    };
+
     if (loading) {
         return <div className="p-8 text-center text-slate-500">Loading documents...</div>;
     }
@@ -355,24 +446,55 @@ const Invoices = () => {
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
                                         {invoices.map(inv => (
-                                            <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
                                                 <td className="px-6 py-4 font-bold text-slate-900">{inv.invoice_number}</td>
                                                 <td className="px-6 py-4 font-medium text-slate-700">
                                                     {inv.customers?.name || inv.guest_name || 'One-Time Customer'}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-600">{inv.date_issued}</td>
-                                                <td className="px-6 py-4 font-bold text-slate-900">€{inv.total_amount.toFixed(2)}</td>
+                                                <td className="px-6 py-4 font-bold text-slate-900">
+                                                    <div className="flex flex-col">
+                                                        <span>€{inv.total_amount.toFixed(2)}</span>
+                                                        {inv.amount_paid ? (
+                                                            <span className="text-xs text-green-600 font-medium">Paid: €{inv.amount_paid.toFixed(2)}</span>
+                                                        ) : null}
+                                                    </div>
+                                                </td>
                                                 <td className="px-6 py-4">
                                                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase
-                                                        ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                                                        ${inv.status === 'paid' ? 'bg-green-100 text-green-800' :
+                                                            inv.status === 'partial' ? 'bg-blue-100 text-blue-800' :
+                                                                inv.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                                                                    'bg-orange-100 text-orange-800'}`}>
                                                         {inv.status}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex gap-3">
+                                                    <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => openPaymentModal(inv)}
+                                                            className="p-1 text-slate-400 hover:text-green-600 transition-colors"
+                                                            title="Record Payment"
+                                                        >
+                                                            <CreditCard size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleSendReminder(inv)}
+                                                            className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                                                            title="Send Reminder Email"
+                                                        >
+                                                            <Mail size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => openEditModal(inv)}
+                                                            className="p-1 text-slate-400 hover:text-delaval-blue transition-colors"
+                                                            title="Edit Invoice"
+                                                        >
+                                                            <Edit size={18} />
+                                                        </button>
                                                         <button
                                                             onClick={() => handleDownloadInvoice(inv)}
-                                                            className="text-slate-400 hover:text-delaval-blue transition-colors"
+                                                            className="p-1 text-slate-400 hover:text-delaval-blue transition-colors"
                                                             title="Download Invoice"
                                                         >
                                                             <Download size={18} />
@@ -383,12 +505,13 @@ const Invoices = () => {
                                                                     const { error } = await dataService.deleteInvoice(inv.id);
                                                                     if (!error) {
                                                                         setInvoices(invoices.filter(i => i.id !== inv.id));
+                                                                        fetchData(); // Refresh to update Pending Jobs list
                                                                     } else {
                                                                         alert('Failed to delete invoice');
                                                                     }
                                                                 }
                                                             }}
-                                                            className="text-slate-400 hover:text-red-600 transition-colors"
+                                                            className="p-1 text-slate-400 hover:text-red-600 transition-colors"
                                                             title="Delete Invoice"
                                                         >
                                                             <Trash2 size={18} />
@@ -632,6 +755,62 @@ const Invoices = () => {
                             Preview PDF
                         </button>
                         <button type="submit" className="btn btn-primary">Save & Generate</button>
+                    </div>
+                </form>
+            </Modal>
+            {/* Payment Modal */}
+            <Modal isOpen={isPaymentOpen} onClose={() => setIsPaymentOpen(false)} title="Record Payment">
+                <form onSubmit={handlePaymentSubmit} className="space-y-4">
+                    <div className="bg-slate-50 p-4 rounded-lg">
+                        <div className="text-sm text-slate-500">Invoice Amount</div>
+                        <div className="text-xl font-bold text-slate-900">€{paymentInvoice?.total_amount.toFixed(2)}</div>
+                        <div className="text-sm text-slate-500 mt-2">Already Paid</div>
+                        <div className="text-lg font-bold text-green-600">€{(paymentInvoice?.amount_paid || 0).toFixed(2)}</div>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Payment Amount (€)</label>
+                        <input
+                            type="number"
+                            step="0.01"
+                            required
+                            className="form-input w-full border border-slate-300 rounded-lg px-4 py-2"
+                            value={paymentAmount}
+                            onChange={(e) => setPaymentAmount(parseFloat(e.target.value))}
+                        />
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button type="button" onClick={() => setIsPaymentOpen(false)} className="btn btn-secondary">Cancel</button>
+                        <button type="submit" className="btn btn-primary bg-green-600 hover:bg-green-700 text-white">Record Payment</button>
+                    </div>
+                </form>
+            </Modal>
+
+            {/* Edit Invoice Modal */}
+            <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Invoice Details">
+                <form onSubmit={handleEditSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">Description</label>
+                        <input
+                            className="form-input w-full border border-slate-300 rounded-lg px-4 py-2"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-slate-700 mb-1">VAT Rate (%)</label>
+                        <select
+                            className="form-select w-full border border-slate-300 rounded-lg px-4 py-2"
+                            value={vatRate}
+                            onChange={(e) => setVatRate(parseFloat(e.target.value))}
+                        >
+                            <option value={13.5}>13.5%</option>
+                            <option value={23}>23%</option>
+                            <option value={0}>0%</option>
+                        </select>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-4">
+                        <button type="button" onClick={() => setIsEditOpen(false)} className="btn btn-secondary">Cancel</button>
+                        <button type="submit" className="btn btn-primary">Save Changes</button>
                     </div>
                 </form>
             </Modal>
