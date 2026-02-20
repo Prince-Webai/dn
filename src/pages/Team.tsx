@@ -184,20 +184,18 @@ const Team = () => {
                                     </div>
                                 </div>
 
-                                <div className="absolute top-4 right-4 flex gap-1">
+                                <div className="flex gap-2 mt-4 pt-3 border-t border-slate-100">
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleEditClick(eng); }}
-                                        className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-all"
-                                        title="Edit"
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-500 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-all"
                                     >
-                                        <Pencil size={16} />
+                                        <Pencil size={14} /> Edit
                                     </button>
                                     <button
                                         onClick={(e) => { e.stopPropagation(); handleDeleteClick(eng.id); }}
-                                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                        title="Delete"
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
                                     >
-                                        <Trash2 size={16} />
+                                        <Trash2 size={14} /> Delete
                                     </button>
                                 </div>
                             </div>
