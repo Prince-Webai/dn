@@ -1,11 +1,12 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, ArrowRight, Trash2, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Quote, Customer } from '../types';
 import Modal from '../components/Modal';
 import { generateQuote } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
+import DatePicker from '../components/DatePicker';
 
 const Quotes = () => {
     const { showToast } = useToast();
@@ -124,6 +125,49 @@ const Quotes = () => {
         setNewQuoteData({ ...newQuoteData, items });
     };
 
+    const removeLineItem = (index: number) => {
+        const items = newQuoteData.items.filter((_, i) => i !== index);
+        setNewQuoteData({ ...newQuoteData, items });
+    };
+
+    const quoteSubtotal = newQuoteData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const quoteVat = quoteSubtotal * 0.135;
+    const quoteTotal = quoteSubtotal + quoteVat;
+
+    const convertToInvoice = async (quote: Quote) => {
+        try {
+            const { error } = await supabase.from('invoices').insert([{
+                invoice_number: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(3, '0')}`,
+                customer_id: quote.customer_id,
+                date_issued: new Date().toISOString().split('T')[0],
+                due_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+                subtotal: quote.subtotal,
+                vat_rate: quote.vat_rate || 13.5,
+                vat_amount: quote.vat_amount,
+                total_amount: quote.total_amount,
+                custom_description: quote.description,
+                status: 'sent'
+            }]);
+            if (error) throw error;
+            // Update quote status to accepted
+            await supabase.from('quotes').update({ status: 'accepted' }).eq('id', quote.id);
+            showToast('Converted!', `Quote ${quote.quote_number} converted to invoice`, 'success');
+            fetchQuotes();
+        } catch (error) {
+            console.error('Error converting quote:', error);
+            showToast('Error', 'Failed to convert quote to invoice', 'error');
+        }
+    };
+
+    const getStatusStyle = (status: string) => {
+        switch (status) {
+            case 'accepted': return 'bg-green-100 text-green-800';
+            case 'rejected': return 'bg-red-100 text-red-800';
+            case 'pending': return 'bg-amber-100 text-amber-800';
+            default: return 'bg-slate-100 text-slate-600';
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -174,19 +218,29 @@ const Quotes = () => {
                                         <td className="px-6 py-4 text-sm text-slate-600">{quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : 'N/A'}</td>
                                         <td className="px-6 py-4 font-bold text-slate-900">€{quote.total_amount.toLocaleString()}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase
-                                                ${quote.status === 'accepted' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase ${getStatusStyle(quote.status)}`}>
                                                 {quote.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 flex gap-2">
-                                            <button
-                                                onClick={() => handleGeneratePDF(quote)}
-                                                className="text-slate-400 hover:text-delaval-blue transition-colors"
-                                                title="Preview PDF"
-                                            >
-                                                <FileText size={18} />
-                                            </button>
+                                        <td className="px-6 py-4">
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => handleGeneratePDF(quote)}
+                                                    className="p-1 text-slate-400 hover:text-delaval-blue transition-colors"
+                                                    title="Preview PDF"
+                                                >
+                                                    <Download size={18} />
+                                                </button>
+                                                {quote.status !== 'accepted' && (
+                                                    <button
+                                                        onClick={() => convertToInvoice(quote)}
+                                                        className="p-1 text-slate-400 hover:text-green-600 transition-colors"
+                                                        title="Convert to Invoice"
+                                                    >
+                                                        <ArrowRight size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -216,12 +270,11 @@ const Quotes = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="form-group">
                             <label className="block text-xs font-bold text-slate-500 mb-1">Valid Until *</label>
-                            <input
-                                type="date"
-                                className="form-input w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                            <DatePicker
                                 value={newQuoteData.validUntil}
-                                onChange={(e) => setNewQuoteData({ ...newQuoteData, validUntil: e.target.value })}
+                                onChange={(v) => setNewQuoteData({ ...newQuoteData, validUntil: v })}
                                 required
+                                placeholder="Select valid until date..."
                             />
                         </div>
                         <div className="form-group">
@@ -238,20 +291,40 @@ const Quotes = () => {
                     </div>
 
                     <div className="border-t pt-4">
-                        <div className="flex justify-between items-center mb-2">
-                            <label className="block text-xs font-bold text-slate-500">Line Items</label>
-                            <button type="button" onClick={addLineItem} className="text-xs text-delaval-blue font-bold">+ Add Item</button>
+                        <div className="flex justify-between items-center mb-3">
+                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Line Items</label>
+                            <button type="button" onClick={addLineItem} className="text-xs text-delaval-blue font-bold hover:underline">+ Add Item</button>
                         </div>
-                        <div className="space-y-2 max-h-40 overflow-y-auto">
+                        <div className="space-y-2 max-h-52 overflow-y-auto">
+                            {newQuoteData.items.length === 0 && (
+                                <div className="flex flex-col items-center py-6 text-center">
+                                    <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-2">
+                                        <FileText size={20} className="text-slate-300" />
+                                    </div>
+                                    <div className="text-xs text-slate-400">No items yet. Click "+ Add Item" above.</div>
+                                </div>
+                            )}
                             {newQuoteData.items.map((item, idx) => (
-                                <div key={idx} className="grid grid-cols-6 gap-2">
-                                    <input placeholder="Desc" className="col-span-3 text-sm border p-1 rounded" value={item.description} onChange={e => updateLineItem(idx, 'description', e.target.value)} required />
-                                    <input type="number" placeholder="Qty" className="col-span-1 text-sm border p-1 rounded" value={item.quantity} onChange={e => updateLineItem(idx, 'quantity', parseFloat(e.target.value))} required />
-                                    <input type="number" placeholder="Price" className="col-span-2 text-sm border p-1 rounded" value={item.unitPrice} onChange={e => updateLineItem(idx, 'unitPrice', parseFloat(e.target.value))} required />
+                                <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 rounded-lg p-2">
+                                    <input placeholder="Description" className="col-span-5 text-sm border border-slate-200 px-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={item.description} onChange={e => updateLineItem(idx, 'description', e.target.value)} required />
+                                    <input type="number" placeholder="Qty" className="col-span-2 text-sm border border-slate-200 px-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={item.quantity} onChange={e => updateLineItem(idx, 'quantity', parseFloat(e.target.value) || 0)} required />
+                                    <input type="number" placeholder="Unit €" className="col-span-3 text-sm border border-slate-200 px-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={item.unitPrice} onChange={e => updateLineItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)} required />
+                                    <div className="col-span-2 flex items-center justify-between">
+                                        <span className="text-xs font-bold text-slate-700">€{(item.quantity * item.unitPrice).toFixed(2)}</span>
+                                        <button type="button" onClick={() => removeLineItem(idx)} className="p-1 text-slate-400 hover:text-red-500 transition-colors">
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
-                            {newQuoteData.items.length === 0 && <div className="text-xs text-slate-400 italic">No items added. Click + Add Item.</div>}
                         </div>
+                        {newQuoteData.items.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-slate-200 space-y-1 text-right">
+                                <div className="text-xs text-slate-500">Subtotal: <span className="font-bold text-slate-700">€{quoteSubtotal.toFixed(2)}</span></div>
+                                <div className="text-xs text-slate-500">VAT (13.5%): <span className="font-bold text-slate-700">€{quoteVat.toFixed(2)}</span></div>
+                                <div className="text-sm font-bold text-slate-900">Total: €{quoteTotal.toFixed(2)}</div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="form-group">

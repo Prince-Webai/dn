@@ -1,14 +1,17 @@
 
-import React, { useEffect, useState } from 'react';
-import { Plus, Search, ArrowLeft, Package, Briefcase, Euro } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { Plus, Search, ArrowLeft, Package, Briefcase, Euro, Upload, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { dataService } from '../services/dataService';
+import { useToast } from '../context/ToastContext';
 
 const Customers = () => {
+    const { showToast } = useToast();
+    const csvInputRef = useRef<HTMLInputElement>(null);
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -29,6 +32,11 @@ const Customers = () => {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Bulk delete state
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+    const [importing, setImporting] = useState(false);
 
     const handleDeleteClick = () => {
         if (selectedCustomer) {
@@ -55,6 +63,102 @@ const Customers = () => {
             alert('Failed to delete customer');
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    // Toggle bulk select
+    const toggleSelect = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const selectAll = () => {
+        if (selectedIds.size === filteredCustomers.length) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(filteredCustomers.map(c => c.id)));
+        }
+    };
+
+    const confirmBulkDelete = async () => {
+        setIsDeleting(true);
+        try {
+            for (const id of selectedIds) {
+                await dataService.deleteCustomer(id);
+            }
+            setCustomers(customers.filter(c => !selectedIds.has(c.id)));
+            showToast('Deleted', `${selectedIds.size} customer(s) deleted`, 'success');
+            setSelectedIds(new Set());
+            setIsBulkDeleteOpen(false);
+        } catch (error) {
+            console.error('Error bulk deleting:', error);
+            showToast('Error', 'Failed to delete some customers', 'error');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    // CSV Import
+    const handleCSVImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImporting(true);
+
+        try {
+            const text = await file.text();
+            const lines = text.split('\n').filter(l => l.trim());
+            if (lines.length < 2) {
+                showToast('Error', 'CSV must have a header row and at least one data row', 'error');
+                return;
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const nameIdx = headers.findIndex(h => h.includes('name') || h.includes('company') || h.includes('farm'));
+            const emailIdx = headers.findIndex(h => h.includes('email'));
+            const phoneIdx = headers.findIndex(h => h.includes('phone') || h.includes('tel'));
+            const addressIdx = headers.findIndex(h => h.includes('address') || h.includes('location'));
+            const contactIdx = headers.findIndex(h => h.includes('contact'));
+
+            if (nameIdx === -1) {
+                showToast('Error', 'CSV must have a "Name" column', 'error');
+                return;
+            }
+
+            const newCustomers = [];
+            for (let i = 1; i < lines.length; i++) {
+                const cols = lines[i].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                if (!cols[nameIdx]) continue;
+                newCustomers.push({
+                    name: cols[nameIdx],
+                    email: emailIdx >= 0 ? cols[emailIdx] || '' : '',
+                    phone: phoneIdx >= 0 ? cols[phoneIdx] || '' : '',
+                    address: addressIdx >= 0 ? cols[addressIdx] || '' : '',
+                    contact_person: contactIdx >= 0 ? cols[contactIdx] || '' : '',
+                    payment_terms: 'Net 30'
+                });
+            }
+
+            if (newCustomers.length === 0) {
+                showToast('Error', 'No valid customers found in CSV', 'error');
+                return;
+            }
+
+            const { error } = await supabase.from('customers').insert(newCustomers);
+            if (error) throw error;
+
+            showToast('Imported!', `${newCustomers.length} customer(s) imported from CSV`, 'success');
+            fetchCustomers();
+        } catch (error) {
+            console.error('CSV import error:', error);
+            showToast('Error', 'Failed to import CSV', 'error');
+        } finally {
+            setImporting(false);
+            if (csvInputRef.current) csvInputRef.current.value = '';
         }
     };
 
@@ -359,29 +463,63 @@ const Customers = () => {
                             <h1 className="text-2xl font-bold font-display text-slate-900">Customer Accounts</h1>
                             <p className="text-slate-500">Manage farm accounts and contact details</p>
                         </div>
-                        <button
-                            onClick={() => {
-                                setEditingId(null);
-                                setNewCustomer({ name: '', address: '', contact_person: '', email: '', phone: '', payment_terms: 'Net 30' });
-                                setIsModalOpen(true);
-                            }}
-                            className="flex items-center gap-2 bg-delaval-blue hover:bg-delaval-dark-blue text-white px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
-                        >
-                            <Plus size={20} />
-                            Add Customer
-                        </button>
+                        <div className="flex gap-2">
+                            {selectedIds.size > 0 && (
+                                <button
+                                    onClick={() => setIsBulkDeleteOpen(true)}
+                                    className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-red-900/20 active:scale-95"
+                                >
+                                    <Trash2 size={18} />
+                                    Delete ({selectedIds.size})
+                                </button>
+                            )}
+                            <input
+                                ref={csvInputRef}
+                                type="file"
+                                accept=".csv"
+                                className="hidden"
+                                onChange={handleCSVImport}
+                            />
+                            <button
+                                onClick={() => csvInputRef.current?.click()}
+                                disabled={importing}
+                                className="flex items-center gap-2 border border-slate-200 text-slate-700 hover:bg-slate-50 px-4 py-2.5 rounded-xl font-semibold transition-all active:scale-95 disabled:opacity-50"
+                            >
+                                <Upload size={18} />
+                                {importing ? 'Importing...' : 'CSV Import'}
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setEditingId(null);
+                                    setNewCustomer({ name: '', address: '', contact_person: '', email: '', phone: '', payment_terms: 'Net 30' });
+                                    setIsModalOpen(true);
+                                }}
+                                className="flex items-center gap-2 bg-delaval-blue hover:bg-delaval-dark-blue text-white px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+                            >
+                                <Plus size={20} />
+                                Add Customer
+                            </button>
+                        </div>
                     </div>
 
                     <div className="section-card p-6">
-                        <div className="relative mb-6">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Search customers by name, location, or account number..."
-                                className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                                <input
+                                    type="text"
+                                    placeholder="Search customers by name, location, or account number..."
+                                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                onClick={selectAll}
+                                className="text-xs font-bold text-slate-500 hover:text-delaval-blue whitespace-nowrap transition-colors"
+                            >
+                                {selectedIds.size === filteredCustomers.length ? 'Deselect All' : 'Select All'}
+                            </button>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
@@ -391,8 +529,17 @@ const Customers = () => {
                                 <div
                                     key={customer.id}
                                     onClick={() => setSelectedCustomer(customer)}
-                                    className="stat-card group cursor-pointer border-2 border-transparent hover:border-delaval-blue p-6"
+                                    className={`stat-card group cursor-pointer border-2 p-6 transition-all relative ${selectedIds.has(customer.id) ? 'border-red-300 bg-red-50/30' : 'border-transparent hover:border-delaval-blue'}`}
                                 >
+                                    {/* Checkbox */}
+                                    <div
+                                        onClick={(e) => toggleSelect(customer.id, e)}
+                                        className={`absolute top-3 right-3 w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer transition-all ${selectedIds.has(customer.id) ? 'bg-red-500 border-red-500 text-white' : 'border-slate-300 hover:border-delaval-blue'}`}
+                                    >
+                                        {selectedIds.has(customer.id) && (
+                                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 6L5 8L9 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                        )}
+                                    </div>
                                     <div className="w-16 h-16 bg-[#E6F0FF] text-[#0051A5] rounded-full flex items-center justify-center font-bold text-2xl mb-4 group-hover:scale-110 transition-transform">
                                         {customer.name.substring(0, 2).toUpperCase()}
                                     </div>
@@ -467,6 +614,17 @@ const Customers = () => {
                 isDestructive={true}
                 isLoading={isDeleting}
                 confirmText="Delete Customer"
+            />
+
+            <ConfirmModal
+                isOpen={isBulkDeleteOpen}
+                onClose={() => setIsBulkDeleteOpen(false)}
+                onConfirm={confirmBulkDelete}
+                title="Delete Selected Customers"
+                message={`Are you sure you want to delete ${selectedIds.size} selected customer(s)? This action cannot be undone.`}
+                isDestructive={true}
+                isLoading={isDeleting}
+                confirmText={`Delete ${selectedIds.size} Customer(s)`}
             />
         </div>
     );

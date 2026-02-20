@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Printer, Download, Plus, Clock, Calculator, Trash2, Edit, CreditCard, Mail } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Calculator, Trash2, Edit, CreditCard, Mail, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, JobItem, Statement } from '../types';
 import Modal from '../components/Modal';
@@ -44,6 +44,34 @@ const Invoices = () => {
     });
 
     const [jobItems, setJobItems] = useState<JobItem[]>([]);
+    const [statusFilter, setStatusFilter] = useState<string>('all');
+
+    const filteredInvoices = useMemo(() => {
+        if (statusFilter === 'all') return invoices;
+        if (statusFilter === 'overdue') {
+            return invoices.filter(inv => {
+                const s = inv.status as string;
+                if (s === 'overdue') return true;
+                if (s !== 'paid' && s !== 'void' && inv.due_date && new Date(inv.due_date) < new Date()) return true;
+                return false;
+            });
+        }
+        return invoices.filter(inv => inv.status === statusFilter);
+    }, [invoices, statusFilter]);
+
+    const handleMarkAsPaid = async (inv: Invoice) => {
+        const { error } = await dataService.updateInvoice(inv.id, {
+            status: 'paid',
+            amount_paid: inv.total_amount,
+            payment_date: new Date().toISOString().split('T')[0]
+        });
+        if (!error) {
+            showToast('Invoice Paid', `${inv.invoice_number} marked as paid`, 'success');
+            fetchData();
+        } else {
+            showToast('Error', 'Failed to update invoice', 'error');
+        }
+    };
 
     useEffect(() => {
         fetchData();
@@ -433,8 +461,32 @@ const Invoices = () => {
                     {/* INVOICES TAB */}
                     {activeTab === 'invoices' && (
                         <>
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                                <h2 className="text-lg font-bold text-slate-900">Recent Invoices</h2>
+                            <div className="p-4 border-b border-slate-100">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h2 className="text-lg font-bold text-slate-900">Invoices</h2>
+                                    <span className="text-xs font-bold text-slate-400">{filteredInvoices.length} results</span>
+                                </div>
+                                <div className="flex gap-2 overflow-x-auto pb-1">
+                                    {[
+                                        { key: 'all', label: 'All', count: invoices.length },
+                                        { key: 'draft', label: 'Draft', count: invoices.filter(i => i.status === 'draft').length },
+                                        { key: 'sent', label: 'Sent', count: invoices.filter(i => i.status === 'sent').length },
+                                        { key: 'paid', label: 'Paid', count: invoices.filter(i => i.status === 'paid').length },
+                                        { key: 'overdue', label: 'Overdue', count: invoices.filter(i => { const s = i.status as string; return s === 'overdue' || (s !== 'paid' && s !== 'void' && i.due_date && new Date(i.due_date) < new Date()); }).length },
+                                        { key: 'partial', label: 'Partial', count: invoices.filter(i => i.status === 'partial').length },
+                                    ].map(tab => (
+                                        <button
+                                            key={tab.key}
+                                            onClick={() => setStatusFilter(tab.key)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap
+                                                ${statusFilter === tab.key
+                                                    ? 'bg-delaval-blue text-white shadow-sm'
+                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                                        >
+                                            {tab.label} {tab.count > 0 && <span className="ml-1 opacity-70">({tab.count})</span>}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-left">
@@ -449,7 +501,7 @@ const Invoices = () => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {invoices.map(inv => (
+                                        {filteredInvoices.map(inv => (
                                             <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
                                                 <td className="px-6 py-4 font-bold text-slate-900">{inv.invoice_number}</td>
                                                 <td className="px-6 py-4 font-medium text-slate-700">
@@ -475,6 +527,15 @@ const Invoices = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        {inv.status !== 'paid' && (
+                                                            <button
+                                                                onClick={() => handleMarkAsPaid(inv)}
+                                                                className="p-1 text-slate-400 hover:text-emerald-600 transition-colors"
+                                                                title="Mark as Paid"
+                                                            >
+                                                                <CheckCircle2 size={18} />
+                                                            </button>
+                                                        )}
                                                         <button
                                                             onClick={() => openPaymentModal(inv)}
                                                             className="p-1 text-slate-400 hover:text-green-600 transition-colors"
@@ -524,8 +585,18 @@ const Invoices = () => {
                                                 </td>
                                             </tr>
                                         ))}
-                                        {invoices.length === 0 && (
-                                            <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No invoices found</td></tr>
+                                        {filteredInvoices.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="px-6 py-12 text-center">
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                                                            <FileText size={24} className="text-slate-300" />
+                                                        </div>
+                                                        <div className="font-bold text-slate-400">No {statusFilter === 'all' ? '' : statusFilter} invoices found</div>
+                                                        <div className="text-xs text-slate-300">Try a different filter or create a new invoice</div>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                         )}
                                     </tbody>
                                 </table>
