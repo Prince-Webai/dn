@@ -34,10 +34,10 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div
                 ref={modalRef}
-                className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden transform transition-all animate-in zoom-in-95 duration-200"
+                className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col transform transition-all animate-in zoom-in-95 duration-200"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="flex-none p-6 border-b bg-white flex items-center justify-between">
+                <div className="flex-none p-6 border-b bg-white rounded-t-xl flex items-center justify-between">
                     <h2 className="text-xl font-bold font-display text-gray-900">{title}</h2>
                     <button
                         onClick={onClose}
@@ -46,7 +46,7 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
                         <X size={20} />
                     </button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto overflow-x-visible p-6">
                     {children}
                 </div>
             </div>
