@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { dataService } from '../services/dataService';
 import { Job, Customer } from '../types';
 import Modal from '../components/Modal';
+import DatePicker from '../components/DatePicker';
 
 const CalendarPage = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -485,8 +486,12 @@ const CalendarPage = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Scheduled Date</label>
-                            <input required type="date" className="w-full px-4 py-2.5 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
-                                value={newJob.date_scheduled} onChange={e => setNewJob({ ...newJob, date_scheduled: e.target.value })} />
+                            <DatePicker
+                                required
+                                value={newJob.date_scheduled}
+                                onChange={(date) => setNewJob({ ...newJob, date_scheduled: date })}
+                                placeholder="Pick a date..."
+                            />
                         </div>
                     </div>
                     <div>

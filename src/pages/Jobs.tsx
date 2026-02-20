@@ -4,6 +4,7 @@ import { Job, Customer } from '../types';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
+import DatePicker from '../components/DatePicker';
 import { dataService } from '../services/dataService';
 
 const Jobs = () => {
@@ -339,12 +340,11 @@ const Jobs = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Scheduled Date</label>
-                            <input
-                                type="date"
+                            <DatePicker
                                 required
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                value={newJob.date_scheduled}
-                                onChange={e => setNewJob({ ...newJob, date_scheduled: e.target.value })}
+                                value={newJob.date_scheduled || ''}
+                                onChange={(date) => setNewJob({ ...newJob, date_scheduled: date })}
+                                placeholder="Pick a date..."
                             />
                         </div>
 
