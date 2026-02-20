@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Package, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Search, Package, CheckCircle, Clock, Tag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { InventoryItem } from '../types';
 import Modal from '../components/Modal';
@@ -21,7 +21,10 @@ const Inventory = () => {
         stock_level: 0,
         location: ''
     });
-    const [allocations, setAllocations] = useState<any[]>([]); // Using any for now due to complex join, ideally JobItem
+    const [allocations, setAllocations] = useState<any[]>([]);
+    const [categoryFilter, setCategoryFilter] = useState('all');
+    const [isNewCategory, setIsNewCategory] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
 
     const [editingId, setEditingId] = useState<string | null>(null);
     const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -151,11 +154,16 @@ const Inventory = () => {
         }
     };
 
-    const filteredItems = items.filter(item =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.category?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredItems = items.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.category?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
+        return matchesSearch && matchesCategory;
+    });
+
+    // Extract unique categories from items
+    const categories = Array.from(new Set(items.map(item => item.category).filter(Boolean))) as string[];
 
     // Calculate Real Stats
     const totalAllocated = allocations.reduce((sum, item) => sum + (item.quantity || 0), 0);
@@ -188,20 +196,38 @@ const Inventory = () => {
                 )}
             </div>
 
-            {/* Inventory / Allocation Toggle (Sidebar-like but top for now to match structure) */}
-            <div className="bg-white rounded-xl border border-slate-200 p-1 inline-flex mb-2">
-                <button
-                    onClick={() => setActiveTab('inventory')}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'inventory' ? 'bg-delaval-light-blue text-delaval-blue' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                    Parts Inventory
-                </button>
-                <button
-                    onClick={() => setActiveTab('allocation')}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'allocation' ? 'bg-delaval-light-blue text-delaval-blue' : 'text-slate-500 hover:text-slate-700'}`}
-                >
-                    Parts Allocation
-                </button>
+            {/* Category Filter + Inventory/Allocation Toggle */}
+            <div className="flex flex-wrap items-center gap-3 mb-2">
+                <div className="bg-white rounded-xl border border-slate-200 p-1 inline-flex">
+                    <button
+                        onClick={() => setActiveTab('inventory')}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'inventory' ? 'bg-delaval-light-blue text-delaval-blue' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Parts Inventory
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('allocation')}
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'allocation' ? 'bg-delaval-light-blue text-delaval-blue' : 'text-slate-500 hover:text-slate-700'}`}
+                    >
+                        Parts Allocation
+                    </button>
+                </div>
+
+                {activeTab === 'inventory' && categories.length > 0 && (
+                    <div className="flex items-center gap-2">
+                        <Tag size={16} className="text-slate-400" />
+                        <select
+                            value={categoryFilter}
+                            onChange={e => setCategoryFilter(e.target.value)}
+                            className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                        >
+                            <option value="all">All Categories</option>
+                            {categories.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
+                    </div>
+                )}
             </div>
 
             {activeTab === 'allocation' && (
@@ -402,8 +428,54 @@ const Inventory = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                            <input type="text" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
-                                value={newItem.category} onChange={e => setNewItem({ ...newItem, category: e.target.value })} />
+                            {isNewCategory ? (
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="New category name"
+                                        className="flex-1 px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
+                                        value={newCategoryName}
+                                        onChange={e => setNewCategoryName(e.target.value)}
+                                        autoFocus
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (newCategoryName.trim()) {
+                                                setNewItem({ ...newItem, category: newCategoryName.trim() });
+                                            }
+                                            setIsNewCategory(false);
+                                            setNewCategoryName('');
+                                        }}
+                                        className="px-3 py-2 bg-delaval-blue text-white rounded-lg text-sm font-bold"
+                                    >Add</button>
+                                    <button
+                                        type="button"
+                                        onClick={() => { setIsNewCategory(false); setNewCategoryName(''); }}
+                                        className="px-3 py-2 text-slate-500 hover:bg-slate-100 rounded-lg text-sm"
+                                    >Cancel</button>
+                                </div>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <select
+                                        className="flex-1 px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
+                                        value={newItem.category}
+                                        onChange={e => {
+                                            if (e.target.value === '__new__') {
+                                                setIsNewCategory(true);
+                                            } else {
+                                                setNewItem({ ...newItem, category: e.target.value });
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Select category...</option>
+                                        {categories.map(cat => (
+                                            <option key={cat} value={cat}>{cat}</option>
+                                        ))}
+                                        <option value="__new__">➕ Create New Category</option>
+                                    </select>
+                                </div>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Cost Price (€)</label>

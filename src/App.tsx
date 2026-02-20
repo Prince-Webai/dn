@@ -10,6 +10,7 @@ import Quotes from './pages/Quotes'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
 import Team from './pages/Team'
+import CalendarPage from './pages/Calendar'
 import JobDetails from './pages/JobDetails'
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -105,6 +106,13 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <Team />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/calendar" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <CalendarPage />
                             </Layout>
                         </ProtectedRoute>
                     } />

@@ -4,7 +4,7 @@ import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
-import { BarChart2, TrendingUp, Users, DollarSign, Package, Calendar } from 'lucide-react';
+import { BarChart2, TrendingUp, Users, Euro, Package, Calendar } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { Invoice, Job, InventoryItem } from '../types';
 
@@ -222,7 +222,7 @@ const Reports = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                 <div className="p-6 border-b border-slate-100">
                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <DollarSign size={20} className="text-slate-400" />
+                        <Euro size={20} className="text-slate-400" />
                         Top Customers by Spend
                     </h3>
                 </div>

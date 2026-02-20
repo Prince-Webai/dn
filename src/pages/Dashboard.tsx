@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-    DollarSign, Wrench, AlertCircle, Package,
+    Euro, Wrench, AlertCircle, Package,
     Plus, Users, FileText, FilePlus, Calendar,
     ArrowUpRight
 } from 'lucide-react';
@@ -68,7 +68,7 @@ const Dashboard = () => {
         {
             label: 'Outstanding Balance',
             value: `€${stats.outstandingBalance.toLocaleString()}`,
-            icon: DollarSign,
+            icon: Euro,
             color: 'bg-[#E6F0FF] text-[#0051A5]', // blue
             change: '↓ €2,400 from last month',
             changeType: 'negative' // In prototype this is actually green/good, but specifically styled

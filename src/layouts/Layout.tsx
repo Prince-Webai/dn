@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, DollarSign, PieChart, FileCheck } from 'lucide-react';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, CalendarDays } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
+import { supabase } from '../lib/supabase';
 import Modal from '../components/Modal';
+import logoImg from '../assets/logo.png';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -37,11 +38,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const handleProfileUpdate = (e: React.FormEvent) => {
+    const handleProfileUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Here you would typically update via Supabase auth
-        // await supabase.auth.updateUser({ data: { name: profileForm.name } })
-        setIsProfileModalOpen(false);
+        try {
+            const { error } = await supabase.auth.updateUser({
+                data: { name: profileForm.name }
+            });
+            if (error) throw error;
+            setIsProfileModalOpen(false);
+        } catch (error: any) {
+            console.error('Error updating profile:', error);
+            alert(`Failed to update profile: ${error.message}`);
+        }
     };
 
     // Prototype Sidebar Structure
@@ -66,13 +74,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             items: [
                 { icon: FileText, label: 'Invoices', path: '/invoices' },
                 { icon: FileCheck, label: 'Quotes', path: '/quotes' },
-                { icon: DollarSign, label: 'Payments', path: '/payments' },
+                { icon: Euro, label: 'Payments', path: '/payments' },
             ]
         },
         {
             title: 'Reports & Admin',
             items: [
                 { icon: PieChart, label: 'Analytics', path: '/reports' },
+                { icon: CalendarDays, label: 'Calendar', path: '/calendar' },
                 { icon: Users, label: 'Team & Engineers', path: '/team' },
             ]
         },
@@ -89,13 +98,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
                     {/* Logo Section */}
                     <div className="flex items-center gap-4">
-                        <div className="w-[50px] h-[50px] rounded-xl flex items-center justify-center font-extrabold text-[#0051A5] text-2xl shadow-[0_4px_16px_rgba(255,255,255,0.3),inset_0_1px_0_rgba(255,255,255,0.8)] border-2 border-white/20"
-                            style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%)' }}>
-                            CD
-                        </div>
+                        <img src={logoImg} alt="Tony Condon Dairy Services" className="h-[50px] w-auto rounded-lg bg-white p-1 shadow-[0_4px_16px_rgba(255,255,255,0.3)]" />
                         <div className="flex flex-col gap-1 text-white">
-                            <h1 className="font-display text-2xl font-bold tracking-tight">Condon Dairy</h1>
-                            <span className="text-sm opacity-90 font-normal">Management System</span>
+                            <h1 className="font-display text-xl font-bold tracking-tight leading-tight">Tony Condon<br />Dairy Services</h1>
                         </div>
                     </div>
 

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, ArrowLeft, Package, Briefcase, DollarSign } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Package, Briefcase, Euro } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
@@ -263,7 +263,7 @@ const Customers = () => {
                                     <div className="text-sm font-medium text-slate-500">Total Revenue</div>
                                 </div>
                                 <div className="w-12 h-12 bg-[#E6F0FF] text-[#0051A5] rounded-xl flex items-center justify-center">
-                                    <DollarSign size={24} />
+                                    <Euro size={24} />
                                 </div>
                             </div>
                         </div>
