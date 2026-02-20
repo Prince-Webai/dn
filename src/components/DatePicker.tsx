@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react';
 
 interface DatePickerProps {
@@ -11,7 +12,9 @@ interface DatePickerProps {
 const DatePicker = ({ value, onChange, required, placeholder = 'Select date...' }: DatePickerProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [viewDate, setViewDate] = useState(value ? new Date(value + 'T00:00:00') : new Date());
-    const containerRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
 
     const year = viewDate.getFullYear();
     const month = viewDate.getMonth();
@@ -21,7 +24,6 @@ const DatePicker = ({ value, onChange, required, placeholder = 'Select date...' 
     const dayLabels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    // Monday-first: convert getDay() (0=Sun) to Mon-first (0=Mon)
     const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
 
     const todayStr = new Date().toISOString().split('T')[0];
@@ -49,10 +51,46 @@ const DatePicker = ({ value, onChange, required, placeholder = 'Select date...' 
         setIsOpen(false);
     };
 
+    // Position the dropdown using a portal so it never gets cut off by parent overflow
+    const updatePosition = useCallback(() => {
+        if (triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            const dropdownWidth = 300;
+            let left = rect.left + rect.width / 2 - dropdownWidth / 2;
+            // Keep within viewport
+            if (left < 8) left = 8;
+            if (left + dropdownWidth > window.innerWidth - 8) left = window.innerWidth - dropdownWidth - 8;
+
+            // Check if dropdown fits below, otherwise show above
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const dropdownHeight = 360; // approximate
+            const top = spaceBelow > dropdownHeight
+                ? rect.bottom + 8
+                : rect.top - dropdownHeight - 8;
+
+            setDropdownPos({ top, left });
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isOpen) {
+            updatePosition();
+            window.addEventListener('scroll', updatePosition, true);
+            window.addEventListener('resize', updatePosition);
+        }
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
+    }, [isOpen, updatePosition]);
+
     // Close on outside click
     useEffect(() => {
         const handleClick = (e: MouseEvent) => {
-            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+            if (
+                triggerRef.current && !triggerRef.current.contains(e.target as Node) &&
+                dropdownRef.current && !dropdownRef.current.contains(e.target as Node)
+            ) {
                 setIsOpen(false);
             }
         };
@@ -76,12 +114,13 @@ const DatePicker = ({ value, onChange, required, placeholder = 'Select date...' 
     for (let d = 1; d <= daysInMonth; d++) days.push(d);
 
     return (
-        <div ref={containerRef} className="relative">
+        <>
             {/* Hidden native input for form validation */}
             {required && <input type="text" required value={value} onChange={() => { }} className="sr-only" tabIndex={-1} />}
 
-            {/* Trigger */}
+            {/* Trigger Button */}
             <button
+                ref={triggerRef}
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-full flex items-center justify-between px-4 py-2.5 rounded-lg border transition-all text-left
@@ -97,10 +136,18 @@ const DatePicker = ({ value, onChange, required, placeholder = 'Select date...' 
                 <CalendarDays size={18} className={isOpen ? 'text-[#0051A5]' : 'text-slate-400'} />
             </button>
 
-            {/* Dropdown Calendar */}
-            {isOpen && (
-                <div className="absolute z-50 mt-2 w-[300px] bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden animate-[fadeInUp_0.15s_ease-out]"
-                    style={{ left: '50%', transform: 'translateX(-50%)' }}>
+            {/* Portal-rendered Dropdown — renders at document body, never clipped by modal overflow */}
+            {isOpen && createPortal(
+                <div
+                    ref={dropdownRef}
+                    className="fixed w-[300px] bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden"
+                    style={{
+                        top: dropdownPos.top,
+                        left: dropdownPos.left,
+                        zIndex: 99999,
+                        animation: 'fadeInUp 0.15s ease-out'
+                    }}
+                >
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-[#003875] to-[#0051A5]">
                         <button type="button" onClick={prevMonth} className="p-1 text-white/70 hover:text-white rounded hover:bg-white/10 transition-colors">
@@ -156,9 +203,10 @@ const DatePicker = ({ value, onChange, required, placeholder = 'Select date...' 
                             Today
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
-        </div>
+        </>
     );
 };
 
