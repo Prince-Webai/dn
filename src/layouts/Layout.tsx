@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, CalendarDays } from 'lucide-react';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -81,7 +81,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             title: 'Reports & Admin',
             items: [
                 { icon: PieChart, label: 'Analytics', path: '/reports' },
-                { icon: CalendarDays, label: 'Calendar', path: '/calendar' },
                 { icon: Users, label: 'Team & Engineers', path: '/team' },
             ]
         },
