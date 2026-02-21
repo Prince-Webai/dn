@@ -258,23 +258,8 @@ const Invoices = () => {
             const customDescription = builderData.items.map(i => i.description).join(', ');
 
             // Generate PDF for one-time style
-            const oneTimePayload = {
-                customerName: builderCustomerMode === 'existing'
-                    ? customers.find(c => c.id === builderData.customerId)?.name || 'Customer'
-                    : builderData.guestName,
-                email: builderCustomerMode === 'existing'
-                    ? customers.find(c => c.id === builderData.customerId)?.email || ''
-                    : builderData.guestEmail,
-                phone: builderCustomerMode === 'existing'
-                    ? customers.find(c => c.id === builderData.customerId)?.phone || ''
-                    : builderData.guestPhone,
-                date: builderData.dateIssued,
-                description: customDescription,
-                labourHours: 0, labourRate: 0,
-                partsCost: builderSubtotal,
-                additional: 0
-            };
-            generateOneTimeInvoice(oneTimePayload);
+            // Note: Auto-download disabled per user request
+            // generateOneTimeInvoice({ ... });
 
             // Save to database
             const insertData: any = {
@@ -532,240 +517,238 @@ const Invoices = () => {
                 </button>
             </div>
 
-            <div className="grid lg:grid-cols-[1fr_300px] gap-6">
+            {/* Main Content Area (Full Width) */}
+            <div className="section-card border border-slate-100 min-h-[500px]">
 
-                {/* Main Content Area (Tabs) */}
-                <div className="section-card border border-slate-100 min-h-[500px]">
-
-                    {/* INVOICES TAB */}
-                    {activeTab === 'invoices' && (
-                        <>
-                            <div className="p-4 border-b border-slate-100">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h2 className="text-lg font-bold text-slate-900">Invoices</h2>
-                                    <span className="text-xs font-bold text-slate-400">{filteredInvoices.length} results</span>
-                                </div>
-                                <div className="flex gap-2 overflow-x-auto pb-1">
-                                    {[
-                                        { key: 'all', label: 'All', count: invoices.length },
-                                        { key: 'draft', label: 'Draft', count: invoices.filter(i => i.status === 'draft').length },
-                                        { key: 'sent', label: 'Sent', count: invoices.filter(i => i.status === 'sent').length },
-                                        { key: 'paid', label: 'Paid', count: invoices.filter(i => i.status === 'paid').length },
-                                        { key: 'overdue', label: 'Overdue', count: invoices.filter(i => { const s = i.status as string; return s === 'overdue' || (s !== 'paid' && s !== 'void' && i.due_date && new Date(i.due_date) < new Date()); }).length },
-                                        { key: 'partial', label: 'Partial', count: invoices.filter(i => i.status === 'partial').length },
-                                    ].map(tab => (
-                                        <button
-                                            key={tab.key}
-                                            onClick={() => setStatusFilter(tab.key)}
-                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap
-                                                ${statusFilter === tab.key
-                                                    ? 'bg-delaval-blue text-white shadow-sm'
-                                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                                        >
-                                            {tab.label} {tab.count > 0 && <span className="ml-1 opacity-70">({tab.count})</span>}
-                                        </button>
-                                    ))}
-                                </div>
+                {/* INVOICES TAB */}
+                {activeTab === 'invoices' && (
+                    <>
+                        <div className="p-4 border-b border-slate-100">
+                            <div className="flex items-center justify-between mb-3">
+                                <h2 className="text-lg font-bold text-slate-900">Invoices</h2>
+                                <span className="text-xs font-bold text-slate-400">{filteredInvoices.length} results</span>
                             </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead className="bg-[#F8FAFB] border-b border-slate-100">
-                                        <tr>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Invoice #</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {filteredInvoices.map(inv => (
-                                            <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-6 py-4 font-bold text-slate-900">{inv.invoice_number}</td>
-                                                <td className="px-6 py-4 font-medium text-slate-700">
-                                                    {inv.customers?.name || inv.guest_name || 'One-Time Customer'}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-600">{inv.date_issued}</td>
-                                                <td className="px-6 py-4 font-bold text-slate-900">
-                                                    <div>
-                                                        <span>€{inv.total_amount.toFixed(2)}</span>
-                                                        {/* Payment progress */}
-                                                        {inv.status !== 'draft' && (
-                                                            <div className="mt-1">
-                                                                <div className="w-full bg-slate-200 rounded-full h-1.5">
-                                                                    <div
-                                                                        className={`h-1.5 rounded-full transition-all ${inv.amount_paid && inv.amount_paid >= inv.total_amount ? 'bg-green-500' : inv.amount_paid && inv.amount_paid > 0 ? 'bg-blue-500' : 'bg-slate-200'}`}
-                                                                        style={{ width: `${Math.min(100, ((inv.amount_paid || 0) / inv.total_amount) * 100)}%` }}
-                                                                    />
-                                                                </div>
-                                                                <div className="flex justify-between mt-0.5">
-                                                                    <span className="text-[10px] text-green-600 font-medium">€{(inv.amount_paid || 0).toFixed(2)} paid</span>
-                                                                    {(inv.amount_paid || 0) < inv.total_amount && (
-                                                                        <span className="text-[10px] text-red-500 font-medium">€{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} due</span>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase
-                                                        ${inv.status === 'paid' ? 'bg-green-100 text-green-800' :
-                                                            inv.status === 'partial' ? 'bg-blue-100 text-blue-800' :
-                                                                inv.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                                                                    'bg-orange-100 text-orange-800'}`}>
-                                                        {inv.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex gap-1.5 flex-wrap">
-                                                        {inv.status !== 'paid' && (
-                                                            <button
-                                                                onClick={() => openPaymentModal(inv)}
-                                                                className="p-1.5 rounded-md text-green-600 bg-green-50 hover:bg-green-100 transition-colors"
-                                                                title="Record Payment"
-                                                            >
-                                                                <CreditCard size={16} />
-                                                            </button>
-                                                        )}
-                                                        {inv.status !== 'paid' && (
-                                                            <button
-                                                                onClick={() => handleMarkAsPaid(inv)}
-                                                                className="p-1.5 rounded-md text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors"
-                                                                title="Mark as Fully Paid"
-                                                            >
-                                                                <CheckCircle2 size={16} />
-                                                            </button>
-                                                        )}
-                                                        <button
-                                                            onClick={() => handleSendReminder(inv)}
-                                                            className="p-1.5 rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
-                                                            title="Send Reminder Email"
-                                                        >
-                                                            <Mail size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => openEditModal(inv)}
-                                                            className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
-                                                            title="Edit Invoice"
-                                                        >
-                                                            <Edit size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => handleDownloadInvoice(inv)}
-                                                            className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
-                                                            title="Download Invoice"
-                                                        >
-                                                            <Download size={16} />
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setDeleteInvoiceId(inv.id)}
-                                                            className="p-1.5 rounded-md text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
-                                                            title="Delete Invoice"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                        {filteredInvoices.length === 0 && (
-                                            <tr>
-                                                <td colSpan={6} className="px-6 py-12 text-center">
-                                                    <div className="flex flex-col items-center gap-2">
-                                                        <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-                                                            <FileText size={24} className="text-slate-300" />
-                                                        </div>
-                                                        <div className="font-bold text-slate-400">No {statusFilter === 'all' ? '' : statusFilter} invoices found</div>
-                                                        <div className="text-xs text-slate-300">Try a different filter or create a new invoice</div>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </>
-                    )}
-
-                    {/* STATEMENTS TAB */}
-                    {activeTab === 'statements' && (
-                        <>
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/50">
-                                <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                    <FileText size={20} className="text-blue-600" /> Statements of Work
-                                </h2>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead className="bg-[#F8FAFB] border-b border-slate-100">
-                                        <tr>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Statement #</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Generated Date</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job Ref</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total Value</th>
-                                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
-                                        {statements.map(stmt => (
-                                            <tr key={stmt.id} className="hover:bg-slate-50/50 transition-colors">
-                                                <td className="px-6 py-4 font-bold text-slate-900">{stmt.statement_number}</td>
-                                                <td className="px-6 py-4 font-medium text-slate-700">{stmt.customers?.name}</td>
-                                                <td className="px-6 py-4 text-sm text-slate-600">
-                                                    {new Date(stmt.date_generated).toLocaleDateString()}
-                                                </td>
-                                                <td className="px-6 py-4 text-sm text-slate-600">
-                                                    {stmt.jobs ? `Job #${stmt.jobs.job_number}` : 'N/A'}
-                                                </td>
-                                                <td className="px-6 py-4 font-bold text-slate-900">€{stmt.total_amount.toFixed(2)}</td>
-                                                <td className="px-6 py-4">
-                                                    <button
-                                                        onClick={() => handleDownloadStatement(stmt)}
-                                                        className="text-slate-400 hover:text-delaval-blue transition-colors"
-                                                        title="Download Statement"
-                                                    >
-                                                        <Download size={18} />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-
-                                        {statements.length === 0 && (
-                                            <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No statements found. Generate one from a job.</td></tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </>
-                    )}
-                </div>
-
-                {/* Pending Jobs Side Panel */}
-                <div className="space-y-6">
-                    <div className="bg-delaval-blue/5 rounded-xl border border-delaval-blue/10 p-6">
-                        <h2 className="text-sm font-bold text-delaval-blue uppercase tracking-wider mb-4 flex items-center gap-2">
-                            <Clock size={16} /> Pending Jobs ({completedJobs.length})
-                        </h2>
-                        <div className="space-y-3">
-                            {completedJobs.map(job => (
-                                <div key={job.id} className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 group hover:border-delaval-blue/30 transition-all">
-                                    <div className="font-bold text-slate-900 mb-1">{job.customers?.name}</div>
-                                    <div className="text-xs text-slate-500 mb-3">{job.service_type} • {job.date_completed?.split('T')[0] || 'Recently'}</div>
+                            <div className="flex gap-2 overflow-x-auto pb-1">
+                                {[
+                                    { key: 'all', label: 'All', count: invoices.length },
+                                    { key: 'draft', label: 'Draft', count: invoices.filter(i => i.status === 'draft').length },
+                                    { key: 'sent', label: 'Sent', count: invoices.filter(i => i.status === 'sent').length },
+                                    { key: 'paid', label: 'Paid', count: invoices.filter(i => i.status === 'paid').length },
+                                    { key: 'overdue', label: 'Overdue', count: invoices.filter(i => { const s = i.status as string; return s === 'overdue' || (s !== 'paid' && s !== 'void' && i.due_date && new Date(i.due_date) < new Date()); }).length },
+                                    { key: 'partial', label: 'Partial', count: invoices.filter(i => i.status === 'partial').length },
+                                ].map(tab => (
                                     <button
-                                        onClick={() => handleJobSelect(job)}
-                                        className="w-full bg-white border border-delaval-blue text-delaval-blue text-xs font-bold py-2 rounded-lg group-hover:bg-delaval-blue group-hover:text-white transition-colors"
+                                        key={tab.key}
+                                        onClick={() => setStatusFilter(tab.key)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap
+                                                ${statusFilter === tab.key
+                                                ? 'bg-delaval-blue text-white shadow-sm'
+                                                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
                                     >
-                                        Generate Docs
+                                        {tab.label} {tab.count > 0 && <span className="ml-1 opacity-70">({tab.count})</span>}
                                     </button>
-                                </div>
-                            ))}
-                            {completedJobs.length === 0 && <div className="text-slate-500 text-sm italic">No pending jobs.</div>}
+                                ))}
+                            </div>
                         </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-[#F8FAFB] border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Invoice #</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {filteredInvoices.map(inv => (
+                                        <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
+                                            <td className="px-6 py-4 font-bold text-slate-900">{inv.invoice_number}</td>
+                                            <td className="px-6 py-4 font-medium text-slate-700">
+                                                {inv.customers?.name || inv.guest_name || 'One-Time Customer'}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600">{inv.date_issued}</td>
+                                            <td className="px-6 py-4 font-bold text-slate-900">
+                                                <div>
+                                                    <span>€{inv.total_amount.toFixed(2)}</span>
+                                                    {/* Payment progress */}
+                                                    {inv.status !== 'draft' && (
+                                                        <div className="mt-1">
+                                                            <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                                                <div
+                                                                    className={`h-1.5 rounded-full transition-all ${inv.amount_paid && inv.amount_paid >= inv.total_amount ? 'bg-green-500' : inv.amount_paid && inv.amount_paid > 0 ? 'bg-blue-500' : 'bg-slate-200'}`}
+                                                                    style={{ width: `${Math.min(100, ((inv.amount_paid || 0) / inv.total_amount) * 100)}%` }}
+                                                                />
+                                                            </div>
+                                                            <div className="flex justify-between mt-0.5">
+                                                                <span className="text-[10px] text-green-600 font-medium">€{(inv.amount_paid || 0).toFixed(2)} paid</span>
+                                                                {(inv.amount_paid || 0) < inv.total_amount && (
+                                                                    <span className="text-[10px] text-red-500 font-medium">€{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} due</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase
+                                                        ${inv.status === 'paid' ? 'bg-green-100 text-green-800' :
+                                                        inv.status === 'partial' ? 'bg-blue-100 text-blue-800' :
+                                                            inv.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                                                                'bg-orange-100 text-orange-800'}`}>
+                                                    {inv.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex gap-1.5 flex-wrap">
+                                                    {inv.status !== 'paid' && (
+                                                        <button
+                                                            onClick={() => openPaymentModal(inv)}
+                                                            className="p-1.5 rounded-md text-green-600 bg-green-50 hover:bg-green-100 transition-colors"
+                                                            title="Record Payment"
+                                                        >
+                                                            <CreditCard size={16} />
+                                                        </button>
+                                                    )}
+                                                    {inv.status !== 'paid' && (
+                                                        <button
+                                                            onClick={() => handleMarkAsPaid(inv)}
+                                                            className="p-1.5 rounded-md text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                                                            title="Mark as Fully Paid"
+                                                        >
+                                                            <CheckCircle2 size={16} />
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        onClick={() => handleSendReminder(inv)}
+                                                        className="p-1.5 rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
+                                                        title="Send Reminder Email"
+                                                    >
+                                                        <Mail size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openEditModal(inv)}
+                                                        className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
+                                                        title="Edit Invoice"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDownloadInvoice(inv)}
+                                                        className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
+                                                        title="Download Invoice"
+                                                    >
+                                                        <Download size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setDeleteInvoiceId(inv.id)}
+                                                        className="p-1.5 rounded-md text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
+                                                        title="Delete Invoice"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredInvoices.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-12 text-center">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                                                        <FileText size={24} className="text-slate-300" />
+                                                    </div>
+                                                    <div className="font-bold text-slate-400">No {statusFilter === 'all' ? '' : statusFilter} invoices found</div>
+                                                    <div className="text-xs text-slate-300">Try a different filter or create a new invoice</div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
+
+                {/* STATEMENTS TAB */}
+                {activeTab === 'statements' && (
+                    <>
+                        <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/50">
+                            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                                <FileText size={20} className="text-blue-600" /> Statements of Work
+                            </h2>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-[#F8FAFB] border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Statement #</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Generated Date</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job Ref</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total Value</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {statements.map(stmt => (
+                                        <tr key={stmt.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-4 font-bold text-slate-900">{stmt.statement_number}</td>
+                                            <td className="px-6 py-4 font-medium text-slate-700">{stmt.customers?.name}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                                {new Date(stmt.date_generated).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                                {stmt.jobs ? `Job #${stmt.jobs.job_number}` : 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4 font-bold text-slate-900">€{stmt.total_amount.toFixed(2)}</td>
+                                            <td className="px-6 py-4">
+                                                <button
+                                                    onClick={() => handleDownloadStatement(stmt)}
+                                                    className="text-slate-400 hover:text-delaval-blue transition-colors"
+                                                    title="Download Statement"
+                                                >
+                                                    <Download size={18} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+
+                                    {statements.length === 0 && (
+                                        <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No statements found. Generate one from a job.</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
+            </div>
+
+            {/* Pending Jobs - Now Full Width Below Main Content */}
+            <div className="bg-delaval-blue/5 rounded-xl border border-delaval-blue/10 p-6 mt-6">
+                <h2 className="text-sm font-bold text-delaval-blue uppercase tracking-wider mb-4 flex items-center gap-2">
+                    <Clock size={16} /> Pending Jobs To Invoice ({completedJobs.length})
+                </h2>
+                {completedJobs.length === 0 ? (
+                    <div className="text-slate-500 text-sm italic">No pending jobs.</div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {completedJobs.map(job => (
+                            <div key={job.id} className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 group hover:border-delaval-blue/30 transition-all flex flex-col h-full">
+                                <div className="font-bold text-slate-900 mb-1">{job.customers?.name}</div>
+                                <div className="text-xs text-slate-500 mb-3 flex-grow">{job.service_type} • {job.date_completed?.split('T')[0] || 'Recently'}</div>
+                                <button
+                                    onClick={() => handleJobSelect(job)}
+                                    className="w-full bg-white border border-delaval-blue text-delaval-blue text-xs font-bold py-2 rounded-lg group-hover:bg-delaval-blue group-hover:text-white transition-colors mt-auto"
+                                >
+                                    Generate Docs
+                                </button>
+                            </div>
+                        ))}
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Generation Modal */}
@@ -810,8 +793,8 @@ const Invoices = () => {
                         <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex justify-between items-center">
                             <div>
                                 <div className="text-xs text-gray-500 uppercase tracking-wide font-bold mb-2">Selected Job</div>
-                                <div className="font-bold text-lg text-slate-900">{selectedJob.customers?.name}</div>
-                                <div className="text-slate-600">{selectedJob.service_type}</div>
+                                <div className="font-bold text-lg text-slate-900">{selectedJob?.customers?.name}</div>
+                                <div className="text-slate-600">{selectedJob?.service_type}</div>
                             </div>
                             <button onClick={() => setSelectedJob(null)} className="text-xs text-delaval-blue hover:underline">Change Job</button>
                         </div>
@@ -1197,7 +1180,7 @@ const Invoices = () => {
                 title="Delete Invoice"
                 message="Are you sure you want to permanently delete this invoice? This action cannot be undone."
             />
-        </div>
+        </div >
     );
 };
 
