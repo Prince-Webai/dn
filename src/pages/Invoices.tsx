@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Printer, Download, Plus, Clock, Calculator, Trash2, Edit, CreditCard, Mail, CheckCircle2 } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, ShoppingBag } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, JobItem, Statement } from '../types';
 import Modal from '../components/Modal';
 import { generateInvoice, generateStatement, generateOneTimeInvoice } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
 import { dataService } from '../services/dataService';
+import DatePicker from '../components/DatePicker';
 
 const Invoices = () => {
     const { showToast } = useToast();
@@ -16,7 +17,6 @@ const Invoices = () => {
     const [completedJobs, setCompletedJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
     const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-    const [isOneTimeOpen, setIsOneTimeOpen] = useState(false);
     const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
     // Edit & Payment States
@@ -30,18 +30,22 @@ const Invoices = () => {
     const [description, setDescription] = useState('');
     const [vatRate, setVatRate] = useState(13.5);
 
-    // One-Time Invoice Calculator State
-    const [oneTimeData, setOneTimeData] = useState({
-        customerName: '',
-        email: '',
-        phone: '',
-        date: new Date().toISOString().split('T')[0],
-        description: '',
-        labourHours: 0,
-        labourRate: 60,
-        partsCost: 0,
-        additional: 0
+    // Standalone Invoice Builder State
+    interface LineItem { description: string; quantity: number; unitPrice: number; }
+    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+    const [builderCustomerMode, setBuilderCustomerMode] = useState<'existing' | 'guest'>('existing');
+    const [builderData, setBuilderData] = useState({
+        customerId: '',
+        guestName: '',
+        guestEmail: '',
+        guestPhone: '',
+        dateIssued: new Date().toISOString().split('T')[0],
+        dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+        vatRate: 13.5,
+        notes: '',
+        items: [] as LineItem[]
     });
+    const [customers, setCustomers] = useState<import('../types').Customer[]>([]);
 
     const [jobItems, setJobItems] = useState<JobItem[]>([]);
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -75,7 +79,13 @@ const Invoices = () => {
 
     useEffect(() => {
         fetchData();
+        fetchCustomerList();
     }, []);
+
+    const fetchCustomerList = async () => {
+        const data = await dataService.getCustomers();
+        setCustomers(data);
+    };
 
     const fetchData = async () => {
         try {
@@ -199,58 +209,97 @@ const Invoices = () => {
         }
     };
 
-    // One-Time Invoice Logic
-    const calculateOneTimeTotal = () => {
-        const labour = oneTimeData.labourHours * oneTimeData.labourRate;
-        return labour + oneTimeData.partsCost + oneTimeData.additional;
+    // --- Invoice Builder Logic ---
+    const builderSubtotal = builderData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    const builderVat = builderSubtotal * (builderData.vatRate / 100);
+    const builderTotal = builderSubtotal + builderVat;
+
+    const addBuilderItem = () => {
+        setBuilderData(d => ({ ...d, items: [...d.items, { description: '', quantity: 1, unitPrice: 0 }] }));
     };
 
-    const handleOneTimeSubmit = async (e: React.FormEvent) => {
+    const updateBuilderItem = (idx: number, field: keyof LineItem, value: string | number) => {
+        setBuilderData(d => {
+            const items = [...d.items];
+            items[idx] = { ...items[idx], [field]: value };
+            return { ...d, items };
+        });
+    };
+
+    const removeBuilderItem = (idx: number) => {
+        setBuilderData(d => ({ ...d, items: d.items.filter((_, i) => i !== idx) }));
+    };
+
+    const handleBuilderSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (builderData.items.length === 0) {
+            showToast('Error', 'Add at least one line item', 'error');
+            return;
+        }
 
         try {
-            const total = calculateOneTimeTotal();
-            const vatRate = 13.5;
-            const subtotal = total / (1 + vatRate / 100);
-
             const nextNumber = await getNextNumber('invoices', 'INV');
+            const customDescription = builderData.items.map(i => i.description).join(', ');
 
-            // Generate Invoice to get data
-            generateOneTimeInvoice(oneTimeData); // Downloads PDF
+            // Generate PDF for one-time style
+            const oneTimePayload = {
+                customerName: builderCustomerMode === 'existing'
+                    ? customers.find(c => c.id === builderData.customerId)?.name || 'Customer'
+                    : builderData.guestName,
+                email: builderCustomerMode === 'existing'
+                    ? customers.find(c => c.id === builderData.customerId)?.email || ''
+                    : builderData.guestEmail,
+                phone: builderCustomerMode === 'existing'
+                    ? customers.find(c => c.id === builderData.customerId)?.phone || ''
+                    : builderData.guestPhone,
+                date: builderData.dateIssued,
+                description: customDescription,
+                labourHours: 0, labourRate: 0,
+                partsCost: builderSubtotal,
+                additional: 0
+            };
+            generateOneTimeInvoice(oneTimePayload);
 
-            // Save to Database (Guest Mode)
-            const { error } = await supabase.from('invoices').insert([{
-                invoice_number: nextNumber, // Uses sequential number
-                // customer_id is null for one-time
-                guest_name: oneTimeData.customerName, // Requires schema update
-                subtotal: subtotal,
-                vat_rate: vatRate,
-                vat_amount: total - subtotal,
-                total_amount: total,
-                custom_description: oneTimeData.description,
-                status: 'paid', // Assuming one-time is paid or sent? Let's say paid for now or 'sent'
-                date_issued: oneTimeData.date
-            }]);
+            // Save to database
+            const insertData: any = {
+                invoice_number: nextNumber,
+                subtotal: builderSubtotal,
+                vat_rate: builderData.vatRate,
+                vat_amount: builderVat,
+                total_amount: builderTotal,
+                custom_description: customDescription,
+                status: 'sent',
+                date_issued: builderData.dateIssued,
+                due_date: builderData.dueDate
+            };
 
-            if (!error) {
-                showToast('Success', `One-Time Invoice saved and downloaded.`, 'success');
-                setIsOneTimeOpen(false);
-                fetchData(); // Refresh list to show new invoice
+            if (builderCustomerMode === 'existing' && builderData.customerId) {
+                insertData.customer_id = builderData.customerId;
             } else {
-                console.error(error);
-                // If error is about missing column, warn user
-                if (error.code === '42703') { // Undefined column
-                    alert("Please run the SQL Update provided by the assistant to save One-Time invoices to the list.");
-                } else {
-                    showToast('Warning', 'Invoice PDF generated but failed to save to list.', 'warning');
-                }
+                insertData.guest_name = builderData.guestName;
             }
 
+            const { error } = await supabase.from('invoices').insert([insertData]);
+
+            if (!error) {
+                showToast('Invoice Created', `${nextNumber} created and PDF downloaded`, 'success');
+                setIsBuilderOpen(false);
+                setBuilderData({
+                    customerId: '', guestName: '', guestEmail: '', guestPhone: '',
+                    dateIssued: new Date().toISOString().split('T')[0],
+                    dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+                    vatRate: 13.5, notes: '', items: []
+                });
+                fetchData();
+            } else {
+                console.error(error);
+                showToast('Warning', 'PDF downloaded but failed to save to database', 'warning');
+            }
         } catch (err) {
             console.error(err);
+            showToast('Error', 'Failed to create invoice', 'error');
         }
     };
-
     const handleDownloadStatement = async (statement: Statement) => {
         if (!statement.jobs || !statement.customers) {
             showToast('Error', 'Missing job or customer data for this statement.', 'error');
@@ -420,10 +469,10 @@ const Invoices = () => {
                 </div>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => setIsOneTimeOpen(true)}
+                        onClick={() => setIsBuilderOpen(true)}
                         className="btn btn-secondary shadow-sm"
                     >
-                        <Calculator size={18} className="mr-2" /> One-Time Invoice
+                        <ShoppingBag size={18} className="mr-2" /> Standalone Invoice
                     </button>
                     <button onClick={() => {
                         setSelectedJob(null);
@@ -812,57 +861,182 @@ const Invoices = () => {
                 )}
             </Modal>
 
-            {/* One-Time Invoice Modal */}
-            <Modal isOpen={isOneTimeOpen} onClose={() => setIsOneTimeOpen(false)} title="One-Time Invoice Calculator">
-                <form onSubmit={handleOneTimeSubmit} className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Customer Info</h3>
-                            <div className="grid grid-cols-2 gap-4">
-                                <input required placeholder="Customer Name" className="form-input w-full px-4 py-2 border rounded-lg" value={oneTimeData.customerName} onChange={e => setOneTimeData({ ...oneTimeData, customerName: e.target.value })} />
-                                <input type="date" className="form-input w-full px-4 py-2 border rounded-lg" value={oneTimeData.date} onChange={e => setOneTimeData({ ...oneTimeData, date: e.target.value })} />
-                                <input placeholder="Email (Optional)" className="form-input w-full px-4 py-2 border rounded-lg" value={oneTimeData.email} onChange={e => setOneTimeData({ ...oneTimeData, email: e.target.value })} />
-                                <input placeholder="Phone (Optional)" className="form-input w-full px-4 py-2 border rounded-lg" value={oneTimeData.phone} onChange={e => setOneTimeData({ ...oneTimeData, phone: e.target.value })} />
-                            </div>
+            {/* Standalone Invoice Builder Modal */}
+            <Modal isOpen={isBuilderOpen} onClose={() => setIsBuilderOpen(false)} title="Create Standalone Invoice">
+                <form onSubmit={handleBuilderSubmit} className="space-y-5">
+                    {/* Customer Mode Toggle */}
+                    <div>
+                        <div className="flex gap-2 mb-3">
+                            <button
+                                type="button"
+                                onClick={() => setBuilderCustomerMode('existing')}
+                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${builderCustomerMode === 'existing' ? 'bg-delaval-blue text-white shadow' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                            >
+                                Existing Customer
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setBuilderCustomerMode('guest')}
+                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${builderCustomerMode === 'guest' ? 'bg-delaval-blue text-white shadow' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                            >
+                                New / Guest
+                            </button>
                         </div>
 
-                        <div className="col-span-2">
-                            <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-2">Job Details</h3>
-                            <input required placeholder="Description of work" className="form-input w-full px-4 py-2 border rounded-lg mb-2" value={oneTimeData.description} onChange={e => setOneTimeData({ ...oneTimeData, description: e.target.value })} />
-
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Hours</label>
-                                    <input type="number" step="0.5" className="form-input w-full px-3 py-2 border rounded-lg text-sm" value={oneTimeData.labourHours} onChange={e => setOneTimeData({ ...oneTimeData, labourHours: parseFloat(e.target.value) || 0 })} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Rate (€)</label>
-                                    <input type="number" className="form-input w-full px-3 py-2 border rounded-lg text-sm" value={oneTimeData.labourRate} onChange={e => setOneTimeData({ ...oneTimeData, labourRate: parseFloat(e.target.value) || 0 })} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Parts (€)</label>
-                                    <input type="number" className="form-input w-full px-3 py-2 border rounded-lg text-sm" value={oneTimeData.partsCost} onChange={e => setOneTimeData({ ...oneTimeData, partsCost: parseFloat(e.target.value) || 0 })} />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-500 mb-1">Extra (€)</label>
-                                    <input type="number" className="form-input w-full px-3 py-2 border rounded-lg text-sm" value={oneTimeData.additional} onChange={e => setOneTimeData({ ...oneTimeData, additional: parseFloat(e.target.value) || 0 })} />
-                                </div>
+                        {builderCustomerMode === 'existing' ? (
+                            <select
+                                required
+                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                value={builderData.customerId}
+                                onChange={e => setBuilderData({ ...builderData, customerId: e.target.value })}
+                            >
+                                <option value="">Select a customer...</option>
+                                {customers.map(c => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        ) : (
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <input required placeholder="Customer Name *" className="px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={builderData.guestName} onChange={e => setBuilderData({ ...builderData, guestName: e.target.value })} />
+                                <input placeholder="Email" className="px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={builderData.guestEmail} onChange={e => setBuilderData({ ...builderData, guestEmail: e.target.value })} />
+                                <input placeholder="Phone" className="px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={builderData.guestPhone} onChange={e => setBuilderData({ ...builderData, guestPhone: e.target.value })} />
                             </div>
+                        )}
+                    </div>
+
+                    {/* Dates & VAT */}
+                    <div className="grid grid-cols-3 gap-3">
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Issue Date</label>
+                            <DatePicker value={builderData.dateIssued} onChange={v => setBuilderData({ ...builderData, dateIssued: v })} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Due Date</label>
+                            <DatePicker value={builderData.dueDate} onChange={v => setBuilderData({ ...builderData, dueDate: v })} />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">VAT Rate</label>
+                            <select
+                                className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                value={builderData.vatRate}
+                                onChange={e => setBuilderData({ ...builderData, vatRate: parseFloat(e.target.value) })}
+                            >
+                                <option value={0}>0% (Zero)</option>
+                                <option value={13.5}>13.5% (Service)</option>
+                                <option value={23}>23% (Goods)</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div className="bg-delaval-light-blue p-4 rounded-xl border-l-4 border-delaval-blue">
-                        <div className="flex justify-between items-center">
-                            <strong className="text-delaval-blue text-lg">Total Amount:</strong>
-                            <strong className="text-delaval-blue text-2xl">€{calculateOneTimeTotal().toFixed(2)}</strong>
+                    {/* Line Items */}
+                    <div className="border-t border-slate-200 pt-4">
+                        <div className="flex items-center justify-between mb-3">
+                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Line Items</label>
+                            <button type="button" onClick={addBuilderItem} className="text-xs text-delaval-blue font-bold hover:underline flex items-center gap-1">
+                                <Plus size={14} /> Add Item
+                            </button>
                         </div>
+
+                        {builderData.items.length === 0 ? (
+                            <div className="flex flex-col items-center py-8 text-center bg-slate-50/50 rounded-xl border-2 border-dashed border-slate-200">
+                                <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-2">
+                                    <ShoppingBag size={20} className="text-slate-300" />
+                                </div>
+                                <div className="text-sm font-bold text-slate-400">No items yet</div>
+                                <div className="text-xs text-slate-300 mt-1">Add products, parts, or services</div>
+                                <button type="button" onClick={addBuilderItem} className="mt-3 text-xs font-bold text-delaval-blue bg-delaval-blue/10 px-4 py-2 rounded-lg hover:bg-delaval-blue/20 transition-colors">
+                                    + Add First Item
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-2 max-h-52 overflow-y-auto">
+                                {/* Header row */}
+                                <div className="grid grid-cols-12 gap-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <div className="col-span-5">Description</div>
+                                    <div className="col-span-2 text-center">Qty</div>
+                                    <div className="col-span-3">Unit Price</div>
+                                    <div className="col-span-2 text-right">Total</div>
+                                </div>
+                                {builderData.items.map((item, idx) => (
+                                    <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 rounded-lg p-2 group">
+                                        <input
+                                            placeholder="e.g. Milk Pump Seal Kit"
+                                            className="col-span-5 text-sm border border-slate-200 px-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none bg-white"
+                                            value={item.description}
+                                            onChange={e => updateBuilderItem(idx, 'description', e.target.value)}
+                                            required
+                                        />
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            placeholder="1"
+                                            className="col-span-2 text-sm border border-slate-200 px-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none bg-white text-center"
+                                            value={item.quantity}
+                                            onChange={e => updateBuilderItem(idx, 'quantity', parseFloat(e.target.value) || 0)}
+                                            required
+                                        />
+                                        <div className="col-span-3 relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="0.00"
+                                                className="w-full text-sm border border-slate-200 pl-7 pr-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none bg-white"
+                                                value={item.unitPrice}
+                                                onChange={e => updateBuilderItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="col-span-2 flex items-center justify-between">
+                                            <span className="text-sm font-bold text-slate-700">€{(item.quantity * item.unitPrice).toFixed(2)}</span>
+                                            <button type="button" onClick={() => removeBuilderItem(idx)} className="p-1 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
+                    {/* Totals */}
+                    {builderData.items.length > 0 && (
+                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between text-sm text-slate-500">
+                                    <span>Subtotal ({builderData.items.length} item{builderData.items.length > 1 ? 's' : ''})</span>
+                                    <span className="font-bold text-slate-700">€{builderSubtotal.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between text-sm text-slate-500">
+                                    <span>VAT ({builderData.vatRate}%)</span>
+                                    <span className="font-bold text-slate-700">€{builderVat.toFixed(2)}</span>
+                                </div>
+                                <div className="flex justify-between pt-2 border-t border-slate-300">
+                                    <span className="text-lg font-bold text-slate-900">Total</span>
+                                    <span className="text-lg font-bold text-delaval-blue">€{builderTotal.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Notes */}
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Notes (Optional)</label>
+                        <textarea
+                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none h-16 resize-none"
+                            placeholder="Payment terms, special instructions..."
+                            value={builderData.notes}
+                            onChange={e => setBuilderData({ ...builderData, notes: e.target.value })}
+                        />
+                    </div>
+
+                    {/* Actions */}
                     <div className="flex justify-end gap-3 pt-4 border-t">
-                        <button type="button" onClick={() => generateOneTimeInvoice(oneTimeData, 'preview')} className="btn btn-secondary border-slate-300">
-                            Preview PDF
+                        <button type="button" onClick={() => setIsBuilderOpen(false)} className="btn btn-secondary border-slate-300">Cancel</button>
+                        <button type="submit" className="btn btn-primary" disabled={builderData.items.length === 0}>
+                            Create Invoice · €{builderTotal.toFixed(2)}
                         </button>
-                        <button type="submit" className="btn btn-primary">Save & Generate</button>
                     </div>
                 </form>
             </Modal>
