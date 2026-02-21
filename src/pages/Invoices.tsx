@@ -1,9 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, ShoppingBag } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, ShoppingBag, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, JobItem, Statement } from '../types';
 import Modal from '../components/Modal';
+import ConfirmModal from '../components/ConfirmModal';
 import { generateInvoice, generateStatement, generateOneTimeInvoice } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
 import { dataService } from '../services/dataService';
@@ -26,6 +27,9 @@ const Invoices = () => {
     const [isPaymentOpen, setIsPaymentOpen] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState<number>(0);
 
+    // Delete confirmation state
+    const [deleteInvoiceId, setDeleteInvoiceId] = useState<string | null>(null);
+
     // Invoice Form State
     const [description, setDescription] = useState('');
     const [vatRate, setVatRate] = useState(13.5);
@@ -46,6 +50,18 @@ const Invoices = () => {
         items: [] as LineItem[]
     });
     const [customers, setCustomers] = useState<import('../types').Customer[]>([]);
+    const [customerSearch, setCustomerSearch] = useState('');
+    const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+
+    const searchedCustomers = useMemo(() => {
+        if (!customerSearch.trim()) return customers;
+        const q = customerSearch.toLowerCase();
+        return customers.filter(c =>
+            c.name.toLowerCase().includes(q) ||
+            c.email?.toLowerCase().includes(q) ||
+            c.phone?.includes(q)
+        );
+    }, [customers, customerSearch]);
 
     const [jobItems, setJobItems] = useState<JobItem[]>([]);
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -276,7 +292,21 @@ const Invoices = () => {
             if (builderCustomerMode === 'existing' && builderData.customerId) {
                 insertData.customer_id = builderData.customerId;
             } else {
-                insertData.guest_name = builderData.guestName;
+                // Auto-save guest as new customer
+                const { data: newCust, error: custError } = await supabase.from('customers').insert([{
+                    name: builderData.guestName,
+                    email: builderData.guestEmail || null,
+                    phone: builderData.guestPhone || null,
+                    payment_terms: 'Net 30'
+                }]).select().single();
+
+                if (!custError && newCust) {
+                    insertData.customer_id = newCust.id;
+                    // Refresh customer list so new customer appears
+                    fetchCustomerList();
+                } else {
+                    insertData.guest_name = builderData.guestName;
+                }
             }
 
             const { error } = await supabase.from('invoices').insert([insertData]);
@@ -558,11 +588,25 @@ const Invoices = () => {
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-600">{inv.date_issued}</td>
                                                 <td className="px-6 py-4 font-bold text-slate-900">
-                                                    <div className="flex flex-col">
+                                                    <div>
                                                         <span>€{inv.total_amount.toFixed(2)}</span>
-                                                        {inv.amount_paid ? (
-                                                            <span className="text-xs text-green-600 font-medium">Paid: €{inv.amount_paid.toFixed(2)}</span>
-                                                        ) : null}
+                                                        {/* Payment progress */}
+                                                        {inv.status !== 'draft' && (
+                                                            <div className="mt-1">
+                                                                <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                                                    <div
+                                                                        className={`h-1.5 rounded-full transition-all ${inv.amount_paid && inv.amount_paid >= inv.total_amount ? 'bg-green-500' : inv.amount_paid && inv.amount_paid > 0 ? 'bg-blue-500' : 'bg-slate-200'}`}
+                                                                        style={{ width: `${Math.min(100, ((inv.amount_paid || 0) / inv.total_amount) * 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                                <div className="flex justify-between mt-0.5">
+                                                                    <span className="text-[10px] text-green-600 font-medium">€{(inv.amount_paid || 0).toFixed(2)} paid</span>
+                                                                    {(inv.amount_paid || 0) < inv.total_amount && (
+                                                                        <span className="text-[10px] text-red-500 font-medium">€{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} due</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-4">
@@ -575,60 +619,52 @@ const Invoices = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4">
-                                                    <div className="flex gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="flex gap-1.5 flex-wrap">
+                                                        {inv.status !== 'paid' && (
+                                                            <button
+                                                                onClick={() => openPaymentModal(inv)}
+                                                                className="p-1.5 rounded-md text-green-600 bg-green-50 hover:bg-green-100 transition-colors"
+                                                                title="Record Payment"
+                                                            >
+                                                                <CreditCard size={16} />
+                                                            </button>
+                                                        )}
                                                         {inv.status !== 'paid' && (
                                                             <button
                                                                 onClick={() => handleMarkAsPaid(inv)}
-                                                                className="p-1 text-slate-400 hover:text-emerald-600 transition-colors"
-                                                                title="Mark as Paid"
+                                                                className="p-1.5 rounded-md text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors"
+                                                                title="Mark as Fully Paid"
                                                             >
-                                                                <CheckCircle2 size={18} />
+                                                                <CheckCircle2 size={16} />
                                                             </button>
                                                         )}
                                                         <button
-                                                            onClick={() => openPaymentModal(inv)}
-                                                            className="p-1 text-slate-400 hover:text-green-600 transition-colors"
-                                                            title="Record Payment"
-                                                        >
-                                                            <CreditCard size={18} />
-                                                        </button>
-                                                        <button
                                                             onClick={() => handleSendReminder(inv)}
-                                                            className="p-1 text-slate-400 hover:text-blue-600 transition-colors"
+                                                            className="p-1.5 rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
                                                             title="Send Reminder Email"
                                                         >
-                                                            <Mail size={18} />
+                                                            <Mail size={16} />
                                                         </button>
                                                         <button
                                                             onClick={() => openEditModal(inv)}
-                                                            className="p-1 text-slate-400 hover:text-delaval-blue transition-colors"
+                                                            className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
                                                             title="Edit Invoice"
                                                         >
-                                                            <Edit size={18} />
+                                                            <Edit size={16} />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDownloadInvoice(inv)}
-                                                            className="p-1 text-slate-400 hover:text-delaval-blue transition-colors"
+                                                            className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
                                                             title="Download Invoice"
                                                         >
-                                                            <Download size={18} />
+                                                            <Download size={16} />
                                                         </button>
                                                         <button
-                                                            onClick={async () => {
-                                                                if (window.confirm('Are you sure you want to delete this invoice?')) {
-                                                                    const { error } = await dataService.deleteInvoice(inv.id);
-                                                                    if (!error) {
-                                                                        setInvoices(invoices.filter(i => i.id !== inv.id));
-                                                                        fetchData(); // Refresh to update Pending Jobs list
-                                                                    } else {
-                                                                        alert('Failed to delete invoice');
-                                                                    }
-                                                                }
-                                                            }}
-                                                            className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                                                            onClick={() => setDeleteInvoiceId(inv.id)}
+                                                            className="p-1.5 rounded-md text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
                                                             title="Delete Invoice"
                                                         >
-                                                            <Trash2 size={18} />
+                                                            <Trash2 size={16} />
                                                         </button>
                                                     </div>
                                                 </td>
@@ -884,17 +920,62 @@ const Invoices = () => {
                         </div>
 
                         {builderCustomerMode === 'existing' ? (
-                            <select
-                                required
-                                className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                                value={builderData.customerId}
-                                onChange={e => setBuilderData({ ...builderData, customerId: e.target.value })}
-                            >
-                                <option value="">Select a customer...</option>
-                                {customers.map(c => (
-                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                                    <input
+                                        type="text"
+                                        placeholder="Search customers by name, email, or phone..."
+                                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none text-sm"
+                                        value={customerSearch}
+                                        onChange={e => {
+                                            setCustomerSearch(e.target.value);
+                                            setShowCustomerDropdown(true);
+                                            // Clear selection if user starts typing again
+                                            if (builderData.customerId) {
+                                                setBuilderData({ ...builderData, customerId: '' });
+                                            }
+                                        }}
+                                        onFocus={() => setShowCustomerDropdown(true)}
+                                    />
+                                </div>
+                                {/* Selected customer badge */}
+                                {builderData.customerId && (
+                                    <div className="mt-2 flex items-center gap-2 bg-delaval-blue/10 text-delaval-blue px-3 py-1.5 rounded-lg text-sm font-bold">
+                                        <span>{customers.find(c => c.id === builderData.customerId)?.name}</span>
+                                        <button type="button" onClick={() => { setBuilderData({ ...builderData, customerId: '' }); setCustomerSearch(''); }} className="ml-auto text-delaval-blue/50 hover:text-delaval-blue">×</button>
+                                    </div>
+                                )}
+                                {/* Dropdown results */}
+                                {showCustomerDropdown && !builderData.customerId && (
+                                    <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
+                                        {searchedCustomers.length === 0 ? (
+                                            <div className="px-4 py-3 text-sm text-slate-400 text-center">No customers found</div>
+                                        ) : (
+                                            searchedCustomers.map(c => (
+                                                <button
+                                                    key={c.id}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setBuilderData({ ...builderData, customerId: c.id });
+                                                        setCustomerSearch(c.name);
+                                                        setShowCustomerDropdown(false);
+                                                    }}
+                                                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-0"
+                                                >
+                                                    <div className="w-8 h-8 bg-delaval-blue/10 text-delaval-blue rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                                        {c.name.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="text-sm font-bold text-slate-900 truncate">{c.name}</div>
+                                                        <div className="text-xs text-slate-400 truncate">{c.email || c.phone || 'No contact info'}</div>
+                                                    </div>
+                                                </button>
+                                            ))
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <input required placeholder="Customer Name *" className="px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={builderData.guestName} onChange={e => setBuilderData({ ...builderData, guestName: e.target.value })} />
@@ -1096,6 +1177,26 @@ const Invoices = () => {
                     </div>
                 </form>
             </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={!!deleteInvoiceId}
+                onClose={() => setDeleteInvoiceId(null)}
+                onConfirm={async () => {
+                    if (!deleteInvoiceId) return;
+                    const { error } = await dataService.deleteInvoice(deleteInvoiceId);
+                    if (!error) {
+                        setInvoices(prev => prev.filter(i => i.id !== deleteInvoiceId));
+                        showToast('Deleted', 'Invoice has been deleted', 'success');
+                        fetchData();
+                    } else {
+                        showToast('Error', 'Failed to delete invoice. Check permissions.', 'error');
+                    }
+                    setDeleteInvoiceId(null);
+                }}
+                title="Delete Invoice"
+                message="Are you sure you want to permanently delete this invoice? This action cannot be undone."
+            />
         </div>
     );
 };
