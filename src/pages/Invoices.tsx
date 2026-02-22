@@ -1,14 +1,14 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, ShoppingBag, Search } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { Invoice, Job, JobItem, Statement } from '../types';
+import { Invoice, Job, Statement } from '../types';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
+import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import { generateInvoice, generateStatement, generateOneTimeInvoice } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
 import { dataService } from '../services/dataService';
-import DatePicker from '../components/DatePicker';
 
 const Invoices = () => {
     const { showToast } = useToast();
@@ -17,8 +17,6 @@ const Invoices = () => {
     const [statements, setStatements] = useState<Statement[]>([]);
     const [completedJobs, setCompletedJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
-    const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-    const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
     // Edit & Payment States
     const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
@@ -29,41 +27,18 @@ const Invoices = () => {
 
     // Delete confirmation state
     const [deleteInvoiceId, setDeleteInvoiceId] = useState<string | null>(null);
+    const [deleteStatementId, setDeleteStatementId] = useState<string | null>(null);
 
-    // Invoice Form State
+    // Edit Invoice Form State
     const [description, setDescription] = useState('');
     const [vatRate, setVatRate] = useState(13.5);
 
-    // Standalone Invoice Builder State
-    interface LineItem { description: string; quantity: number; unitPrice: number; }
-    const [isBuilderOpen, setIsBuilderOpen] = useState(false);
-    const [builderCustomerMode, setBuilderCustomerMode] = useState<'existing' | 'guest'>('existing');
-    const [builderData, setBuilderData] = useState({
-        customerId: '',
-        guestName: '',
-        guestEmail: '',
-        guestPhone: '',
-        dateIssued: new Date().toISOString().split('T')[0],
-        dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-        vatRate: 13.5,
-        notes: '',
-        items: [] as LineItem[]
-    });
-    const [customers, setCustomers] = useState<import('../types').Customer[]>([]);
-    const [customerSearch, setCustomerSearch] = useState('');
-    const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+    // Preview Modal State
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState('');
+    const [previewType, setPreviewType] = useState<'Invoice' | 'Statement'>('Invoice');
+    const [activeDocument, setActiveDocument] = useState<Invoice | Statement | null>(null);
 
-    const searchedCustomers = useMemo(() => {
-        if (!customerSearch.trim()) return customers;
-        const q = customerSearch.toLowerCase();
-        return customers.filter(c =>
-            c.name.toLowerCase().includes(q) ||
-            c.email?.toLowerCase().includes(q) ||
-            c.phone?.includes(q)
-        );
-    }, [customers, customerSearch]);
-
-    const [jobItems, setJobItems] = useState<JobItem[]>([]);
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
     const filteredInvoices = useMemo(() => {
@@ -95,13 +70,7 @@ const Invoices = () => {
 
     useEffect(() => {
         fetchData();
-        fetchCustomerList();
     }, []);
-
-    const fetchCustomerList = async () => {
-        const data = await dataService.getCustomers();
-        setCustomers(data);
-    };
 
     const fetchData = async () => {
         try {
@@ -117,9 +86,10 @@ const Invoices = () => {
             // Fetch Completed Jobs via DataService
             const jobData = await dataService.getJobs('completed');
 
-            // Filter out jobs that already have an invoice
+            // Filter out jobs that already have an invoice or statement
             const invoicedJobIds = new Set(invData.map(inv => inv.job_id).filter(Boolean));
-            const pendingJobs = jobData.filter(job => !invoicedJobIds.has(job.id));
+            const statementJobIds = new Set((stmtData || []).map(stmt => stmt.job_id).filter(Boolean));
+            const pendingJobs = jobData.filter(job => !invoicedJobIds.has(job.id) && !statementJobIds.has(job.id));
 
             setCompletedJobs(pendingJobs);
         } finally {
@@ -127,194 +97,7 @@ const Invoices = () => {
         }
     };
 
-    const fetchJobItems = async (jobId: string) => {
-        const { data } = await supabase.from('job_items').select('*').eq('job_id', jobId);
-        setJobItems(data || []);
-    };
 
-    const handleJobSelect = async (job: Job) => {
-        setSelectedJob(job);
-        setDescription(job.service_type || 'Service');
-        await fetchJobItems(job.id);
-        setIsGenerateOpen(true);
-    };
-
-    const calculateTotal = () => {
-        return jobItems.reduce((_acc, item) => (_acc + (item.quantity * item.unit_price)), 0);
-    };
-
-    const getNextNumber = async (table: 'invoices' | 'statements', prefix: string) => {
-        const column = table === 'invoices' ? 'invoice_number' : 'statement_number';
-        const { data } = await supabase
-            .from(table)
-            .select(column)
-            .order('created_at', { ascending: false })
-            .limit(1);
-
-        const lastNumber = (data?.[0] as any)?.[column] as string;
-        const currentYear = new Date().getFullYear();
-
-        if (lastNumber && lastNumber.includes(`${prefix}-${currentYear}-`)) {
-            const sequence = parseInt(lastNumber.split('-').pop() || '0');
-            return `${prefix}-${currentYear}-${String(sequence + 1).padStart(3, '0')}`;
-        }
-
-        return `${prefix}-${currentYear}-001`;
-    };
-
-    const processStatement = async () => {
-        if (!selectedJob || !selectedJob.customers) return;
-
-        try {
-            const nextNumber = await getNextNumber('statements', 'STMT');
-
-            // Generate PDF
-            generateStatement(selectedJob, jobItems, selectedJob.customers);
-
-            // Save to Database
-            const { error } = await supabase.from('statements').insert([{
-                statement_number: nextNumber,
-                customer_id: selectedJob.customer_id,
-                job_id: selectedJob.id,
-                date_generated: new Date().toISOString(),
-                total_amount: calculateTotal()
-            }]);
-
-            if (!error) {
-                showToast('Success', `Statement ${nextNumber} saved.`, 'success');
-                setIsGenerateOpen(false);
-                fetchData();
-            } else {
-                console.error(error);
-                showToast('Error', 'Failed to save statement record.', 'error');
-            }
-        } catch (error) {
-            console.error(error);
-            showToast('Error', 'Failed to process statement.', 'error');
-        }
-    };
-
-    const processInvoice = async () => {
-        if (!selectedJob || !selectedJob.customers) return;
-        const total = calculateTotal();
-        const nextNumber = await getNextNumber('invoices', 'INV');
-
-        // Generate PDF
-        generateInvoice(selectedJob, selectedJob.customers, description, vatRate, total);
-
-        // Save to Database
-        const { error } = await supabase.from('invoices').insert([{
-            invoice_number: nextNumber,
-            customer_id: selectedJob.customer_id,
-            job_id: selectedJob.id,
-            subtotal: total / (1 + vatRate / 100),
-            vat_rate: vatRate,
-            vat_amount: total - (total / (1 + vatRate / 100)),
-            total_amount: total,
-            custom_description: description,
-            status: 'sent'
-        }]);
-
-        if (!error) {
-            showToast('Invoice Created', `Invoice ${nextNumber} saved.`, 'success');
-            setIsGenerateOpen(false);
-            fetchData();
-        } else {
-            console.error(error);
-            showToast('Error', 'Failed to save invoice record.', 'error');
-        }
-    };
-
-    // --- Invoice Builder Logic ---
-    const builderSubtotal = builderData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const builderVat = builderSubtotal * (builderData.vatRate / 100);
-    const builderTotal = builderSubtotal + builderVat;
-
-    const addBuilderItem = () => {
-        setBuilderData(d => ({ ...d, items: [...d.items, { description: '', quantity: 1, unitPrice: 0 }] }));
-    };
-
-    const updateBuilderItem = (idx: number, field: keyof LineItem, value: string | number) => {
-        setBuilderData(d => {
-            const items = [...d.items];
-            items[idx] = { ...items[idx], [field]: value };
-            return { ...d, items };
-        });
-    };
-
-    const removeBuilderItem = (idx: number) => {
-        setBuilderData(d => ({ ...d, items: d.items.filter((_, i) => i !== idx) }));
-    };
-
-    const handleBuilderSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (builderData.items.length === 0) {
-            showToast('Error', 'Add at least one line item', 'error');
-            return;
-        }
-
-        try {
-            const nextNumber = await getNextNumber('invoices', 'INV');
-            const customDescription = builderData.items.map(i => i.description).join(', ');
-
-            // Generate PDF for one-time style
-            // Note: Auto-download disabled per user request
-            // generateOneTimeInvoice({ ... });
-
-            // Save to database
-            const insertData: any = {
-                invoice_number: nextNumber,
-                subtotal: builderSubtotal,
-                vat_rate: builderData.vatRate,
-                vat_amount: builderVat,
-                total_amount: builderTotal,
-                custom_description: customDescription,
-                status: 'sent',
-                date_issued: builderData.dateIssued,
-                due_date: builderData.dueDate
-            };
-
-            if (builderCustomerMode === 'existing' && builderData.customerId) {
-                insertData.customer_id = builderData.customerId;
-            } else {
-                // Auto-save guest as new customer
-                const { data: newCust, error: custError } = await supabase.from('customers').insert([{
-                    name: builderData.guestName,
-                    email: builderData.guestEmail || null,
-                    phone: builderData.guestPhone || null,
-                    payment_terms: 'Net 30'
-                }]).select().single();
-
-                if (!custError && newCust) {
-                    insertData.customer_id = newCust.id;
-                    // Refresh customer list so new customer appears
-                    fetchCustomerList();
-                } else {
-                    insertData.guest_name = builderData.guestName;
-                }
-            }
-
-            const { error } = await supabase.from('invoices').insert([insertData]);
-
-            if (!error) {
-                showToast('Invoice Created', `${nextNumber} created and PDF downloaded`, 'success');
-                setIsBuilderOpen(false);
-                setBuilderData({
-                    customerId: '', guestName: '', guestEmail: '', guestPhone: '',
-                    dateIssued: new Date().toISOString().split('T')[0],
-                    dueDate: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
-                    vatRate: 13.5, notes: '', items: []
-                });
-                fetchData();
-            } else {
-                console.error(error);
-                showToast('Warning', 'PDF downloaded but failed to save to database', 'warning');
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('Error', 'Failed to create invoice', 'error');
-        }
-    };
     const handleDownloadStatement = async (statement: Statement) => {
         if (!statement.jobs || !statement.customers) {
             showToast('Error', 'Missing job or customer data for this statement.', 'error');
@@ -333,8 +116,13 @@ const Invoices = () => {
                 return;
             }
 
-            generateStatement(statement.jobs, items, statement.customers);
-            showToast('Success', 'Statement downloaded.', 'success');
+            const pdfData = generateStatement(statement.jobs, items, statement.customers, 'preview');
+            if (pdfData) {
+                setPreviewUrl(pdfData);
+                setPreviewType('Statement');
+                setActiveDocument(statement);
+                setPreviewModalOpen(true);
+            }
         } catch (error) {
             console.error(error);
             showToast('Error', 'Failed to generate statement PDF.', 'error');
@@ -356,20 +144,27 @@ const Invoices = () => {
                 const { data: job } = await supabase.from('jobs').select('*').eq('id', invoice.job_id).single();
 
                 if (job) {
-                    generateInvoice(
+                    const pdfData = generateInvoice(
                         job,
                         invoice.customers,
                         invoice.custom_description || job.service_type || 'Service',
                         invoice.vat_rate || 13.5,
-                        invoice.total_amount
+                        invoice.total_amount,
+                        'preview'
                     );
+                    if (pdfData) {
+                        setPreviewUrl(pdfData);
+                        setPreviewType('Invoice');
+                        setActiveDocument(invoice);
+                        setPreviewModalOpen(true);
+                    }
                 }
             } else if (invoice.guest_name) {
                 // Re-construct one-time invoice data
                 // This is harder because we didn't save breakdown, just totals and description.
                 // We'll do a best-effort regeneration using the stored totals.
 
-                generateOneTimeInvoice({
+                const pdfData = generateOneTimeInvoice({
                     customerName: invoice.guest_name,
                     email: '', // Not stored
                     phone: '',
@@ -384,11 +179,18 @@ const Invoices = () => {
                     // Let's just create a simplified invoice for re-download or admit we can't fully recreate it without more data.
                     // For now, let's just not support re-downloading one-time invoices perfectly or update schema to store JSON.
                     // I will implement a basic version.
-                } as any);
+                } as any, 'preview');
+
+                if (pdfData) {
+                    setPreviewUrl(pdfData);
+                    setPreviewType('Invoice');
+                    setActiveDocument(invoice);
+                    setPreviewModalOpen(true);
+                }
             }
         } catch (error) {
             console.error(error);
-            showToast('Error', 'Failed to download invoice.', 'error');
+            showToast('Error', 'Failed to generate invoice preview.', 'error');
         }
     };
 
@@ -471,6 +273,22 @@ const Invoices = () => {
         window.location.href = `mailto:${invoice.customers.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     };
 
+    const handleMarkInvoiceAsSent = async () => {
+        if (previewType === 'Invoice' && activeDocument) {
+            const invoice = activeDocument as Invoice;
+            if (invoice.status === 'draft') {
+                const { error } = await dataService.updateInvoice(invoice.id, {
+                    status: 'sent'
+                });
+
+                if (!error) {
+                    showToast('Success', 'Invoice marked as sent', 'success');
+                    fetchData();
+                }
+            }
+        }
+    };
+
     if (loading) {
         return <div className="p-8 text-center text-slate-500">Loading documents...</div>;
     }
@@ -483,18 +301,12 @@ const Invoices = () => {
                     <p className="text-slate-500">Manage invoicing and customer statements</p>
                 </div>
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => setIsBuilderOpen(true)}
-                        className="btn btn-secondary shadow-sm"
+                    <Link
+                        to="/documents/new?type=invoice"
+                        className="btn btn-primary shadow-lg shadow-blue-900/20"
                     >
-                        <ShoppingBag size={18} className="mr-2" /> Standalone Invoice
-                    </button>
-                    <button onClick={() => {
-                        setSelectedJob(null);
-                        setIsGenerateOpen(true);
-                    }} className="btn btn-primary shadow-lg shadow-blue-900/20">
                         <Plus size={20} className="mr-2" /> Create Invoice
-                    </button>
+                    </Link>
                 </div>
             </div>
 
@@ -705,13 +517,22 @@ const Invoices = () => {
                                             </td>
                                             <td className="px-6 py-4 font-bold text-slate-900">€{stmt.total_amount.toFixed(2)}</td>
                                             <td className="px-6 py-4">
-                                                <button
-                                                    onClick={() => handleDownloadStatement(stmt)}
-                                                    className="text-slate-400 hover:text-delaval-blue transition-colors"
-                                                    title="Download Statement"
-                                                >
-                                                    <Download size={18} />
-                                                </button>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => handleDownloadStatement(stmt)}
+                                                        className="text-slate-400 hover:text-delaval-blue transition-colors p-1.5 rounded-lg hover:bg-blue-50"
+                                                        title="Download Statement"
+                                                    >
+                                                        <Download size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setDeleteStatementId(stmt.id)}
+                                                        className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50"
+                                                        title="Delete Statement"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -726,384 +547,74 @@ const Invoices = () => {
                 )}
             </div>
 
-            {/* Pending Jobs - Now Full Width Below Main Content */}
-            <div className="bg-delaval-blue/5 rounded-xl border border-delaval-blue/10 p-6 mt-6">
-                <h2 className="text-sm font-bold text-delaval-blue uppercase tracking-wider mb-4 flex items-center gap-2">
-                    <Clock size={16} /> Pending Jobs To Invoice ({completedJobs.length})
-                </h2>
-                {completedJobs.length === 0 ? (
-                    <div className="text-slate-500 text-sm italic">No pending jobs.</div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {completedJobs.map(job => (
-                            <div key={job.id} className="bg-white p-4 rounded-lg shadow-sm border border-slate-100 group hover:border-delaval-blue/30 transition-all flex flex-col h-full">
-                                <div className="font-bold text-slate-900 mb-1">{job.customers?.name}</div>
-                                <div className="text-xs text-slate-500 mb-3 flex-grow">{job.service_type} • {job.date_completed?.split('T')[0] || 'Recently'}</div>
-                                <button
-                                    onClick={() => handleJobSelect(job)}
-                                    className="w-full bg-white border border-delaval-blue text-delaval-blue text-xs font-bold py-2 rounded-lg group-hover:bg-delaval-blue group-hover:text-white transition-colors mt-auto"
-                                >
-                                    Generate Docs
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
+            {/* Pending Jobs - Glassmorphic / Modernized UI */}
+            <div className="relative rounded-2xl overflow-hidden shadow-xl border border-white/40 mt-6 bg-gradient-to-br from-[#f8fafc] to-[#e6f0ff] backdrop-blur-md">
+                {/* Decorative background elements */}
+                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-blue-300 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-blob"></div>
+                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-purple-300 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-blob animation-delay-2000"></div>
 
-            {/* Generation Modal */}
-            <Modal isOpen={isGenerateOpen} onClose={() => setIsGenerateOpen(false)} title="Generate Documents">
-                {!selectedJob ? (
-                    <div className="p-4 space-y-4">
-                        <p className="text-slate-500 text-center">Select a pending job to generate documents for:</p>
-
-                        {completedJobs.length > 0 ? (
-                            <div className="space-y-2 max-h-60 overflow-y-auto">
-                                {completedJobs.map(job => (
-                                    <button
-                                        key={job.id}
-                                        onClick={() => handleJobSelect(job)}
-                                        className="w-full text-left p-3 rounded-lg border border-slate-200 hover:border-delaval-blue hover:bg-blue-50 transition-colors flex justify-between items-center group"
-                                    >
-                                        <div>
-                                            <div className="font-bold text-slate-900">{job.customers?.name}</div>
-                                            <div className="text-xs text-slate-500">{job.service_type}</div>
-                                        </div>
-                                        <div className="text-delaval-blue opacity-0 group-hover:opacity-100 transition-opacity text-sm font-bold">
-                                            Select
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="text-center py-6">
-                                <div className="text-slate-400 mb-3 italic">No completed jobs found pending invoice.</div>
-                                <Link to="/jobs" className="btn btn-primary inline-flex items-center" onClick={() => setIsGenerateOpen(false)}>
-                                    Go to Jobs
-                                </Link>
-                            </div>
-                        )}
-
-                        <div className="pt-2 text-center">
-                            <button onClick={() => setIsGenerateOpen(false)} className="text-slate-400 hover:text-slate-600 text-sm">Cancel</button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex justify-between items-center">
-                            <div>
-                                <div className="text-xs text-gray-500 uppercase tracking-wide font-bold mb-2">Selected Job</div>
-                                <div className="font-bold text-lg text-slate-900">{selectedJob?.customers?.name}</div>
-                                <div className="text-slate-600">{selectedJob?.service_type}</div>
-                            </div>
-                            <button onClick={() => setSelectedJob(null)} className="text-xs text-delaval-blue hover:underline">Change Job</button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Statement Generation */}
-                            <div className="border border-slate-200 p-5 rounded-xl hover:border-delaval-blue hover:bg-blue-50/30 transition-all group">
-                                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                    <FileText size={24} />
-                                </div>
-                                <h3 className="font-bold text-slate-900 text-lg">Statement</h3>
-                                <p className="text-sm text-slate-500 mt-1 mb-4">Detailed breakdown of parts & labour. For Farmer.</p>
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => {
-                                            if (!selectedJob || !selectedJob.customers) return;
-                                            generateStatement(selectedJob, jobItems, selectedJob.customers, 'preview');
-                                        }}
-                                        className="flex-1 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:border-blue-200 hover:text-blue-700 hover:bg-slate-50"
-                                    >
-                                        Preview
-                                    </button>
-                                    <button
-                                        onClick={processStatement}
-                                        className="flex-1 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 hover:border-blue-200 hover:text-blue-700 hover:bg-slate-50"
-                                    >
-                                        Download PDF
-                                    </button>
-                                </div>
-                            </div>
-
-                            {/* Invoice Generation */}
-                            <div className="border-2 border-delaval-blue bg-blue-50/10 p-5 rounded-xl relative overflow-hidden">
-                                <div className="absolute top-0 right-0 bg-delaval-blue text-white text-[10px] font-bold px-2 py-1 rounded-bl-lg">RECOMMENDED</div>
-                                <div className="w-12 h-12 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-4">
-                                    <Printer size={24} />
-                                </div>
-                                <h3 className="font-bold text-slate-900 text-lg">Tax Invoice</h3>
-                                <p className="text-sm text-slate-500 mt-1 mb-4">Summary for accounting.</p>
-
-                                <div className="space-y-3">
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-700 block mb-1">Description</label>
-                                        <input
-                                            className="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                                            value={description}
-                                            onChange={e => setDescription(e.target.value)}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-700 block mb-1">VAT Rate</label>
-                                        <select
-                                            className="w-full text-sm border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                                            value={vatRate}
-                                            onChange={e => setVatRate(Number(e.target.value))}
-                                        >
-                                            <option value={13.5}>13.5% (Service)</option>
-                                            <option value={23}>23% (Goods)</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={async () => {
-                                                if (!selectedJob || !selectedJob.customers) return;
-                                                const total = calculateTotal();
-                                                generateInvoice(selectedJob, selectedJob.customers, description, vatRate, total, 'preview');
-                                            }}
-                                            className="flex-1 py-2.5 bg-white border border-delaval-blue text-delaval-blue rounded-lg text-sm font-bold hover:bg-blue-50 transition-all"
-                                        >
-                                            Preview
-                                        </button>
-                                        <button
-                                            onClick={processInvoice}
-                                            className="flex-1 py-2.5 bg-delaval-blue text-white rounded-lg text-sm font-bold hover:bg-delaval-dark-blue shadow-lg shadow-blue-900/20 transition-all active:scale-95"
-                                        >
-                                            Generate
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </Modal>
-
-            {/* Standalone Invoice Builder Modal */}
-            <Modal isOpen={isBuilderOpen} onClose={() => setIsBuilderOpen(false)} title="Create Standalone Invoice">
-                <form onSubmit={handleBuilderSubmit} className="space-y-5">
-                    {/* Customer Mode Toggle */}
-                    <div>
-                        <div className="flex gap-2 mb-3">
-                            <button
-                                type="button"
-                                onClick={() => setBuilderCustomerMode('existing')}
-                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${builderCustomerMode === 'existing' ? 'bg-delaval-blue text-white shadow' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                            >
-                                Existing Customer
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setBuilderCustomerMode('guest')}
-                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${builderCustomerMode === 'guest' ? 'bg-delaval-blue text-white shadow' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
-                            >
-                                New / Guest
-                            </button>
-                        </div>
-
-                        {builderCustomerMode === 'existing' ? (
-                            <div className="relative">
-                                <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input
-                                        type="text"
-                                        placeholder="Search customers by name, email, or phone..."
-                                        className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none text-sm"
-                                        value={customerSearch}
-                                        onChange={e => {
-                                            setCustomerSearch(e.target.value);
-                                            setShowCustomerDropdown(true);
-                                            // Clear selection if user starts typing again
-                                            if (builderData.customerId) {
-                                                setBuilderData({ ...builderData, customerId: '' });
-                                            }
-                                        }}
-                                        onFocus={() => setShowCustomerDropdown(true)}
-                                    />
-                                </div>
-                                {/* Selected customer badge */}
-                                {builderData.customerId && (
-                                    <div className="mt-2 flex items-center gap-2 bg-delaval-blue/10 text-delaval-blue px-3 py-1.5 rounded-lg text-sm font-bold">
-                                        <span>{customers.find(c => c.id === builderData.customerId)?.name}</span>
-                                        <button type="button" onClick={() => { setBuilderData({ ...builderData, customerId: '' }); setCustomerSearch(''); }} className="ml-auto text-delaval-blue/50 hover:text-delaval-blue">×</button>
-                                    </div>
-                                )}
-                                {/* Dropdown results */}
-                                {showCustomerDropdown && !builderData.customerId && (
-                                    <div className="absolute z-50 mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-xl max-h-48 overflow-y-auto">
-                                        {searchedCustomers.length === 0 ? (
-                                            <div className="px-4 py-3 text-sm text-slate-400 text-center">No customers found</div>
-                                        ) : (
-                                            searchedCustomers.map(c => (
-                                                <button
-                                                    key={c.id}
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setBuilderData({ ...builderData, customerId: c.id });
-                                                        setCustomerSearch(c.name);
-                                                        setShowCustomerDropdown(false);
-                                                    }}
-                                                    className="w-full text-left px-4 py-2.5 hover:bg-slate-50 transition-colors flex items-center gap-3 border-b border-slate-100 last:border-0"
-                                                >
-                                                    <div className="w-8 h-8 bg-delaval-blue/10 text-delaval-blue rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                                        {c.name.substring(0, 2).toUpperCase()}
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="text-sm font-bold text-slate-900 truncate">{c.name}</div>
-                                                        <div className="text-xs text-slate-400 truncate">{c.email || c.phone || 'No contact info'}</div>
-                                                    </div>
-                                                </button>
-                                            ))
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                <input required placeholder="Customer Name *" className="px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={builderData.guestName} onChange={e => setBuilderData({ ...builderData, guestName: e.target.value })} />
-                                <input placeholder="Email" className="px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={builderData.guestEmail} onChange={e => setBuilderData({ ...builderData, guestEmail: e.target.value })} />
-                                <input placeholder="Phone" className="px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={builderData.guestPhone} onChange={e => setBuilderData({ ...builderData, guestPhone: e.target.value })} />
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Dates & VAT */}
-                    <div className="grid grid-cols-3 gap-3">
+                <div className="relative p-6 sm:p-8 z-10">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Issue Date</label>
-                            <DatePicker value={builderData.dateIssued} onChange={v => setBuilderData({ ...builderData, dateIssued: v })} />
+                            <h2 className="text-xl font-bold font-display tracking-tight text-slate-900 flex items-center gap-2">
+                                <Clock size={22} className="text-delaval-blue" />
+                                Action Required: Pending Jobs
+                            </h2>
+                            <p className="text-sm font-medium text-slate-500 mt-1">Jobs that have been completed but not yet billed.</p>
                         </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Due Date</label>
-                            <DatePicker value={builderData.dueDate} onChange={v => setBuilderData({ ...builderData, dueDate: v })} />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">VAT Rate</label>
-                            <select
-                                className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                                value={builderData.vatRate}
-                                onChange={e => setBuilderData({ ...builderData, vatRate: parseFloat(e.target.value) })}
-                            >
-                                <option value={0}>0% (Zero)</option>
-                                <option value={13.5}>13.5% (Service)</option>
-                                <option value={23}>23% (Goods)</option>
-                            </select>
+                        <div className="px-4 py-2 rounded-full bg-white/60 shadow-sm border border-white flex items-center gap-2">
+                            <span className="relative flex h-3 w-3">
+                                {completedJobs.length > 0 && <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>}
+                                <span className={`relative inline-flex rounded-full h-3 w-3 ${completedJobs.length > 0 ? 'bg-orange-500' : 'bg-green-500'}`}></span>
+                            </span>
+                            <span className="text-sm font-black text-slate-800">{completedJobs.length} To Process</span>
                         </div>
                     </div>
 
-                    {/* Line Items */}
-                    <div className="border-t border-slate-200 pt-4">
-                        <div className="flex items-center justify-between mb-3">
-                            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Line Items</label>
-                            <button type="button" onClick={addBuilderItem} className="text-xs text-delaval-blue font-bold hover:underline flex items-center gap-1">
-                                <Plus size={14} /> Add Item
-                            </button>
-                        </div>
-
-                        {builderData.items.length === 0 ? (
-                            <div className="flex flex-col items-center py-8 text-center bg-slate-50/50 rounded-xl border-2 border-dashed border-slate-200">
-                                <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-2">
-                                    <ShoppingBag size={20} className="text-slate-300" />
-                                </div>
-                                <div className="text-sm font-bold text-slate-400">No items yet</div>
-                                <div className="text-xs text-slate-300 mt-1">Add products, parts, or services</div>
-                                <button type="button" onClick={addBuilderItem} className="mt-3 text-xs font-bold text-delaval-blue bg-delaval-blue/10 px-4 py-2 rounded-lg hover:bg-delaval-blue/20 transition-colors">
-                                    + Add First Item
-                                </button>
+                    {completedJobs.length === 0 ? (
+                        <div className="p-10 border-2 border-dashed border-slate-300/50 rounded-xl bg-white/40 text-center flex flex-col items-center justify-center">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                                <CheckCircle2 size={32} className="text-green-500" />
                             </div>
-                        ) : (
-                            <div className="space-y-2 max-h-52 overflow-y-auto">
-                                {/* Header row */}
-                                <div className="grid grid-cols-12 gap-2 px-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    <div className="col-span-5">Description</div>
-                                    <div className="col-span-2 text-center">Qty</div>
-                                    <div className="col-span-3">Unit Price</div>
-                                    <div className="col-span-2 text-right">Total</div>
-                                </div>
-                                {builderData.items.map((item, idx) => (
-                                    <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-slate-50 rounded-lg p-2 group">
-                                        <input
-                                            placeholder="e.g. Milk Pump Seal Kit"
-                                            className="col-span-5 text-sm border border-slate-200 px-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none bg-white"
-                                            value={item.description}
-                                            onChange={e => updateBuilderItem(idx, 'description', e.target.value)}
-                                            required
-                                        />
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            placeholder="1"
-                                            className="col-span-2 text-sm border border-slate-200 px-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none bg-white text-center"
-                                            value={item.quantity}
-                                            onChange={e => updateBuilderItem(idx, 'quantity', parseFloat(e.target.value) || 0)}
-                                            required
-                                        />
-                                        <div className="col-span-3 relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                min="0"
-                                                placeholder="0.00"
-                                                className="w-full text-sm border border-slate-200 pl-7 pr-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none bg-white"
-                                                value={item.unitPrice}
-                                                onChange={e => updateBuilderItem(idx, 'unitPrice', parseFloat(e.target.value) || 0)}
-                                                required
-                                            />
+                            <h3 className="text-lg font-bold text-slate-800">You're all caught up!</h3>
+                            <p className="text-slate-500 mt-1">No pending jobs waiting to be invoiced.</p>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                            {completedJobs.map(job => (
+                                <div key={job.id} className="group relative bg-white rounded-xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-slate-100 overflow-hidden flex flex-col h-full">
+                                    <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-delaval-blue to-teal-400 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="p-5 flex flex-col h-full">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="w-10 h-10 rounded-lg bg-[#E6F0FF] text-delaval-blue flex items-center justify-center font-bold text-sm shrink-0">
+                                                {job.customers?.name?.substring(0, 2).toUpperCase() || 'NA'}
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-400 px-2 py-1 bg-slate-100 rounded-md">
+                                                #{job.job_number}
+                                            </div>
                                         </div>
-                                        <div className="col-span-2 flex items-center justify-between">
-                                            <span className="text-sm font-bold text-slate-700">€{(item.quantity * item.unitPrice).toFixed(2)}</span>
-                                            <button type="button" onClick={() => removeBuilderItem(idx)} className="p-1 text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100">
-                                                <Trash2 size={14} />
-                                            </button>
+                                        <div className="font-bold text-slate-900 text-lg mb-1 line-clamp-1" title={job.customers?.name}>{job.customers?.name}</div>
+                                        <div className="text-sm font-medium text-slate-500 mb-4 line-clamp-2">{job.service_type}</div>
+
+                                        <div className="mt-auto pt-4 border-t border-slate-100/60 flex items-center justify-between">
+                                            <div className="text-xs text-slate-400 font-medium">
+                                                {job.date_completed ? new Date(job.date_completed).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : 'Recently'}
+                                            </div>
+                                            <Link
+                                                to={`/invoices/builder?jobId=${job.id}`}
+                                                className="opacity-0 group-hover:opacity-100 group-hover:translate-x-0 -translate-x-2 transition-all text-xs font-black text-delaval-blue flex items-center gap-1 hover:text-delaval-dark-blue"
+                                            >
+                                                Invoice Now &rarr;
+                                            </Link>
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Totals */}
-                    {builderData.items.length > 0 && (
-                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
-                            <div className="space-y-1.5">
-                                <div className="flex justify-between text-sm text-slate-500">
-                                    <span>Subtotal ({builderData.items.length} item{builderData.items.length > 1 ? 's' : ''})</span>
-                                    <span className="font-bold text-slate-700">€{builderSubtotal.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-sm text-slate-500">
-                                    <span>VAT ({builderData.vatRate}%)</span>
-                                    <span className="font-bold text-slate-700">€{builderVat.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between pt-2 border-t border-slate-300">
-                                    <span className="text-lg font-bold text-slate-900">Total</span>
-                                    <span className="text-lg font-bold text-delaval-blue">€{builderTotal.toFixed(2)}</span>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     )}
+                </div>
+            </div>
 
-                    {/* Notes */}
-                    <div>
-                        <label className="block text-xs font-bold text-slate-500 mb-1 uppercase tracking-wider">Notes (Optional)</label>
-                        <textarea
-                            className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-delaval-blue/20 outline-none h-16 resize-none"
-                            placeholder="Payment terms, special instructions..."
-                            value={builderData.notes}
-                            onChange={e => setBuilderData({ ...builderData, notes: e.target.value })}
-                        />
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex justify-end gap-3 pt-4 border-t">
-                        <button type="button" onClick={() => setIsBuilderOpen(false)} className="btn btn-secondary border-slate-300">Cancel</button>
-                        <button type="submit" className="btn btn-primary" disabled={builderData.items.length === 0}>
-                            Create Invoice · €{builderTotal.toFixed(2)}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
             {/* Payment Modal */}
             <Modal isOpen={isPaymentOpen} onClose={() => setIsPaymentOpen(false)} title="Record Payment">
                 <form onSubmit={handlePaymentSubmit} className="space-y-4">
@@ -1123,6 +634,29 @@ const Invoices = () => {
                             value={paymentAmount}
                             onChange={(e) => setPaymentAmount(parseFloat(e.target.value))}
                         />
+                        <div className="flex flex-wrap gap-2 mt-3">
+                            <button
+                                type="button"
+                                onClick={() => setPaymentAmount(paymentInvoice ? Number((paymentInvoice.total_amount * 0.25).toFixed(2)) : 0)}
+                                className="px-3 py-1.5 text-xs font-bold rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200"
+                            >
+                                25% (Deposit)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentAmount(paymentInvoice ? Number((paymentInvoice.total_amount * 0.50).toFixed(2)) : 0)}
+                                className="px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors border border-indigo-200"
+                            >
+                                50% (Half)
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPaymentAmount(paymentInvoice ? Number((paymentInvoice.total_amount - (paymentInvoice.amount_paid || 0)).toFixed(2)) : 0)}
+                                className="px-3 py-1.5 text-xs font-bold rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors border border-green-200"
+                            >
+                                100% (Full)
+                            </button>
+                        </div>
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
                         <button type="button" onClick={() => setIsPaymentOpen(false)} className="btn btn-secondary">Cancel</button>
@@ -1180,7 +714,56 @@ const Invoices = () => {
                 title="Delete Invoice"
                 message="Are you sure you want to permanently delete this invoice? This action cannot be undone."
             />
-        </div >
+
+            {/* Delete Statement Confirmation Modal */}
+            <ConfirmModal
+                isOpen={!!deleteStatementId}
+                onClose={() => setDeleteStatementId(null)}
+                onConfirm={async () => {
+                    if (!deleteStatementId) return;
+                    const { error } = await dataService.deleteStatement(deleteStatementId);
+                    if (!error) {
+                        setStatements(prev => prev.filter(s => s.id !== deleteStatementId));
+                        showToast('Deleted', 'Statement has been deleted', 'success');
+                        fetchData();
+                    } else {
+                        showToast('Error', 'Failed to delete statement. Check permissions.', 'error');
+                    }
+                    setDeleteStatementId(null);
+                }}
+                title="Delete Statement"
+                message="Are you sure you want to permanently delete this statement? This action cannot be undone."
+            />
+            {/* Document Preview Modal */}
+            {activeDocument && (
+                <DocumentPreviewModal
+                    isOpen={previewModalOpen}
+                    onClose={() => setPreviewModalOpen(false)}
+                    pdfDataUrl={previewUrl}
+                    documentType={previewType}
+                    documentNumber={
+                        previewType === 'Invoice'
+                            ? (activeDocument as Invoice).invoice_number || 'Unknown'
+                            : (activeDocument as Statement).statement_number || 'Unknown'
+                    }
+                    customerName={
+                        previewType === 'Invoice'
+                            ? ((activeDocument as Invoice).customers?.name || (activeDocument as Invoice).guest_name || 'Guest')
+                            : ((activeDocument as Statement).customers?.name || 'Unknown')
+                    }
+                    customerEmail={
+                        previewType === 'Invoice'
+                            ? (activeDocument as Invoice).customers?.email || undefined
+                            : (activeDocument as Statement).customers?.email || undefined
+                    }
+                    amount={`€${previewType === 'Invoice'
+                        ? (activeDocument as Invoice).total_amount.toLocaleString()
+                        : ((activeDocument as Statement).jobs?.job_items?.reduce((s, i) => s + (i.total || 0), 0) || 0).toLocaleString()
+                        }`}
+                    onMarkAsSent={previewType === 'Invoice' && (activeDocument as Invoice).status === 'draft' ? handleMarkInvoiceAsSent : undefined}
+                />
+            )}
+        </div>
     );
 };
 

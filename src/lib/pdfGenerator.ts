@@ -76,9 +76,7 @@ export const generateStatement = (job: Job, items: JobItem[], customer: Customer
     doc.text('This is a detailed statement of work performed. Not a tax invoice.', 20, 280);
 
     if (action === 'preview') {
-        const blob = doc.output('blob');
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        return doc.output('datauristring');
     } else {
         doc.save(`Statement-${job.job_number}.pdf`);
     }
@@ -169,9 +167,7 @@ export const generateInvoice = (
     doc.text('Bank Details: IBAN IE98 AIBK 9312 4512 8512 33', 20, 275);
 
     if (action === 'preview') {
-        const blob = doc.output('blob');
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        return doc.output('datauristring');
     } else {
         doc.save(`Invoice-${job.job_number}.pdf`);
     }
@@ -315,9 +311,7 @@ export const generateOneTimeInvoice = (
     doc.text('Condon Dairy Services - County Cork, Ireland', 105, 285, { align: 'center' });
 
     if (action === 'preview') {
-        const blob = doc.output('blob');
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        return doc.output('datauristring');
     } else {
         doc.save(`${invoiceNumber}_${customerName.replace(/\s+/g, '_')}.pdf`);
     }
@@ -409,9 +403,7 @@ export const generateQuote = (
     doc.text('Subject to Condon Dairy Services Terms & Conditions.', 20, footerY + 5);
 
     if (action === 'preview') {
-        const blob = doc.output('blob');
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
+        return doc.output('datauristring');
     } else {
         doc.save(`Quote-${quote.quote_number}.pdf`);
     }

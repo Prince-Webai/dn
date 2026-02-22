@@ -1,0 +1,5 @@
+{
+  "name": "Clonmel Glass Invoice Hub v2",
+  "description": "Professional invoice generator for Clonmel Glass & Mirrors. Now featuring advanced product CRUD (Add/Edit/Remove), persistent database simulation, and AI-powered descriptions.",
+  "requestFramePermissions": []
+}

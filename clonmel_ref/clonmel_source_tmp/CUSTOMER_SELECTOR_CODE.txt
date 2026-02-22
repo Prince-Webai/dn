@@ -1,0 +1,64 @@
+// Customer Selector Component - Add this to InvoiceBuilder.tsx
+
+// STEP 1: Add this code block right after line 200 in InvoiceBuilder.tsx
+// Insert it BEFORE the existing "Customer / Client" div
+
+/*
+<div>
+  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-2">
+    Select Existing Customer (Optional)
+  </label>
+  <select
+    onChange={(e) => {
+      const customer = customers.find(c => c.id === e.target.value);
+      if (customer) {
+        setCustomerName(customer.name);
+        setCustomerEmail(customer.email);
+        setCustomerPhone(customer.phone);
+        const fullAddress = [
+          customer.address,
+          customer.city,
+          customer.postalCode,
+          customer.country
+        ].filter(Boolean).join(', ');
+        setCustomerAddress(fullAddress);
+      }
+    }}
+    className="w-full text-slate-900 bg-white border-2 border-slate-200 rounded-xl px-4 py-3 text-sm focus:border-brand-500 outline-none transition-all"
+  >
+    <option value="">-- Or select from CRM --</option>
+    {customers.map(c => (
+      <option key={c.id} value={c.id}>
+        {c.name} ({c.email})
+      </option>
+    ))}
+  </select>
+</div>
+*/
+
+// EXACT LOCATION IN FILE:
+// Find line 200-201 which has:
+//   <div className="space-y-4">
+//     <div>
+//       <label className="block text-[10px]...">Customer / Client</label>
+
+// Add the customer selector <div> block RIGHT AFTER line 200 (after <div className="space-y-4">)
+// and BEFORE line 201 (before the existing <div> with Customer / Client label)
+
+// The structure should become:
+/*
+<div className="space-y-4">
+  <!-- NEW: Customer Selector -->
+  <div>
+    <label>Select Existing Customer (Optional)</label>
+    <select onChange={...}>...</select>
+  </div>
+  
+  <!-- EXISTING: Customer Name Input -->
+  <div>
+    <label>Customer / Client</label>
+    <input type="text" .../>
+  </div>
+  
+  <!-- Rest of the form continues... -->
+*/

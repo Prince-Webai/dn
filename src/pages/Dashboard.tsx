@@ -1,16 +1,13 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import {
     Euro, Wrench, AlertCircle, Package,
-    Plus, Users, FileText, FilePlus, Calendar,
-    ArrowUpRight, Clock, Send, CheckCircle2, TrendingUp
+    Plus, Users, FileText, FilePlus, Calendar, ArrowUpRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Job, Invoice } from '../types';
+import { Job } from '../types';
 import { dataService } from '../services/dataService';
-import { useToast } from '../context/ToastContext';
 
 const Dashboard = () => {
-    const { showToast } = useToast();
     const [stats, setStats] = useState({
         outstandingBalance: 0,
         activeJobs: 0,
@@ -18,9 +15,7 @@ const Dashboard = () => {
         lowStockItems: 0
     });
     const [recentJobs, setRecentJobs] = useState<Job[]>([]);
-    const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
-    const [sendingReminder, setSendingReminder] = useState<string | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -35,7 +30,6 @@ const Dashboard = () => {
                 dataService.getInventory()
             ]);
 
-            setInvoices(invoiceData);
 
             const unpaidInvoices = invoiceData.filter(inv => {
                 const s = inv.status as string;
@@ -45,7 +39,6 @@ const Dashboard = () => {
             const activeJobsCount = allJobs.filter(j => ['scheduled', 'in_progress'].includes(j.status)).length;
             const lowStockCount = inventoryArray.filter(i => i.stock_level < 5).length;
 
-            // Count truly overdue (past due_date and not paid)
             const overdueCount = invoiceData.filter(inv => {
                 const s = inv.status as string;
                 if (s === 'paid' || s === 'void') return false;
@@ -67,58 +60,6 @@ const Dashboard = () => {
             setLoading(false);
         }
     };
-
-    // Overdue invoices for the reminder section
-    const overdueInvoices = useMemo(() => {
-        return invoices
-            .filter(inv => {
-                const s = inv.status as string;
-                if (s === 'paid' || s === 'void') return false;
-                if (inv.due_date && new Date(inv.due_date) < new Date()) return true;
-                return s === 'overdue';
-            })
-            .sort((a, b) => {
-                const daysA = a.due_date ? Math.floor((Date.now() - new Date(a.due_date).getTime()) / 86400000) : 0;
-                const daysB = b.due_date ? Math.floor((Date.now() - new Date(b.due_date).getTime()) / 86400000) : 0;
-                return daysB - daysA;
-            })
-            .slice(0, 5);
-    }, [invoices]);
-
-    // Revenue chart data — last 6 months
-    const revenueData = useMemo(() => {
-        const months: { label: string; amount: number }[] = [];
-        const now = new Date();
-        for (let i = 5; i >= 0; i--) {
-            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthStr = d.toLocaleDateString('en-IE', { month: 'short' });
-            const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const amount = invoices
-                .filter(inv => {
-                    const s = inv.status as string;
-                    return s === 'paid' && inv.payment_date?.startsWith(mKey);
-                })
-                .reduce((sum, inv) => sum + (inv.amount_paid || inv.total_amount || 0), 0);
-            months.push({ label: monthStr, amount });
-        }
-        return months;
-    }, [invoices]);
-
-    const maxRevenue = Math.max(...revenueData.map(m => m.amount), 1);
-
-    const handleSendReminder = async (inv: Invoice) => {
-        setSendingReminder(inv.id);
-        // Simulate sending reminder
-        await new Promise(r => setTimeout(r, 1000));
-        showToast('Reminder Sent', `Payment reminder sent for ${inv.customers?.name || 'customer'}`, 'success');
-        setSendingReminder(null);
-    };
-
-    const getDaysOverdue = (inv: Invoice) => {
-        if (!inv.due_date) return 0;
-        return Math.max(0, Math.floor((Date.now() - new Date(inv.due_date).getTime()) / 86400000));
-    };
-
     const statCards = [
         {
             label: 'Outstanding Balance',
@@ -181,7 +122,7 @@ const Dashboard = () => {
                                     </div>
                                     <div className="font-medium text-slate-500 mb-1 text-sm">{stat.label}</div>
                                     <div className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-md mt-1
-                                        ${stat.changeType === 'positive' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                                ${stat.changeType === 'positive' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
                                         {stat.change}
                                     </div>
                                 </div>
@@ -213,106 +154,7 @@ const Dashboard = () => {
                 })}
             </div>
 
-            {/* Two-column: Overdue Reminders + Revenue Chart */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Overdue Invoices & Reminders */}
-                <div className="section-card">
-                    <div className="flex justify-between items-center p-6 border-b border-slate-100">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center">
-                                <AlertCircle size={18} className="text-red-500" />
-                            </div>
-                            <h2 className="text-lg font-bold font-display text-slate-900">Payment Reminders</h2>
-                        </div>
-                        <Link to="/invoices" className="text-xs font-bold text-delaval-blue hover:underline uppercase tracking-wider">
-                            View All
-                        </Link>
-                    </div>
-                    <div className="divide-y divide-slate-100">
-                        {loading ? (
-                            <div className="p-6 text-center text-slate-400">Loading...</div>
-                        ) : overdueInvoices.length === 0 ? (
-                            <div className="p-8 text-center">
-                                <div className="w-14 h-14 mx-auto mb-3 rounded-2xl bg-green-50 flex items-center justify-center">
-                                    <CheckCircle2 size={24} className="text-green-500" />
-                                </div>
-                                <div className="font-bold text-slate-700">All Clear!</div>
-                                <div className="text-sm text-slate-400 mt-1">No overdue payments at the moment</div>
-                            </div>
-                        ) : (
-                            overdueInvoices.map(inv => {
-                                const days = getDaysOverdue(inv);
-                                const remaining = inv.total_amount - (inv.amount_paid || 0);
-                                return (
-                                    <div key={inv.id} className="flex items-center justify-between p-4 hover:bg-slate-50/50 transition-colors group">
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${days > 30 ? 'bg-red-100 text-red-600' : days > 14 ? 'bg-orange-100 text-orange-600' : 'bg-amber-100 text-amber-600'}`}>
-                                                <Clock size={18} />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="font-bold text-slate-900 text-sm truncate">{inv.customers?.name || inv.guest_name || 'Unknown'}</div>
-                                                <div className="text-xs text-slate-400">
-                                                    {inv.invoice_number} · <span className={`font-bold ${days > 30 ? 'text-red-500' : days > 14 ? 'text-orange-500' : 'text-amber-500'}`}>{days} days overdue</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 shrink-0">
-                                            <span className="font-bold text-slate-900 text-sm">€{remaining.toLocaleString()}</span>
-                                            <button
-                                                onClick={() => handleSendReminder(inv)}
-                                                disabled={sendingReminder === inv.id}
-                                                className="p-2 rounded-lg bg-delaval-blue/10 text-delaval-blue hover:bg-delaval-blue hover:text-white transition-all disabled:opacity-50"
-                                                title="Send Reminder"
-                                            >
-                                                {sendingReminder === inv.id ? (
-                                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                                ) : (
-                                                    <Send size={14} />
-                                                )}
-                                            </button>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        )}
-                    </div>
-                </div>
 
-                {/* Revenue Chart */}
-                <div className="section-card">
-                    <div className="flex justify-between items-center p-6 border-b border-slate-100">
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
-                                <TrendingUp size={18} className="text-emerald-500" />
-                            </div>
-                            <h2 className="text-lg font-bold font-display text-slate-900">Revenue (6 Months)</h2>
-                        </div>
-                        <Link to="/payments" className="text-xs font-bold text-delaval-blue hover:underline uppercase tracking-wider">
-                            Details
-                        </Link>
-                    </div>
-                    <div className="p-6">
-                        <div className="flex items-end justify-between gap-3 h-[200px]">
-                            {revenueData.map((m, i) => (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-2 h-full justify-end">
-                                    <div className="text-xs font-bold text-slate-700">
-                                        {m.amount > 0 ? `€${(m.amount / 1000).toFixed(1)}k` : '—'}
-                                    </div>
-                                    <div
-                                        className="w-full rounded-lg bg-gradient-to-t from-delaval-blue to-blue-400 transition-all duration-500 hover:from-delaval-dark-blue hover:to-delaval-blue relative group min-h-[4px]"
-                                        style={{ height: `${Math.max((m.amount / maxRevenue) * 150, 4)}px` }}
-                                    >
-                                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                                            €{m.amount.toLocaleString()}
-                                        </div>
-                                    </div>
-                                    <div className="text-[11px] font-bold text-slate-400 uppercase">{m.label}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             {/* Recent Jobs Table */}
             <div className="section-card">
@@ -365,7 +207,7 @@ const Dashboard = () => {
                                     <td className="px-6 py-4 text-sm text-slate-600">{job.date_scheduled?.split('T')[0]}</td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                                            ${job.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                                ${job.status === 'completed' ? 'bg-green-100 text-green-800' :
                                                 job.status === 'in_progress' ? 'bg-orange-100 text-orange-800' :
                                                     'bg-blue-100 text-blue-800'}`}>
                                             {job.status.replace('_', ' ')}
@@ -380,6 +222,7 @@ const Dashboard = () => {
                     </table>
                 </div>
             </div>
+
         </div>
     );
 };

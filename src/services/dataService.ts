@@ -102,6 +102,11 @@ export const dataService = {
 
     async deleteJob(id: string): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+
+        // Delete related job items first to satisfy foreign key constraints
+        const { error: itemsError } = await supabase.from('job_items').delete().eq('job_id', id);
+        if (itemsError) return { error: itemsError };
+
         return await supabase.from('jobs').delete().eq('id', id);
     },
 
@@ -118,5 +123,10 @@ export const dataService = {
     async deleteInvoice(id: string): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
         return await supabase.from('invoices').delete().eq('id', id);
+    },
+
+    async deleteStatement(id: string): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+        return await supabase.from('statements').delete().eq('id', id);
     }
 };

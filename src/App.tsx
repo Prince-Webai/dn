@@ -6,7 +6,9 @@ import Jobs from './pages/Jobs'
 import Customers from './pages/Customers'
 import Inventory from './pages/Inventory'
 import Invoices from './pages/Invoices'
+import InvoiceBuilder from './pages/InvoiceBuilder'
 import Quotes from './pages/Quotes'
+import DocumentBuilder from './pages/DocumentBuilder'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
 import Team from './pages/Team'
@@ -80,10 +82,24 @@ function App() {
                             </Layout>
                         </ProtectedRoute>
                     } />
+                    <Route path="/invoices/builder" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <InvoiceBuilder />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
                     <Route path="/quotes" element={
                         <ProtectedRoute>
                             <Layout>
                                 <Quotes />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/documents/new" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <DocumentBuilder />
                             </Layout>
                         </ProtectedRoute>
                     } />

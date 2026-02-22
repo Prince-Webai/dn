@@ -234,6 +234,9 @@ const Customers = () => {
     );
 
     const [customerJobs, setCustomerJobs] = useState<any[]>([]);
+    const [customerInvoices, setCustomerInvoices] = useState<any[]>([]);
+    const [customerQuotes, setCustomerQuotes] = useState<any[]>([]);
+    const [customerStatements, setCustomerStatements] = useState<any[]>([]);
     const [stats, setStats] = useState({
         totalJobs: 0,
         totalRevenue: 0,
@@ -248,20 +251,40 @@ const Customers = () => {
 
     const fetchCustomerDetails = async (customerId: string) => {
         try {
-            const { data, error } = await supabase
-                .from('jobs')
-                .select('*, job_items(total, type)')
-                .eq('customer_id', customerId)
-                .order('created_at', { ascending: false });
+            const [jobsRes, invoicesRes, quotesRes, statementsRes] = await Promise.all([
+                supabase
+                    .from('jobs')
+                    .select('*, job_items(total, type, description, quantity, unit_price)')
+                    .eq('customer_id', customerId)
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('invoices')
+                    .select('*')
+                    .eq('customer_id', customerId)
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('quotes')
+                    .select('*')
+                    .eq('customer_id', customerId)
+                    .order('created_at', { ascending: false }),
+                supabase
+                    .from('statements')
+                    .select('*')
+                    .eq('customer_id', customerId)
+                    .order('created_at', { ascending: false })
+            ]);
 
-            if (error) throw error;
+            if (jobsRes.error) throw jobsRes.error;
 
-            const jobs = data?.map(job => {
+            const jobs = jobsRes.data?.map(job => {
                 const total = job.job_items?.reduce((sum: number, item: any) => sum + (item.total || 0), 0) || 0;
                 return { ...job, total };
             }) || [];
 
             setCustomerJobs(jobs);
+            setCustomerInvoices(invoicesRes.data || []);
+            setCustomerQuotes(quotesRes.data || []);
+            setCustomerStatements(statementsRes.data || []);
 
             // Calculate Stats
             const completedJobs = jobs.filter(j => j.status === 'completed');
@@ -307,10 +330,31 @@ const Customers = () => {
                             </div>
                             <div className="flex-1 min-w-[250px]">
                                 <h2 className="text-3xl font-bold font-display text-slate-900 mb-2">{selectedCustomer.name}</h2>
-                                <div className="text-slate-500 space-y-1 mb-4">
-                                    <div>{selectedCustomer.address}</div>
-                                    <div>Contact: {selectedCustomer.contact_person}</div>
-                                    <div>Email: {selectedCustomer.email || 'N/A'} | Phone: {selectedCustomer.phone || 'N/A'}</div>
+                                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-500 mb-4">
+                                    {selectedCustomer.address && (
+                                        <div className="flex items-center gap-1.5">
+                                            <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                                            {selectedCustomer.address}
+                                        </div>
+                                    )}
+                                    {selectedCustomer.contact_person && (
+                                        <div className="flex items-center gap-1.5">
+                                            <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0" /></svg>
+                                            {selectedCustomer.contact_person}
+                                        </div>
+                                    )}
+                                    {selectedCustomer.email && (
+                                        <div className="flex items-center gap-1.5">
+                                            <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+                                            {selectedCustomer.email}
+                                        </div>
+                                    )}
+                                    {selectedCustomer.phone && (
+                                        <div className="flex items-center gap-1.5">
+                                            <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+                                            {selectedCustomer.phone}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex gap-3">
                                     <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Active Account</span>
@@ -448,9 +492,139 @@ const Customers = () => {
                                     </table>
                                 </div>
                             )}
-                            {activeTab !== 'service-history' && (
-                                <div className="py-12 text-center text-slate-400 italic">
-                                    Feature coming soon...
+                            {activeTab === 'parts-history' && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-[#F8FAFB] border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Part</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Qty</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Cost</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {customerJobs.flatMap(j =>
+                                                (j.job_items || [])
+                                                    .filter((item: any) => item.type === 'part')
+                                                    .map((item: any) => (
+                                                        <tr key={item.id} className="hover:bg-slate-50/50">
+                                                            <td className="px-6 py-4 text-slate-600">{new Date(j.created_at).toLocaleDateString()}</td>
+                                                            <td className="px-6 py-4 font-bold text-slate-900">{item.description} {item.inventory?.sku ? `[${item.inventory.sku}]` : ''}</td>
+                                                            <td className="px-6 py-4 text-slate-600">#JOB-{j.job_number}</td>
+                                                            <td className="px-6 py-4 text-slate-600">{item.quantity}</td>
+                                                            <td className="px-6 py-4 font-bold text-slate-900">€{item.total.toLocaleString()}</td>
+                                                        </tr>
+                                                    )))}
+                                            {customerJobs.flatMap(j => (j.job_items || []).filter((i: any) => i.type === 'part')).length === 0 && (
+                                                <tr>
+                                                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">
+                                                        No parts history found for this customer.
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {activeTab === 'invoices' && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-[#F8FAFB] border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Invoice #</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                                <th className="px-6 py-4"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {customerInvoices.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">No invoices found.</td>
+                                                </tr>
+                                            ) : customerInvoices.map(inv => (
+                                                <tr key={inv.id} className="hover:bg-slate-50/50">
+                                                    <td className="px-6 py-4 text-slate-600">{new Date(inv.date_issued).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4 font-bold text-slate-900">{inv.invoice_number}</td>
+                                                    <td className="px-6 py-4 font-bold text-slate-900">€{inv.total_amount.toLocaleString()}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : inv.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600'}`}>{inv.status}</span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {inv.pdf_url && <a href={inv.pdf_url} target="_blank" rel="noopener noreferrer" className="text-delaval-blue hover:underline text-sm font-medium">View PDF</a>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {activeTab === 'quotes' && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-[#F8FAFB] border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Quote #</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Description</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {customerQuotes.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400 italic">No quotes found.</td>
+                                                </tr>
+                                            ) : customerQuotes.map(quote => (
+                                                <tr key={quote.id} className="hover:bg-slate-50/50">
+                                                    <td className="px-6 py-4 text-slate-600">{new Date(quote.date_issued).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4 font-bold text-slate-900">{quote.quote_number}</td>
+                                                    <td className="px-6 py-4 text-slate-600 min-w-[200px] truncate max-w-[200px]">{quote.description}</td>
+                                                    <td className="px-6 py-4 font-bold text-slate-900">€{quote.total_amount.toLocaleString()}</td>
+                                                    <td className="px-6 py-4">
+                                                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${quote.status === 'accepted' ? 'bg-green-100 text-green-800' : quote.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600'}`}>{quote.status}</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                            {activeTab === 'documents' && (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-[#F8FAFB] border-b border-slate-100">
+                                            <tr>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Statement #</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
+                                                <th className="px-6 py-4"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-slate-100">
+                                            {customerStatements.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={4} className="px-6 py-8 text-center text-slate-400 italic">No statements found.</td>
+                                                </tr>
+                                            ) : customerStatements.map(stmt => (
+                                                <tr key={stmt.id} className="hover:bg-slate-50/50">
+                                                    <td className="px-6 py-4 text-slate-600">{new Date(stmt.date_generated).toLocaleDateString()}</td>
+                                                    <td className="px-6 py-4 font-bold text-slate-900">{stmt.statement_number}</td>
+                                                    <td className="px-6 py-4 font-bold text-slate-900">€{stmt.total_amount.toLocaleString()}</td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        {stmt.pdf_url && <a href={stmt.pdf_url} target="_blank" rel="noopener noreferrer" className="text-delaval-blue hover:underline text-sm font-medium">View PDF</a>}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             )}
                         </div>
@@ -543,12 +717,34 @@ const Customers = () => {
                                     <div className="w-16 h-16 bg-[#E6F0FF] text-[#0051A5] rounded-full flex items-center justify-center font-bold text-2xl mb-4 group-hover:scale-110 transition-transform">
                                         {customer.name.substring(0, 2).toUpperCase()}
                                     </div>
-                                    <div className="mb-2">
-                                        <h3 className="text-lg font-bold text-slate-900">{customer.name}</h3>
-                                        <div className="text-slate-500 text-sm">{customer.address || 'No address'}</div>
+                                    <h3 className="text-lg font-bold text-slate-900 mb-2">{customer.name}</h3>
+
+                                    {/* Contact Details */}
+                                    <div className="space-y-1.5 text-sm">
+                                        {customer.address && (
+                                            <div className="flex items-center gap-2 text-slate-500">
+                                                <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>
+                                                <span className="truncate">{customer.address}</span>
+                                            </div>
+                                        )}
+                                        {customer.email && (
+                                            <div className="flex items-center gap-2 text-slate-500">
+                                                <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+                                                <span className="truncate">{customer.email}</span>
+                                            </div>
+                                        )}
+                                        {customer.phone && (
+                                            <div className="flex items-center gap-2 text-slate-500">
+                                                <svg className="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z" /></svg>
+                                                <span>{customer.phone}</span>
+                                            </div>
+                                        )}
+                                        {!customer.address && !customer.email && !customer.phone && (
+                                            <div className="text-slate-400 italic text-xs">No contact info</div>
+                                        )}
                                     </div>
 
-                                    <div className="flex justify-between items-center mt-6 pt-4 border-t border-slate-100">
+                                    <div className="flex justify-between items-center mt-4 pt-4 border-t border-slate-100">
                                         <div>
                                             <div className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Outstanding</div>
                                             <div className={`text-xl font-extrabold ${customer.account_balance > 0 ? 'text-delaval-blue' : 'text-green-600'}`}>

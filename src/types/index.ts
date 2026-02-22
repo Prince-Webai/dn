@@ -37,6 +37,7 @@ export interface Job {
     notes?: string;
     // Joins
     customers?: Customer;
+    job_items?: JobItem[];
 }
 
 export interface JobItem {
