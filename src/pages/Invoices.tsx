@@ -23,7 +23,7 @@ const Invoices = () => {
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
     const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-    const [paymentAmount, setPaymentAmount] = useState<number>(0);
+    const [paymentAmount, setPaymentAmount] = useState<number | string>('');
 
     // Delete confirmation state
     const [deleteInvoiceId, setDeleteInvoiceId] = useState<string | null>(null);
@@ -205,7 +205,13 @@ const Invoices = () => {
         e.preventDefault();
         if (!paymentInvoice) return;
 
-        const newAmountPaid = (paymentInvoice.amount_paid || 0) + paymentAmount;
+        const parsedAmount = typeof paymentAmount === 'string' ? parseFloat(paymentAmount) : paymentAmount;
+        if (isNaN(parsedAmount) || parsedAmount <= 0) {
+            showToast('Error', 'Please enter a valid payment amount', 'error');
+            return;
+        }
+
+        const newAmountPaid = (paymentInvoice.amount_paid || 0) + parsedAmount;
         let newStatus: Invoice['status'] = paymentInvoice.status;
 
         if (newAmountPaid >= paymentInvoice.total_amount) {
@@ -632,7 +638,7 @@ const Invoices = () => {
                             required
                             className="form-input w-full border border-slate-300 rounded-lg px-4 py-2"
                             value={paymentAmount}
-                            onChange={(e) => setPaymentAmount(parseFloat(e.target.value))}
+                            onChange={(e) => setPaymentAmount(e.target.value)}
                         />
                         <div className="flex flex-wrap gap-2 mt-3">
                             <button
