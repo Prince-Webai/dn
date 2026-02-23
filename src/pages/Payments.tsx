@@ -63,7 +63,7 @@ const Payments = () => {
         return map;
     }, [invoices]);
 
-    // Build full 42-day calendar grid (6 weeks) like Clonmel Glass
+    // Build full 42-day calendar grid (6 weeks) like Tony Condon Dairy Services style
     const calendarDays = useMemo(() => {
         const days: { day: number; month: number; year: number; currentMonth: boolean }[] = [];
         // Previous month fill
@@ -101,13 +101,13 @@ const Payments = () => {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-4">
-                        <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-700 text-white rounded-2xl shadow-xl shadow-purple-500/20">
+                        <div className="p-3 bg-gradient-to-br from-delaval-blue to-delaval-dark-blue text-white rounded-2xl shadow-xl shadow-delaval-blue/20">
                             <FileText size={26} />
                         </div>
                         Payment Schedule
                     </h2>
                     <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] mt-2 flex items-center gap-2 ml-[60px]">
-                        <Target size={14} className="text-purple-500" />
+                        <Target size={14} className="text-delaval-blue" />
                         Collection Strategy & Deadline Monitoring
                     </p>
                 </div>
@@ -115,18 +115,18 @@ const Payments = () => {
                 <div className="flex items-center gap-3">
                     <button
                         onClick={jumpToToday}
-                        className="px-4 py-3 bg-white border-2 border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-purple-600 hover:border-purple-200 transition-all shadow-sm"
+                        className="px-4 py-3 bg-white border-2 border-slate-100 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-delaval-blue hover:border-delaval-blue/20 transition-all shadow-sm"
                     >
                         Today
                     </button>
                     <div className="flex items-center bg-white border-2 border-slate-100 rounded-xl p-1 shadow-sm">
-                        <button onClick={prevMonth} className="p-2 text-slate-400 hover:text-purple-600 hover:bg-slate-50 rounded-lg transition-all">
+                        <button onClick={prevMonth} className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-slate-50 rounded-lg transition-all">
                             <ChevronLeft size={20} />
                         </button>
                         <div className="px-4 text-xs font-black text-slate-800 uppercase tracking-widest min-w-[140px] text-center">
                             {monthNames[month]} {year}
                         </div>
-                        <button onClick={nextMonth} className="p-2 text-slate-400 hover:text-purple-600 hover:bg-slate-50 rounded-lg transition-all">
+                        <button onClick={nextMonth} className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-slate-50 rounded-lg transition-all">
                             <ChevronRight size={20} />
                         </button>
                     </div>
@@ -163,13 +163,13 @@ const Payments = () => {
                                         onClick={() => setSelectedDate(dateObj)}
                                         className={`relative h-28 p-3 border-r border-b border-slate-100 text-left transition-all group
                                             ${!date.currentMonth ? 'bg-slate-50/30 opacity-30' : 'bg-white'}
-                                            ${isSelected ? 'ring-2 ring-inset ring-purple-500 bg-purple-50/20' : 'hover:bg-slate-50/50'}
+                                            ${isSelected ? 'ring-2 ring-inset ring-delaval-blue bg-delaval-light-blue/20' : 'hover:bg-slate-50/50'}
                                         `}
                                     >
                                         <div className="flex justify-between items-start mb-1">
                                             <span className={`text-[11px] font-black
-                                                ${isToday ? 'bg-purple-600 text-white h-6 w-6 rounded-lg flex items-center justify-center shadow-lg shadow-purple-500/20' :
-                                                    isSelected ? 'text-purple-600' : 'text-slate-400'}
+                                                ${isToday ? 'bg-delaval-blue text-white h-6 w-6 rounded-lg flex items-center justify-center shadow-lg shadow-delaval-blue/20' :
+                                                    isSelected ? 'text-delaval-blue' : 'text-slate-400'}
                                             `}>
                                                 {date.day}
                                             </span>
@@ -193,7 +193,7 @@ const Payments = () => {
                                                         + {invs.length - 1} other{invs.length > 2 ? 's' : ''}
                                                     </div>
                                                 )}
-                                                <div className="mt-2 text-[9px] font-bold text-purple-600">
+                                                <div className="mt-2 text-[9px] font-bold text-delaval-blue">
                                                     €{invs.reduce((sum, i) => i.total_amount - (i.amount_paid || 0) + sum, 0).toLocaleString()}
                                                 </div>
                                             </div>
@@ -221,23 +221,23 @@ const Payments = () => {
                     </div>
                 </div>
 
-                {/* Dark Sidebar - matches Clonmel Glass style */}
+                {/* Dark Sidebar - Tony Condon Branding Style */}
                 <div className="xl:col-span-1">
                     <div className="bg-black rounded-[2.5rem] p-8 shadow-2xl h-full flex flex-col border border-white/5 relative overflow-hidden">
                         {/* Decorative glow */}
-                        <div className="absolute top-0 right-0 h-40 w-40 bg-purple-500/10 rounded-full blur-3xl -mr-20 -mt-20" />
+                        <div className="absolute top-0 right-0 h-40 w-40 bg-delaval-blue/10 rounded-full blur-3xl -mr-20 -mt-20" />
 
                         {/* Day header */}
                         <div className="relative z-10 mb-8 pb-8 border-b border-white/10">
                             <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-[10px] font-black text-purple-500 uppercase tracking-[0.3em]">Day Overview</h3>
+                                <h3 className="text-[10px] font-black text-delaval-blue uppercase tracking-[0.3em]">Day Overview</h3>
                                 <div className="h-8 w-8 bg-white/5 rounded-lg flex items-center justify-center text-slate-500">
                                     <Clock size={16} />
                                 </div>
                             </div>
                             <div className="text-xl font-black text-white leading-tight">
                                 {selectedDate.toLocaleDateString(undefined, { weekday: 'long' })}<br />
-                                <span className="text-purple-400">
+                                <span className="text-delaval-light-blue">
                                     {selectedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                                 </span>
                             </div>
@@ -269,9 +269,15 @@ const Payments = () => {
                                                     <span className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1">
                                                         {inv.invoice_number}
                                                     </span>
-                                                    <span className="block text-sm font-black text-white group-hover:text-purple-400 transition-colors truncate">
-                                                        {inv.customers?.name || inv.guest_name || 'Unknown'}
+                                                    <span className="block text-sm font-black text-white group-hover:text-delaval-light-blue transition-colors truncate">
+                                                        {inv.customers?.name || inv.guest_name || 'Guest Customer'}
                                                     </span>
+                                                    <div className="flex items-center gap-2 mt-1">
+                                                        <Euro size={12} className="text-delaval-blue" />
+                                                        <span className="text-xs font-bold text-slate-400">
+                                                            €{(inv.total_amount - (inv.amount_paid || 0)).toLocaleString()} Due
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <div className={`p-2 rounded-lg ${ps === 'settled' ? 'bg-emerald-500/20 text-emerald-400' :
                                                     ps === 'overdue' ? 'bg-rose-500/20 text-rose-400' : 'bg-amber-500/20 text-amber-400'}`}>
@@ -281,10 +287,10 @@ const Payments = () => {
 
                                             <div className="flex items-center justify-between pt-4 border-t border-white/5">
                                                 <div className="flex items-center gap-2">
-                                                    <Euro size={12} className="text-purple-500" />
+                                                    <Euro size={12} className="text-delaval-blue" />
                                                     <span className="text-sm font-black text-white">{formatCurrency(remaining)}</span>
                                                 </div>
-                                                <Link to={`/invoices`} className="p-2 bg-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-purple-600 transition-all">
+                                                <Link to={`/invoices`} className="p-2 bg-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-delaval-blue transition-all">
                                                     <ArrowRight size={14} />
                                                 </Link>
                                             </div>
@@ -301,8 +307,8 @@ const Payments = () => {
                                     <span className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Total Due</span>
                                     <span className="text-base font-black text-white">{formatCurrency(selectedTotalDue)}</span>
                                 </div>
-                                <div className="bg-purple-600 p-4 rounded-2xl shadow-xl shadow-purple-500/10">
-                                    <span className="block text-[9px] font-black text-purple-200 uppercase tracking-widest mb-1">Invoices</span>
+                                <div className="bg-delaval-blue p-4 rounded-2xl shadow-xl shadow-delaval-blue/10">
+                                    <span className="block text-[9px] font-black text-delaval-light-blue uppercase tracking-widest mb-1">Invoices</span>
                                     <span className="text-base font-black text-white">{selectedInvoices.length}</span>
                                 </div>
                             </div>

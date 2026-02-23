@@ -116,7 +116,7 @@ const Invoices = () => {
                 return;
             }
 
-            const pdfData = generateStatement(statement.jobs, items, statement.customers, 'preview');
+            const pdfData = generateStatement(statement.jobs, items, statement.customers, 'preview') as string;
             if (pdfData) {
                 setPreviewUrl(pdfData);
                 setPreviewType('Statement');
@@ -150,8 +150,9 @@ const Invoices = () => {
                         invoice.custom_description || job.service_type || 'Service',
                         invoice.vat_rate || 13.5,
                         invoice.total_amount,
-                        'preview'
-                    );
+                        'preview',
+                        invoice.status.toUpperCase()
+                    ) as string;
                     if (pdfData) {
                         setPreviewUrl(pdfData);
                         setPreviewType('Invoice');
@@ -172,14 +173,10 @@ const Invoices = () => {
                     description: invoice.custom_description || 'One-Time Service',
                     labourHours: 0,
                     labourRate: 0,
-                    partsCost: 0, // We don't have breakdown, so we can't perfectly recreate the original inputs
-                    additional: invoice.total_amount // We just put everything in additional or try to reverse calc?
-                    // Actually generateOneTimeInvoice recalculates totals. 
-                    // If we pass 'additional' as title, it might work.
-                    // Let's just create a simplified invoice for re-download or admit we can't fully recreate it without more data.
-                    // For now, let's just not support re-downloading one-time invoices perfectly or update schema to store JSON.
-                    // I will implement a basic version.
-                } as any, 'preview');
+                    partsCost: 0,
+                    additional: invoice.total_amount,
+                    total: invoice.total_amount
+                } as any, 'preview') as string;
 
                 if (pdfData) {
                     setPreviewUrl(pdfData);
@@ -557,7 +554,7 @@ const Invoices = () => {
             <div className="relative rounded-2xl overflow-hidden shadow-xl border border-white/40 mt-6 bg-gradient-to-br from-[#f8fafc] to-[#e6f0ff] backdrop-blur-md">
                 {/* Decorative background elements */}
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-blue-300 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-blob"></div>
-                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-purple-300 rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-blob animation-delay-2000"></div>
+                <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-delaval-light-blue rounded-full mix-blend-multiply filter blur-2xl opacity-20 animate-blob animation-delay-2000"></div>
 
                 <div className="relative p-6 sm:p-8 z-10">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">

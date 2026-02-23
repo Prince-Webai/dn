@@ -4,7 +4,8 @@ import { supabase } from '../lib/supabase';
 import { Job, JobItem, Customer } from '../types';
 import { generateInvoice, generateStatement } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
-import { ArrowLeft, Printer, FileText, Activity } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Activity, Eye } from 'lucide-react';
+import DocumentPreviewModal from '../components/DocumentPreviewModal';
 
 const InvoiceBuilder = () => {
     const [searchParams] = useSearchParams();
@@ -19,6 +20,11 @@ const InvoiceBuilder = () => {
 
     const [description, setDescription] = useState('Service');
     const [vatRate, setVatRate] = useState<number>(13.5);
+
+    // Preview state
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
+    const [previewUrl, setPreviewUrl] = useState('');
+    const [previewType, setPreviewType] = useState<'Invoice' | 'Statement'>('Invoice');
 
     useEffect(() => {
         if (!jobId) {
@@ -98,6 +104,27 @@ const InvoiceBuilder = () => {
         } else {
             console.error(error);
             showToast('Error', 'Failed to save invoice record.', 'error');
+        }
+    };
+
+    const handlePreviewInvoice = () => {
+        if (!job || !customer) return;
+        const total = calculateTotal();
+        const pdfData = generateInvoice(job, customer, description, vatRate, total, 'preview', 'DRAFT') as string;
+        if (pdfData) {
+            setPreviewUrl(pdfData);
+            setPreviewType('Invoice');
+            setPreviewModalOpen(true);
+        }
+    };
+
+    const handlePreviewStatement = () => {
+        if (!job || !customer) return;
+        const pdfData = generateStatement(job, jobItems, customer, 'preview') as string;
+        if (pdfData) {
+            setPreviewUrl(pdfData);
+            setPreviewType('Statement');
+            setPreviewModalOpen(true);
         }
     };
 
@@ -203,10 +230,10 @@ const InvoiceBuilder = () => {
                             </div>
                             <div className="flex gap-3 pt-2">
                                 <button
-                                    onClick={() => generateInvoice(job, customer!, description, vatRate, calculateTotal(), 'preview')}
-                                    className="flex-1 py-3 bg-white border-2 border-delaval-blue text-delaval-blue rounded-xl text-sm font-bold hover:bg-blue-50 transition-all"
+                                    onClick={handlePreviewInvoice}
+                                    className="flex-1 py-3 bg-white border-2 border-delaval-blue text-delaval-blue rounded-xl text-sm font-bold hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
                                 >
-                                    Preview
+                                    <Eye size={16} /> Preview
                                 </button>
                                 <button
                                     onClick={processInvoice}
@@ -228,10 +255,10 @@ const InvoiceBuilder = () => {
 
                         <div className="flex gap-3">
                             <button
-                                onClick={() => generateStatement(job, jobItems, customer!, 'preview')}
-                                className="flex-1 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all"
+                                onClick={handlePreviewStatement}
+                                className="flex-1 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
                             >
-                                Preview
+                                <Eye size={16} /> Preview
                             </button>
                             <button
                                 onClick={processStatement}
@@ -243,6 +270,16 @@ const InvoiceBuilder = () => {
                     </div>
                 </div>
             </div>
+
+            <DocumentPreviewModal
+                isOpen={previewModalOpen}
+                onClose={() => setPreviewModalOpen(false)}
+                pdfDataUrl={previewUrl}
+                documentType={previewType}
+                documentNumber="PREVIEW"
+                customerName={customer?.name || 'Unknown'}
+                amount={`€${calculateTotal().toFixed(2)}`}
+            />
         </div>
     );
 };

@@ -102,7 +102,7 @@ const Dashboard = () => {
     const quickActions = [
         { icon: Plus, title: 'New Job', desc: 'Create service job', path: '/jobs', color: 'bg-blue-50 text-blue-600' },
         { icon: Users, title: 'Add Customer', desc: 'Register new account', path: '/customers', color: 'bg-green-50 text-green-600' },
-        { icon: FileText, title: 'One-Time Invoice', desc: 'Instant charge invoice', path: '/invoices', color: 'bg-purple-50 text-purple-600' },
+        { icon: FileText, title: 'One-Time Invoice', desc: 'Instant charge invoice', path: '/invoices', color: 'bg-delaval-light-blue text-delaval-blue' },
         { icon: FilePlus, title: 'Create Quote', desc: 'Generate estimate', path: '/quotes', color: 'bg-orange-50 text-orange-600' },
         { icon: Calendar, title: 'Monthly Invoice', desc: 'Bill customer account', path: '/invoices', color: 'bg-indigo-50 text-indigo-600' },
     ];

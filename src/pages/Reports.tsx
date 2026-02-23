@@ -37,7 +37,7 @@ const Reports = () => {
     // Date Range Filter State
     const [dateRangeFilter, setDateRangeFilter] = useState<'6months' | 'ytd' | '12months'>('6months');
 
-    // Clonmel UX States
+    // Tony Condon UX States
     const [sendingReminder, setSendingReminder] = useState<string | null>(null);
     const [selectedInvoiceForDetail, setSelectedInvoiceForDetail] = useState<Invoice | null>(null);
 
@@ -119,7 +119,7 @@ const Reports = () => {
         setRevenueData(chartData);
     };
 
-    // Clonmel UX: Payment Action Center (Overdue + Due within 3 days)
+    // Payment Action Center (Overdue + Due within 3 days)
     const reminderCandidates = useMemo(() => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -209,7 +209,7 @@ const Reports = () => {
         setTopCustomers(sorted);
     };
 
-    const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+    const COLORS = ['#0051A5', '#00A862', '#FFC107', '#FF6B00', '#003875'];
 
     if (loading) {
         return (
@@ -254,14 +254,14 @@ const Reports = () => {
                             €{revenueData.reduce((acc, curr) => acc + curr.revenue, 0).toLocaleString()}
                         </h3>
                     </div>
-                    <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center">
+                    <div className="w-12 h-12 bg-delaval-light-blue text-delaval-blue rounded-lg flex items-center justify-center">
                         <TrendingUp size={24} />
                     </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Payment Action Center (Clonmel Style) */}
+                {/* Payment Action Center */}
                 <div className="section-card border-none shadow-md overflow-hidden bg-white hover:border-transparent">
                     <div className="flex justify-between items-center p-6 bg-slate-50 border-b border-slate-100">
                         <div className="flex items-center gap-3">
@@ -416,7 +416,7 @@ const Reports = () => {
                                     cy="50%"
                                     innerRadius={60}
                                     outerRadius={100}
-                                    fill="#8884d8"
+                                    fill="#0051A5"
                                     paddingAngle={5}
                                     dataKey="value"
                                 >

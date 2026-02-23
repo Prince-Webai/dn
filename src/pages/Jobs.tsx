@@ -5,7 +5,9 @@ import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import DatePicker from '../components/DatePicker';
+import SearchableSelect from '../components/SearchableSelect';
 import { dataService } from '../services/dataService';
+import { supabase } from '../lib/supabase';
 
 const Jobs = () => {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -23,14 +25,24 @@ const Jobs = () => {
         notes: ''
     });
 
+    const [modalItems, setModalItems] = useState<any[]>([]);
+    const [inventory, setInventory] = useState<any[]>([]);
+    const [newItem, setNewItem] = useState({ description: '', quantity: 1, unit_price: 0, type: 'part' as const });
+    const [isAddingCustom, setIsAddingCustom] = useState(false);
+
     useEffect(() => {
         loadData();
     }, [activeTab]); // Reload when tab changes (server-side filter)
 
     const loadData = async () => {
         setLoading(true);
-        await Promise.all([fetchJobs(), fetchCustomers(), fetchEngineers()]);
+        await Promise.all([fetchJobs(), fetchCustomers(), fetchEngineers(), fetchInventory()]);
         setLoading(false);
+    };
+
+    const fetchInventory = async () => {
+        const data = await dataService.getInventory();
+        setInventory(data);
     };
 
     const fetchJobs = async () => {
@@ -54,16 +66,27 @@ const Jobs = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const handleEditClick = (job: Job) => {
+    const handleEditClick = async (job: Job) => {
         setNewJob({
             customer_id: job.customer_id,
             engineer_name: job.engineer_name || '',
             service_type: job.service_type,
             status: job.status,
-            date_scheduled: job.date_scheduled,
+            date_scheduled: job.date_scheduled ? job.date_scheduled.split('T')[0] : '',
             notes: job.notes || ''
         });
         setEditingId(job.id);
+
+        // Fetch items
+        const items = await dataService.getJobItems(job.id);
+        setModalItems(items.map(i => ({
+            description: i.description,
+            quantity: i.quantity,
+            unit_price: i.unit_price,
+            type: i.type,
+            inventory_id: i.inventory_id
+        })));
+
         setIsModalOpen(true);
     };
 
@@ -95,21 +118,37 @@ const Jobs = () => {
     const handleAddJob = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            let jobId = editingId;
             if (editingId) {
                 // Update
                 const { error } = await dataService.updateJob(editingId, newJob);
-
                 if (error) throw error;
 
-                fetchJobs();
+                // For updates, we'll keep it simple: delete old items and add new ones
+                // (In a real app we might do a diff)
+                await supabase.from('job_items').delete().eq('job_id', editingId);
             } else {
                 // Create
-                const { error } = await dataService.createJob(newJob);
-
+                const { data, error } = await dataService.createJob(newJob);
                 if (error) throw error;
-                fetchJobs();
+                if (!data) throw new Error("Failed to create job");
+                jobId = data.id;
             }
 
+            // Save items if we have a jobId
+            if (jobId && modalItems.length > 0) {
+                const itemsToSave = modalItems.map(item => {
+                    const { total, ...rest } = item; // Remove total as it's a generated column
+                    return {
+                        ...rest,
+                        job_id: jobId
+                    };
+                });
+                const { error: itemsError } = await dataService.addJobItems(itemsToSave);
+                if (itemsError) throw itemsError;
+            }
+
+            fetchJobs();
             setIsModalOpen(false);
             setEditingId(null);
             setNewJob({
@@ -120,6 +159,7 @@ const Jobs = () => {
                 date_scheduled: new Date().toISOString().split('T')[0],
                 notes: ''
             });
+            setModalItems([]);
 
         } catch (error) {
             console.error('Error saving job:', error);
@@ -180,6 +220,7 @@ const Jobs = () => {
                                 date_scheduled: new Date().toISOString().split('T')[0],
                                 notes: ''
                             });
+                            setModalItems([]);
                             setIsModalOpen(true);
                         }} className="btn btn-primary text-sm shadow-md shadow-blue-900/10">
                             + New Job
@@ -250,7 +291,7 @@ const Jobs = () => {
                                         <td className="px-6 py-4 text-sm text-slate-600">
                                             <div className="flex items-center gap-2">
                                                 <Calendar size={14} className="text-slate-400" />
-                                                {job.date_scheduled}
+                                                {job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
@@ -297,30 +338,30 @@ const Jobs = () => {
             >
                 <form onSubmit={handleAddJob} className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Customer</label>
-                        <select
-                            required
-                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                            value={newJob.customer_id}
-                            onChange={e => setNewJob({ ...newJob, customer_id: e.target.value })}
-                        >
-                            <option value="">Select a customer...</option>
-                            {customers.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
+                        <SearchableSelect
+                            label="Customer"
+                            options={customers.map(c => ({ value: c.id, label: c.name }))}
+                            value={newJob.customer_id || ''}
+                            onChange={val => setNewJob({ ...newJob, customer_id: val })}
+                            placeholder="Search and select a customer..."
+                            icon={<User size={16} />}
+                        />
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Service Type</label>
-                            <input
-                                required
-                                type="text"
-                                placeholder="e.g. Milking Machine Service"
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                value={newJob.service_type}
-                                onChange={e => setNewJob({ ...newJob, service_type: e.target.value })}
+                            <SearchableSelect
+                                label="Service Type"
+                                options={[
+                                    { value: 'Machine Service', label: 'Machine Service' },
+                                    { value: 'Breakdown', label: 'Breakdown' },
+                                    { value: 'Emergency Call Out', label: 'Emergency Call Out' }
+                                ]}
+                                allowCustom={true}
+                                value={newJob.service_type || ''}
+                                onChange={val => setNewJob({ ...newJob, service_type: val })}
+                                placeholder="Choose or type service type..."
+                                icon={<FileText size={16} />}
                             />
                         </div>
 
@@ -367,10 +408,136 @@ const Jobs = () => {
                             <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
                             <textarea
                                 className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                rows={3}
+                                rows={2}
                                 value={newJob.notes}
                                 onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
                             />
+                        </div>
+
+                        {/* Line Items Editor */}
+                        <div className="col-span-2 mt-4">
+                            <div className="flex justify-between items-center mb-2">
+                                <label className="block text-sm font-bold text-slate-700 uppercase tracking-widest">Parts & Labor</label>
+                                <div className="text-xs font-bold text-delaval-blue">
+                                    Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 max-h-[200px] overflow-y-auto mb-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                {modalItems.length === 0 ? (
+                                    <div className="text-center py-4 text-xs text-slate-400 italic">No parts or labor added yet</div>
+                                ) : (
+                                    modalItems.map((item, idx) => (
+                                        <div key={idx} className="flex gap-2 items-center bg-white p-2 rounded border border-slate-200 shadow-sm group">
+                                            <div className="flex-1 text-xs font-medium text-slate-700 truncate">{item.description}</div>
+                                            <div className="w-12 text-[10px] text-slate-500 text-center">x{item.quantity}</div>
+                                            <div className="w-16 text-xs font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
+                                                className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                {isAddingCustom ? (
+                                    <div className="space-y-3">
+                                        <div className="grid grid-cols-12 gap-2">
+                                            <div className="col-span-12 sm:col-span-6">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Item description (e.g. Labor, Mileage, Oil)..."
+                                                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                                    value={newItem.description}
+                                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="col-span-6 sm:col-span-2">
+                                                <input
+                                                    type="number"
+                                                    placeholder="Qty"
+                                                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                                    value={newItem.quantity}
+                                                    onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
+                                                />
+                                            </div>
+                                            <div className="col-span-6 sm:col-span-4">
+                                                <div className="relative">
+                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
+                                                    <input
+                                                        type="number"
+                                                        placeholder="Rate"
+                                                        className="w-full pl-7 pr-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                                        value={newItem.unit_price}
+                                                        onChange={e => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAddingCustom(false)}
+                                                className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    if (newItem.description) {
+                                                        setModalItems([...modalItems, { ...newItem, type: 'labor' }]);
+                                                        setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
+                                                        setIsAddingCustom(false);
+                                                    }
+                                                }}
+                                                className="px-4 py-1.5 text-xs font-bold bg-delaval-blue text-white rounded-lg hover:bg-delaval-dark-blue transition-colors shadow-sm"
+                                            >
+                                                Add Item
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-12 gap-3 items-center">
+                                        <div className="col-span-7">
+                                            <SearchableSelect
+                                                placeholder="Search products..."
+                                                options={inventory.map(i => ({ value: i.id, label: `${i.name} (€${i.sell_price})` }))}
+                                                value=""
+                                                onChange={(id) => {
+                                                    const invItem = inventory.find(i => i.id === id);
+                                                    if (invItem) {
+                                                        setModalItems([...modalItems, {
+                                                            description: invItem.name,
+                                                            quantity: 1,
+                                                            unit_price: invItem.sell_price,
+                                                            type: 'part',
+                                                            inventory_id: invItem.id
+                                                        }]);
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="col-span-5 flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsAddingCustom(true)}
+                                                className="flex-1 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+                                            >
+                                                + Custom / Labor
+                                            </button>
+                                            <div className="flex flex-col items-center justify-center text-[9px] text-slate-400 font-black uppercase leading-tight tracking-tighter shrink-0">
+                                                Add<br />Item
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 

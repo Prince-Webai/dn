@@ -1,85 +1,133 @@
 
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { Customer, Job, JobItem, Quote, QuoteItem } from '../types';
 
-export const generateStatement = (job: Job, items: JobItem[], customer: Customer, action: 'download' | 'preview' = 'download') => {
-    const doc = new jsPDF();
+// Helper: Add Professional Header & Branding
+const addHeader = (doc: jsPDF, title: string, subTitle: string, status?: string) => {
+    const pageWidth = doc.internal.pageSize.width;
 
-    // ... (rest of function remains creating the doc)
+    // DeLaval Blue Header Bar
+    doc.setFillColor(0, 56, 117); // DeLaval Dark Blue
+    doc.rect(0, 0, pageWidth, 45, 'F');
 
-    // Header
-    doc.setFontSize(20);
-    doc.setTextColor(0, 81, 165); // DeLaval Blue
+    // Branding text
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
     doc.text('Condon Dairy Services', 20, 20);
 
     doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('Dairy Farm Equipment & Maintenance', 20, 26);
-
-    // Statement Details
-    doc.setFontSize(16);
-    doc.setTextColor(0);
-    doc.text('STATEMENT OF WORK', 140, 20);
-
-    doc.setFontSize(10);
-    doc.text(`Statement #: STMT-${new Date().getFullYear()}-${job.job_number}`, 140, 30);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, 36);
-    doc.text(`Job Ref: #${job.job_number}`, 140, 42);
-
-    // Customer Details
-    doc.setFontSize(12);
-    doc.text('Bill To:', 20, 50);
-    doc.setFontSize(10);
-    doc.text(customer.name, 20, 56);
-    if (customer.address) doc.text(customer.address, 20, 62);
-    if (customer.email) doc.text(customer.email, 20, 68);
-
-    // Items Table Header
-    let y = 85;
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, y - 5, 170, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.text('Description', 25, y);
-    doc.text('Type', 100, y);
-    doc.text('Qty', 130, y);
-    doc.text('Price', 150, y);
-    doc.text('Total', 175, y);
-
-    // Items List
-    y += 10;
     doc.setFont('helvetica', 'normal');
+    doc.text('Professional Dairy Solutions & Dairy Equipment Maintenance', 20, 28);
+    doc.text('Condon Dairy Services, Cork, Ireland', 20, 34);
 
-    let subtotal = 0;
-
-    items.forEach((item) => {
-        doc.text(item.description, 25, y);
-        doc.text(item.type, 100, y);
-        doc.text(item.quantity.toString(), 130, y);
-        doc.text(`€${item.unit_price.toFixed(2)}`, 150, y);
-        doc.text(`€${item.total.toFixed(2)}`, 175, y);
-        subtotal += item.total;
-        y += 8;
-    });
-
-    // Totals
-    y += 10;
-    doc.line(20, y, 190, y);
-    y += 10;
-
+    // Document Title
+    doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('Total Value:', 140, y);
-    doc.text(`€${subtotal.toFixed(2)}`, 175, y);
+    doc.text(title, pageWidth - 20, 20, { align: 'right' });
 
-    // Footer
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(subTitle, pageWidth - 20, 30, { align: 'right' });
+
+    // Status Banner (inspired by Clonmel)
+    if (status) {
+        const statusColor = status.toUpperCase() === 'PAID' ? [34, 197, 94] : [255, 140, 0]; // Green vs Orange
+        doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+        doc.triangle(0, 0, 45, 0, 0, 45, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text(status.toUpperCase(), 10, 20, { angle: -45 });
+    }
+
+    return 55; // Next Y position
+};
+
+// Helper: Add Footer
+const addFooter = (doc: jsPDF, customText?: string) => {
+    const pageHeight = doc.internal.pageSize.height;
+    const pageWidth = doc.internal.pageSize.width;
+
+    doc.setDrawColor(230, 230, 230);
+    doc.line(20, pageHeight - 40, pageWidth - 20, pageHeight - 40);
+
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Bank Details:', 20, pageHeight - 32);
+    doc.setFont('helvetica', 'normal');
+    doc.text('IBAN: IE98 AIBK 9312 4512 8512 33 | Swift/BIC: AIBKIE2D', 20, pageHeight - 27);
+
+    if (customText) {
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(customText, 20, pageHeight - 15);
+    }
+
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text('This is a detailed statement of work performed. Not a tax invoice.', 20, 280);
+    doc.text(`Printed: ${new Date().toLocaleDateString('en-GB')} | Page 1 of 1`, pageWidth - 20, pageHeight - 15, { align: 'right' });
+};
 
-    if (action === 'preview') {
-        return doc.output('datauristring');
-    } else {
-        doc.save(`Statement-${job.job_number}.pdf`);
-    }
+export const generateStatement = (job: Job, items: JobItem[], customer: Customer, action: 'download' | 'preview' = 'download') => {
+    const doc = new jsPDF();
+    const title = 'STATEMENT OF WORK';
+    const subTitle = `STMT-${new Date().getFullYear()}-${job.job_number}`;
+
+    let y = addHeader(doc, title, subTitle);
+
+    // Customer Info
+    doc.setTextColor(0);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BILL TO:', 20, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(customer.name, 20, y + 6);
+    if (customer.address) doc.text(customer.address, 20, y + 12);
+    if (customer.email) doc.text(customer.email, 20, y + 18);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('JOB REFERENCE:', 140, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`#${job.job_number} - ${job.service_type}`, 140, y + 6);
+    doc.text(`Date: ${new Date().toLocaleDateString('en-GB')}`, 140, y + 12);
+
+    y += 30;
+
+    autoTable(doc, {
+        startY: y,
+        head: [['Description', 'Type', 'Qty', 'Price', 'Total']],
+        body: items.map(item => [
+            item.description,
+            item.type.charAt(0).toUpperCase() + item.type.slice(1),
+            item.quantity,
+            `€${item.unit_price.toFixed(2)}`,
+            `€${item.total.toFixed(2)}`
+        ]),
+        headStyles: { fillColor: [0, 81, 165], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+            2: { halign: 'center' },
+            3: { halign: 'right' },
+            4: { halign: 'right' }
+        }
+    });
+
+    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+    // @ts-ignore
+    y = doc.lastAutoTable.finalY + 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL VALUE:', 140, y);
+    doc.text(`€${subtotal.toFixed(2)}`, 190, y, { align: 'right' });
+
+    addFooter(doc, 'Notice: This is a detailed work record for your reference. This document is not a tax invoice.');
+
+    return action === 'preview' ? doc.output('datauristring') : doc.save(`Statement-${job.job_number}.pdf`);
 };
 
 export const generateInvoice = (
@@ -88,233 +136,72 @@ export const generateInvoice = (
     description: string,
     vatRate: number,
     totalAmount: number,
-    action: 'download' | 'preview' = 'download'
+    action: 'download' | 'preview' = 'download',
+    paymentStatus: string = 'UNPAID'
 ) => {
     const doc = new jsPDF();
+    const invNumber = `INV-${new Date().getFullYear()}-${job.job_number}`;
+    let y = addHeader(doc, 'TAX INVOICE', invNumber, paymentStatus);
 
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(0, 81, 165);
-    doc.text('Condon Dairy Services', 20, 20);
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('123 Dairy Road, Cork', 20, 28);
-    doc.text('VAT Reg: IE 12345678L', 20, 33);
-
-    // Title
-    doc.setFontSize(24);
+    // Customer Info
     doc.setTextColor(0);
-    doc.text('INVOICE', 140, 25);
-
     doc.setFontSize(10);
-    doc.text(`Invoice #: INV-${new Date().getFullYear()}-${job.job_number}`, 140, 35);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 140, 40);
-
-    // Customer
-    doc.setFontSize(12);
-    doc.text('Invoice To:', 20, 50);
-    doc.setFontSize(10);
-    doc.text(customer.name, 20, 56);
-    if (customer.address) doc.text(customer.address, 20, 62);
-
-    // Single Line Item
-    let y = 90;
-    doc.setFillColor(0, 81, 165); // Blue Header
-    doc.rect(20, y - 6, 170, 10, 'F');
-    doc.setTextColor(255);
     doc.setFont('helvetica', 'bold');
-    doc.text('Description', 25, y);
-    doc.text('Amount', 170, y);
-
-    y += 15;
-    doc.setTextColor(0);
+    doc.text('INVOICE TO:', 20, y);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.text(description, 25, y);
+    doc.text(customer.name, 20, y + 6);
+    if (customer.address) doc.text(customer.address, 20, y + 12);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE DETAILS:', 140, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date Issued: ${new Date().toLocaleDateString('en-GB')}`, 140, y + 6);
+    doc.text(`VAT No: IE 12345678L`, 140, y + 12);
+
+    y += 30;
 
     const netAmount = totalAmount / (1 + vatRate / 100);
     const vatAmount = totalAmount - netAmount;
 
-    doc.text(`€${netAmount.toFixed(2)}`, 170, y);
+    autoTable(doc, {
+        startY: y,
+        head: [['Description', 'Net Amount', 'VAT Rate', 'Total']],
+        body: [[
+            description,
+            `€${netAmount.toFixed(2)}`,
+            `${vatRate}%`,
+            `€${totalAmount.toFixed(2)}`
+        ]],
+        headStyles: { fillColor: [0, 81, 165], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { fontSize: 10, cellPadding: 5 },
+        columnStyles: {
+            1: { halign: 'right' },
+            2: { halign: 'center' },
+            3: { halign: 'right' }
+        }
+    });
 
-    // Totals Section
-    y = 150;
-    const xLabel = 130;
-    const xValue = 170;
+    // @ts-ignore
+    y = doc.lastAutoTable.finalY + 15;
 
-    doc.line(120, y, 190, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Subtotal (Net):', 140, y);
+    doc.text(`€${netAmount.toFixed(2)}`, 190, y, { align: 'right' });
+
+    y += 7;
+    doc.text(`VAT @ ${vatRate}%:`, 140, y);
+    doc.text(`€${vatAmount.toFixed(2)}`, 190, y, { align: 'right' });
+
     y += 10;
-
-    doc.text('Subtotal (Net):', xLabel, y);
-    doc.text(`€${netAmount.toFixed(2)}`, xValue, y);
-
-    y += 8;
-    doc.text(`VAT @ ${vatRate}%:`, xLabel, y);
-    doc.text(`€${vatAmount.toFixed(2)}`, xValue, y);
-
-    y += 12;
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.text('TOTAL:', xLabel, y);
-    doc.text(`€${totalAmount.toFixed(2)}`, xValue, y);
-
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(150);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Thank you for your business. Payment due within 30 days.', 20, 270);
-    doc.text('Bank Details: IBAN IE98 AIBK 9312 4512 8512 33', 20, 275);
-
-    if (action === 'preview') {
-        return doc.output('datauristring');
-    } else {
-        doc.save(`Invoice-${job.job_number}.pdf`);
-    }
-};
-
-export const generateOneTimeInvoice = (
-    data: {
-        customerName: string;
-        email: string;
-        phone: string;
-        date: string;
-        description: string;
-        labourHours: number;
-        labourRate: number;
-        partsCost: number;
-        additional: number;
-    },
-    action: 'download' | 'preview' = 'download'
-) => {
-    const doc = new jsPDF();
-    const { customerName, email, phone, date, description, labourHours, labourRate, partsCost, additional } = data;
-
-    const labourTotal = labourHours * labourRate;
-    const total = labourTotal + partsCost + additional;
-    const invoiceNumber = `INV-${new Date().getFullYear()}-${Math.floor(Math.random() * 1000)}`;
-
-    // DeLaval Blue Header
-    doc.setFillColor(0, 81, 165);
-    doc.rect(0, 0, 210, 40, 'F');
-
-    // Company Name
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(24);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Condon Dairy Services', 20, 20);
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Powered by DeLaval Technology', 20, 28);
-
-    // Invoice Title
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('INVOICE', 150, 20);
-
-    // Invoice Number and Date
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`Invoice #: ${invoiceNumber}`, 150, 28);
-    doc.text(`Date: ${date}`, 150, 34);
-
-    // Customer Details
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Bill To:', 20, 55);
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.text(customerName, 20, 62);
-    if (email) doc.text(email, 20, 68);
-    if (phone) doc.text(phone, 20, 74);
-
-    // Description
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Description:', 20, 90);
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const splitDescription = doc.splitTextToSize(description, 170);
-    doc.text(splitDescription, 20, 97);
-
-    // Line Items Table
-    let yPos = 120;
-
-    // Table Header
-    doc.setFillColor(230, 240, 255);
-    doc.rect(20, yPos, 170, 10, 'F');
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Item', 25, yPos + 7);
-    doc.text('Quantity', 100, yPos + 7);
-    doc.text('Rate', 130, yPos + 7);
-    doc.text('Amount', 160, yPos + 7);
-
-    yPos += 10;
-
-    // Labour
-    if (labourHours > 0) {
-        doc.setFont('helvetica', 'normal');
-        doc.text('Labour', 25, yPos + 7);
-        doc.text(`${labourHours} hrs`, 100, yPos + 7);
-        doc.text(`€${labourRate.toFixed(2)}`, 130, yPos + 7);
-        doc.text(`€${labourTotal.toFixed(2)}`, 160, yPos + 7);
-        yPos += 10;
-    }
-
-    // Parts
-    if (partsCost > 0) {
-        doc.text('Parts & Materials', 25, yPos + 7);
-        doc.text('-', 100, yPos + 7);
-        doc.text('-', 130, yPos + 7);
-        doc.text(`€${partsCost.toFixed(2)}`, 160, yPos + 7);
-        yPos += 10;
-    }
-
-    // Additional
-    if (additional > 0) {
-        doc.text('Additional Charges', 25, yPos + 7);
-        doc.text('-', 100, yPos + 7);
-        doc.text('-', 130, yPos + 7);
-        doc.text(`€${additional.toFixed(2)}`, 160, yPos + 7);
-        yPos += 10;
-    }
-
-    // Total Line
-    yPos += 5;
-    doc.setLineWidth(0.5);
-    doc.line(130, yPos, 190, yPos);
-
-    yPos += 10;
     doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.text('TOTAL:', 130, yPos);
-    doc.text(`€${total.toFixed(2)}`, 160, yPos);
+    doc.text('TOTAL:', 140, y);
+    doc.text(`€${totalAmount.toFixed(2)}`, 190, y, { align: 'right' });
 
-    // Payment Terms
-    yPos += 20;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Payment Terms:', 20, yPos);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Payment due within 30 days', 20, yPos + 7);
+    addFooter(doc, 'Thank you for your business. Payment is strictly due within 30 days of invoice date.');
 
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Thank you for your business!', 105, 280, { align: 'center' });
-    doc.text('Condon Dairy Services - County Cork, Ireland', 105, 285, { align: 'center' });
-
-    if (action === 'preview') {
-        return doc.output('datauristring');
-    } else {
-        doc.save(`${invoiceNumber}_${customerName.replace(/\s+/g, '_')}.pdf`);
-    }
+    return action === 'preview' ? doc.output('datauristring') : doc.save(`Invoice-${job.job_number}.pdf`);
 };
 
 export const generateQuote = (
@@ -324,87 +211,111 @@ export const generateQuote = (
     action: 'download' | 'preview' = 'download'
 ) => {
     const doc = new jsPDF();
+    let y = addHeader(doc, 'QUOTATION', quote.quote_number);
 
-    // Header
-    doc.setFontSize(22);
-    doc.setTextColor(0, 81, 165);
-    doc.text('Condon Dairy Services', 20, 20);
-
-    doc.setFontSize(10);
-    doc.setTextColor(100);
-    doc.text('123 Dairy Road, Cork', 20, 28);
-    doc.text('VAT Reg: IE 12345678L', 20, 33);
-
-    // Title
-    doc.setFontSize(24);
+    // Customer Info
     doc.setTextColor(0);
-    doc.text('QUOTE', 140, 25);
-
     doc.setFontSize(10);
-    doc.text(`Quote #: ${quote.quote_number}`, 140, 35);
-    doc.text(`Date: ${new Date(quote.date_issued).toLocaleDateString()}`, 140, 40);
-    doc.text(`Valid Until: ${quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : '30 Days'}`, 140, 45);
-
-    // Customer
-    doc.setFontSize(12);
-    doc.text('Quote For:', 20, 50);
-    doc.setFontSize(10);
-    doc.text(customer.name, 20, 56);
-    if (customer.address) doc.text(customer.address, 20, 62);
-
-    // Items Header
-    let y = 85;
-    doc.setFillColor(240, 240, 240);
-    doc.rect(20, y - 5, 170, 8, 'F');
     doc.setFont('helvetica', 'bold');
-    doc.text('Description', 25, y);
-    doc.text('Qty', 130, y);
-    doc.text('Price', 150, y);
-    doc.text('Total', 175, y);
-
-    y += 10;
+    doc.text('QUOTE FOR:', 20, y);
     doc.setFont('helvetica', 'normal');
+    doc.text(customer.name, 20, y + 6);
+    if (customer.address) doc.text(customer.address, 20, y + 12);
 
-    items.forEach((item) => {
-        doc.text(item.description, 25, y);
-        doc.text(item.quantity.toString(), 130, y);
-        doc.text(`€${item.unit_price.toFixed(2)}`, 150, y);
-        doc.text(`€${item.total.toFixed(2)}`, 175, y);
-        y += 8;
+    doc.setFont('helvetica', 'bold');
+    doc.text('QUOTE DETAILS:', 140, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date Issued: ${new Date(quote.date_issued).toLocaleDateString('en-GB')}`, 140, y + 6);
+    doc.text(`Valid Until: ${quote.valid_until ? new Date(quote.valid_until).toLocaleDateString('en-GB') : '30 Days'}`, 140, y + 12);
+
+    y += 30;
+
+    autoTable(doc, {
+        startY: y,
+        head: [['Description', 'Quantity', 'Price', 'Total']],
+        body: items.map(i => [i.description, i.quantity, `€${i.unit_price.toFixed(2)}`, `€${i.total.toFixed(2)}`]),
+        headStyles: { fillColor: [0, 81, 165], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+            1: { halign: 'center' },
+            2: { halign: 'right' },
+            3: { halign: 'right' }
+        }
     });
 
-    // Totals
-    y += 10;
-    doc.line(20, y, 190, y);
-    y += 10;
+    // @ts-ignore
+    y = doc.lastAutoTable.finalY + 10;
 
-    const xLabel = 130;
-    const xValue = 170;
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const xLabel = 140;
+    const xValue = 190;
 
     doc.text('Subtotal:', xLabel, y);
-    doc.text(`€${quote.subtotal.toFixed(2)}`, xValue, y);
-    y += 8;
+    doc.text(`€${quote.subtotal.toFixed(2)}`, xValue, y, { align: 'right' });
+    y += 7;
 
     doc.text(`VAT @ ${quote.vat_rate || 13.5}%:`, xLabel, y);
-    doc.text(`€${quote.vat_amount.toFixed(2)}`, xValue, y);
-    y += 12;
+    doc.text(`€${quote.vat_amount.toFixed(2)}`, xValue, y, { align: 'right' });
+    y += 10;
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
     doc.text('TOTAL:', xLabel, y);
-    doc.text(`€${quote.total_amount.toFixed(2)}`, xValue, y);
+    doc.text(`€${quote.total_amount.toFixed(2)}`, xValue, y, { align: 'right' });
 
-    // Footer
-    doc.setFontSize(8);
-    doc.setTextColor(150);
+    addFooter(doc, 'This quotation is subject to Condon Dairy Services terms and conditions and is valid for 30 days.');
+
+    return action === 'preview' ? doc.output('datauristring') : doc.save(`Quote-${quote.quote_number}.pdf`);
+};
+
+export const generateOneTimeInvoice = (
+    data: any,
+    action: 'download' | 'preview' = 'download'
+) => {
+    const doc = new jsPDF();
+    const { customerName, description, labourTotal, partsCost, additional, total, date } = data;
+    const invNum = `INV-QUICK-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    let y = addHeader(doc, 'TAX INVOICE', invNum, 'UNPAID');
+
+    doc.setTextColor(0);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE TO:', 20, y);
     doc.setFont('helvetica', 'normal');
-    const footerY = 270;
-    doc.text('This quote is valid for 30 days from the date of issue.', 20, footerY);
-    doc.text('Subject to Condon Dairy Services Terms & Conditions.', 20, footerY + 5);
+    doc.text(customerName, 20, y + 6);
 
-    if (action === 'preview') {
-        return doc.output('datauristring');
-    } else {
-        doc.save(`Quote-${quote.quote_number}.pdf`);
-    }
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE DETAILS:', 140, y);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Date: ${date || new Date().toLocaleDateString('en-GB')}`, 140, y + 6);
+    doc.text(`VAT No: IE 12345678L`, 140, y + 12);
+
+    y += 30;
+
+    autoTable(doc, {
+        startY: y,
+        head: [['Work Description', 'Amount']],
+        body: [
+            [description, ''],
+            ['Labour Charges', `€${(labourTotal || 0).toFixed(2)}`],
+            ['Parts & Materials', `€${(partsCost || 0).toFixed(2)}`],
+            ['Additional Charges', `€${(additional || 0).toFixed(2)}`]
+        ],
+        headStyles: { fillColor: [0, 81, 165], textColor: [255, 255, 255] },
+        styles: { fontSize: 10 }
+    });
+
+    // @ts-ignore
+    y = doc.lastAutoTable.finalY + 10;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text('TOTAL:', 140, y);
+    doc.text(`€${total.toFixed(2)}`, 190, y, { align: 'right' });
+
+    addFooter(doc);
+
+    return action === 'preview' ? doc.output('datauristring') : doc.save(`${invNum}.pdf`);
 };

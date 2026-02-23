@@ -170,7 +170,7 @@ const Team = () => {
                                     <div className="w-12 h-12 bg-blue-50 text-delaval-blue rounded-full flex items-center justify-center font-bold text-xl">
                                         {eng.name.substring(0, 2).toUpperCase()}
                                     </div>
-                                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${eng.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
+                                    <div className={`px-2 py-1 rounded-full text-xs font-semibold ${eng.role === 'Admin' ? 'bg-delaval-blue text-white' : 'bg-blue-100 text-blue-800'}`}>
                                         {eng.role}
                                     </div>
                                 </div>

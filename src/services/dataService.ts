@@ -29,6 +29,22 @@ export const dataService = {
         }
     },
 
+    async getJobById(id: string): Promise<Job | null> {
+        if (!isSupabaseConfigured()) return null;
+        try {
+            const { data, error } = await supabase
+                .from('jobs')
+                .select('*, customers(*)')
+                .eq('id', id)
+                .single();
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error fetching job by ID:', error);
+            return null;
+        }
+    },
+
     async getCustomers(): Promise<Customer[]> {
         if (!isSupabaseConfigured()) return [];
 
@@ -59,6 +75,31 @@ export const dataService = {
             console.error('Error fetching invoices:', error);
             return [];
         }
+    },
+
+    async getJobItems(jobId: string): Promise<any[]> {
+        if (!isSupabaseConfigured()) return [];
+        try {
+            const { data, error } = await supabase
+                .from('job_items')
+                .select('*')
+                .eq('job_id', jobId);
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error fetching job items:', error);
+            return [];
+        }
+    },
+
+    async addJobItem(item: any): Promise<{ data: any, error: any }> {
+        if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
+        return await supabase.from('job_items').insert([item]).select().single();
+    },
+
+    async addJobItems(items: any[]): Promise<{ data: any, error: any }> {
+        if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
+        return await supabase.from('job_items').insert(items).select();
     },
 
     async getEngineers(): Promise<any[]> {

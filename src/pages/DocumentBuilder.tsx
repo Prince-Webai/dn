@@ -307,7 +307,7 @@ const DocumentBuilder = () => {
                         total: item.quantity * item.unitPrice
                     })),
                     'preview'
-                );
+                ) as string;
             } else {
                 pdfData = generateInvoice(
                     {
@@ -316,13 +316,14 @@ const DocumentBuilder = () => {
                         job_number: 9999,
                         customer_id: customerToUse.id,
                         status: 'completed'
-                    },
+                    } as any,
                     customerToUse,
                     customDescription || 'Services Rendered',
                     vatRate,
                     totalAmount,
-                    'preview'
-                );
+                    'preview',
+                    'DRAFT'
+                ) as string;
             }
 
             if (pdfData) {
