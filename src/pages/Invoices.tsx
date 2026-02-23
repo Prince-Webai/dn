@@ -197,7 +197,7 @@ const Invoices = () => {
     // --- Payment Handlers ---
     const openPaymentModal = (invoice: Invoice) => {
         setPaymentInvoice(invoice);
-        setPaymentAmount(invoice.total_amount - (invoice.amount_paid || 0));
+        setPaymentAmount((invoice.total_amount - (invoice.amount_paid || 0)).toFixed(2));
         setIsPaymentOpen(true);
     };
 
@@ -643,21 +643,21 @@ const Invoices = () => {
                         <div className="flex flex-wrap gap-2 mt-3">
                             <button
                                 type="button"
-                                onClick={() => setPaymentAmount(paymentInvoice ? Number((paymentInvoice.total_amount * 0.25).toFixed(2)) : 0)}
+                                onClick={() => setPaymentAmount(paymentInvoice ? (paymentInvoice.total_amount * 0.25).toFixed(2) : '')}
                                 className="px-3 py-1.5 text-xs font-bold rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200"
                             >
                                 25% (Deposit)
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setPaymentAmount(paymentInvoice ? Number((paymentInvoice.total_amount * 0.50).toFixed(2)) : 0)}
+                                onClick={() => setPaymentAmount(paymentInvoice ? (paymentInvoice.total_amount * 0.50).toFixed(2) : '')}
                                 className="px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors border border-indigo-200"
                             >
                                 50% (Half)
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setPaymentAmount(paymentInvoice ? Number((paymentInvoice.total_amount - (paymentInvoice.amount_paid || 0)).toFixed(2)) : 0)}
+                                onClick={() => setPaymentAmount(paymentInvoice ? (paymentInvoice.total_amount - (paymentInvoice.amount_paid || 0)).toFixed(2) : '')}
                                 className="px-3 py-1.5 text-xs font-bold rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors border border-green-200"
                             >
                                 100% (Full)
