@@ -356,7 +356,7 @@ export const generateStatement = (job: Job | null, items: JobItem[], customer: C
             String(item?.description || 'N/A'),
             String(item?.quantity || 1),
             `€${(item?.unit_price || 0).toFixed(2)}`,
-            `€${(item?.total || 0).toFixed(2)}`
+            `€${(item?.total || (Number(item?.quantity || 0) * Number(item?.unit_price || 0)) || 0).toFixed(2)}`
         ]),
         theme: 'plain',
         styles: { fontSize: 10, font: "helvetica" },
@@ -364,7 +364,7 @@ export const generateStatement = (job: Job | null, items: JobItem[], customer: C
         columnStyles: { 3: { halign: 'right' } }
     });
 
-    const subtotal = statement.total_amount || items.reduce((sum, item) => sum + item.total, 0);
+    const subtotal = statement.total_amount || (items || []).reduce((sum, item) => sum + (item.total || (item.quantity * item.unit_price) || 0), 0);
     // @ts-ignore
     y = doc.lastAutoTable.finalY + 15;
     doc.setFont("helvetica", "bold");

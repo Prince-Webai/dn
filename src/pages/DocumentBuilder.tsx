@@ -233,6 +233,7 @@ const DocumentBuilder = () => {
                         description: item.description,
                         quantity: item.quantity,
                         unit_price: item.unitPrice,
+                        total: item.quantity * item.unitPrice,
                         type: 'service' // Default type
                     }));
                     const { error: itemsError } = await supabase.from('invoice_items').insert(itemsToInsert);
@@ -260,6 +261,7 @@ const DocumentBuilder = () => {
                             description: item.description,
                             quantity: item.quantity,
                             unit_price: item.unitPrice,
+                            total: item.quantity * item.unitPrice,
                             type: 'service'
                         }));
                         await supabase.from('job_items').insert(jobItemsToInsert);

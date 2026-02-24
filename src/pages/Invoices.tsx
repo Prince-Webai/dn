@@ -104,7 +104,10 @@ const Invoices = () => {
                 if (jobItems) items = jobItems;
             }
 
-            const pdfData = generateStatement(statement.jobs as any, items, statement.customers, statement, action) as unknown as string;
+            const finalJob = Array.isArray(statement.jobs) ? statement.jobs[0] : statement.jobs;
+            const finalCustomer = Array.isArray(statement.customers) ? statement.customers[0] : statement.customers;
+
+            const pdfData = generateStatement(finalJob as any, items, finalCustomer as any, statement, action) as unknown as string;
             if (pdfData && action === 'preview') {
                 window.open(pdfData, '_blank', 'noopener,noreferrer');
             }
