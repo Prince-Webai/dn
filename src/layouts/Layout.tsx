@@ -5,7 +5,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import Modal from '../components/Modal';
-import logoImg from '../assets/logo.png';
+import logoImg from '../assets/logo_v2.png';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -90,17 +90,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
     return (
         <div className="min-h-screen bg-[#F8FAFB] font-sans text-[#1a1a1a]">
-            {/* Header - Matching Prototype Gradient */}
-            <header className="sticky top-0 z-[1000] border-b-4 border-delaval-accent shadow-[0_8px_32px_rgba(0,81,165,0.3)] backdrop-blur-3xl"
-                style={{ background: 'linear-gradient(135deg, #003875 0%, #0051A5 50%, #0066CC 100%)' }}>
-                <div className="max-w-[1600px] mx-auto px-8 py-6 flex justify-between items-center flex-wrap gap-4">
+            <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white shadow-sm">
+                <div className="max-w-[1600px] mx-auto px-8 py-2 flex justify-between items-center flex-wrap gap-4">
 
                     {/* Logo Section */}
-                    <div className="flex items-center gap-4">
-                        <img src={logoImg} alt="Tony Condon Dairy Services" className="h-[50px] w-auto rounded-lg bg-white p-1 shadow-[0_4px_16px_rgba(255,255,255,0.3)]" />
-                        <div className="flex flex-col gap-1 text-white">
-                            <h1 className="font-display text-xl font-bold tracking-tight leading-tight">Tony Condon<br />Dairy Services</h1>
-                        </div>
+                    <div className="flex items-center">
+                        <img
+                            src={logoImg}
+                            alt="Tony Condon Dairy Services"
+                            className="h-[65px] w-auto mix-blend-multiply transition-transform duration-300 hover:scale-105"
+                        />
                     </div>
 
                     {/* User Info & Mobile Toggle */}
@@ -109,18 +108,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                             onClick={() => {
                                 setIsProfileModalOpen(true);
                             }}
-                            className="hidden md:flex items-center gap-3 px-4 py-2 bg-white/15 rounded-full backdrop-blur-md border border-white/10 cursor-pointer hover:bg-white/20 transition-colors">
-                            <div className="w-9 h-9 rounded-full bg-white text-[#0051A5] flex items-center justify-center font-bold">
+                            className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-full border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                            <div className="w-9 h-9 rounded-full bg-delaval-blue text-white flex items-center justify-center font-bold">
                                 <User size={20} />
                             </div>
-                            <div className="text-white text-sm font-medium pr-2">
+                            <div className="text-slate-700 text-sm font-medium pr-2">
                                 {profileForm.name}
                             </div>
                         </div>
 
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="lg:hidden p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+                            className="lg:hidden p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                         >
                             <Menu size={28} />
                         </button>

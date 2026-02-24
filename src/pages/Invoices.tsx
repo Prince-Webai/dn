@@ -31,6 +31,8 @@ const Invoices = () => {
     // Edit Invoice Form State
     const [description, setDescription] = useState('');
     const [vatRate, setVatRate] = useState(13.5);
+    const [dueDate, setDueDate] = useState('');
+    const [editItems, setEditItems] = useState<any[]>([]);
 
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -83,24 +85,26 @@ const Invoices = () => {
     };
 
     const handleDownloadStatement = async (statement: Statement, action: 'download' | 'preview' = 'download') => {
-        if (!statement.jobs || !statement.customers) {
-            showToast('Error', 'Missing job or customer data for this statement.', 'error');
+        if (!statement.customers) {
+            console.error('Statement missing customer data:', statement);
+            showToast('Error', 'Missing customer reference for this statement.', 'error');
             return;
         }
 
         try {
-            // Fetch Job Items to regenerate PDF
-            const { data: items } = await supabase
-                .from('job_items')
-                .select('*')
-                .eq('job_id', statement.job_id);
+            let items: any[] = [];
 
-            if (!items) {
-                showToast('Error', 'Could not fetch job items.', 'error');
-                return;
+            // Only try to fetch if job_id exists
+            if (statement.job_id) {
+                const { data: jobItems } = await supabase
+                    .from('job_items')
+                    .select('*')
+                    .eq('job_id', statement.job_id);
+
+                if (jobItems) items = jobItems;
             }
 
-            const pdfData = generateStatement(statement.jobs, items, statement.customers, action) as unknown as string;
+            const pdfData = generateStatement(statement.jobs as any, items, statement.customers, statement, action) as unknown as string;
             if (pdfData && action === 'preview') {
                 window.open(pdfData, '_blank', 'noopener,noreferrer');
             }
@@ -219,11 +223,16 @@ const Invoices = () => {
     };
 
     // --- Edit Handlers ---
-    const openEditModal = (invoice: Invoice) => {
+    const openEditModal = async (invoice: Invoice) => {
         setEditingInvoice(invoice);
-        // Pre-fill form if needed, or use editingInvoice directly in modal
         setDescription(invoice.custom_description || '');
         setVatRate(invoice.vat_rate || 13.5);
+        setDueDate(invoice.due_date || '');
+
+        // Fetch existing items
+        const items = await dataService.getInvoiceItems(invoice.id);
+        setEditItems(items || []);
+
         setIsEditOpen(true);
     };
 
@@ -231,22 +240,51 @@ const Invoices = () => {
         e.preventDefault();
         if (!editingInvoice) return;
 
-        const { error } = await dataService.updateInvoice(editingInvoice.id, {
+        // Recalculate totals
+        const subtotal = editItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0);
+        const vatAmount = subtotal * (vatRate / 100);
+        const totalAmount = subtotal + vatAmount;
+
+        // 1. Update Invoice Header
+        const { error: invError } = await dataService.updateInvoice(editingInvoice.id, {
             custom_description: description,
-            vat_rate: vatRate
-            // Recalculate totals? complicated if we don't have items. 
-            // For now, allow editing description/vat only implies re-calc?
-            // If we change VAT, we must recalc totals.
-            // Simplified: Just update text for now to avoid breaking totals without items.
+            vat_rate: vatRate,
+            due_date: dueDate,
+            subtotal,
+            vat_amount: vatAmount,
+            total_amount: totalAmount
         });
 
-        if (!error) {
-            showToast('Success', 'Invoice updated', 'success');
-            setIsEditOpen(false);
-            fetchData();
-        } else {
-            showToast('Error', 'Failed to update invoice', 'error');
+        if (invError) {
+            showToast('Error', 'Failed to update invoice header', 'error');
+            return;
         }
+
+        // 2. Update Items (Delete and Re-insert)
+        const { error: delError } = await supabase.from('invoice_items').delete().eq('invoice_id', editingInvoice.id);
+        if (delError) {
+            showToast('Error', 'Failed to update items', 'error');
+            return;
+        }
+
+        if (editItems.length > 0) {
+            const itemsToInsert = editItems.map(item => ({
+                invoice_id: editingInvoice.id,
+                description: item.description,
+                quantity: item.quantity,
+                unit_price: item.unit_price,
+                type: item.type || 'service'
+            }));
+            const { error: insError } = await dataService.addInvoiceItems(itemsToInsert);
+            if (insError) {
+                showToast('Error', 'Failed to re-insert items', 'error');
+                return;
+            }
+        }
+
+        showToast('Success', 'Invoice updated successfully', 'success');
+        setIsEditOpen(false);
+        fetchData();
     };
 
     // --- Reminder Handler ---
@@ -645,15 +683,27 @@ const Invoices = () => {
 
             {/* Edit Invoice Modal */}
             <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Invoice Details">
-                <form onSubmit={handleEditSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">Description</label>
-                        <input
-                            className="form-input w-full border border-slate-300 rounded-lg px-4 py-2"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                        />
+                <form onSubmit={handleEditSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Description</label>
+                            <input
+                                className="form-input w-full border border-slate-300 rounded-lg px-4 py-2"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-slate-700 mb-1">Due Date</label>
+                            <input
+                                type="date"
+                                className="form-input w-full border border-slate-300 rounded-lg px-4 py-2"
+                                value={dueDate}
+                                onChange={(e) => setDueDate(e.target.value)}
+                            />
+                        </div>
                     </div>
+
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-1">VAT Rate (%)</label>
                         <select
@@ -666,9 +716,87 @@ const Invoices = () => {
                             <option value={0}>0%</option>
                         </select>
                     </div>
-                    <div className="flex justify-end gap-3 pt-4">
-                        <button type="button" onClick={() => setIsEditOpen(false)} className="btn btn-secondary">Cancel</button>
-                        <button type="submit" className="btn btn-primary">Save Changes</button>
+
+                    {/* Line Items Management */}
+                    <div className="border-t border-slate-100 pt-4">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-sm font-black uppercase tracking-wider text-slate-400">Products / Services</h3>
+                            <button
+                                type="button"
+                                onClick={() => setEditItems([...editItems, { description: '', quantity: 1, unit_price: 0, type: 'service' }])}
+                                className="text-xs font-bold text-delaval-blue flex items-center gap-1 hover:underline"
+                            >
+                                <Plus size={14} /> Add Item
+                            </button>
+                        </div>
+
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                            {editItems.map((item, idx) => (
+                                <div key={idx} className="flex gap-2 items-start bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <div className="flex-1">
+                                        <input
+                                            placeholder="Description"
+                                            className="w-full text-xs font-medium bg-transparent border-b border-slate-200 focus:border-delaval-blue outline-none py-1"
+                                            value={item.description}
+                                            onChange={(e) => {
+                                                const newItems = [...editItems];
+                                                newItems[idx].description = e.target.value;
+                                                setEditItems(newItems);
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="w-16">
+                                        <input
+                                            type="number"
+                                            placeholder="Qty"
+                                            className="w-full text-xs font-medium bg-transparent border-b border-slate-200 focus:border-delaval-blue outline-none py-1"
+                                            value={item.quantity}
+                                            onChange={(e) => {
+                                                const newItems = [...editItems];
+                                                newItems[idx].quantity = parseFloat(e.target.value) || 0;
+                                                setEditItems(newItems);
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="w-20">
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="Price"
+                                            className="w-full text-xs font-medium bg-transparent border-b border-slate-200 focus:border-delaval-blue outline-none py-1"
+                                            value={item.unit_price}
+                                            onChange={(e) => {
+                                                const newItems = [...editItems];
+                                                newItems[idx].unit_price = parseFloat(e.target.value) || 0;
+                                                setEditItems(newItems);
+                                            }}
+                                        />
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditItems(editItems.filter((_, i) => i !== idx))}
+                                        className="text-red-400 hover:text-red-600 p-1"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                            {editItems.length === 0 && (
+                                <div className="text-center py-4 text-xs text-slate-400 italic">No items. Click "Add Item" to start.</div>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex justify-between items-center">
+                        <div className="text-sm font-bold text-slate-600">Total Est.</div>
+                        <div className="text-lg font-black text-delaval-blue">
+                            €{(editItems.reduce((sum, item) => sum + (item.quantity * item.unit_price), 0) * (1 + vatRate / 100)).toFixed(2)}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <button type="button" onClick={() => setIsEditOpen(false)} className="btn btn-secondary px-6">Cancel</button>
+                        <button type="submit" className="btn btn-primary px-8 shadow-lg shadow-blue-900/20">Save Changes</button>
                     </div>
                 </form>
             </Modal>

@@ -240,6 +240,43 @@ const DocumentBuilder = () => {
                 }
 
                 showToast('Invoice Created', `Invoice ${nextNumber} created.`, 'success');
+
+                // AUTO-GENERATE STATEMENT
+                try {
+                    // Create a hidden "Job" record to store the items for the statement
+                    const { data: jobData, error: jobError } = await supabase.from('jobs').insert([{
+                        customer_id: finalCustomerId,
+                        service_type: docType === 'invoice' ? 'Detailed Invoice Statement' : 'Quote Statement',
+                        status: 'completed',
+                        date_completed: new Date().toISOString(),
+                        notes: `Auto-generated from ${docType} ${nextNumber}`
+                    }]).select().single();
+
+                    if (jobError) throw jobError;
+
+                    if (jobData && docData.items.length > 0) {
+                        const jobItemsToInsert = docData.items.map(item => ({
+                            job_id: jobData.id,
+                            description: item.description,
+                            quantity: item.quantity,
+                            unit_price: item.unitPrice,
+                            type: 'service'
+                        }));
+                        await supabase.from('job_items').insert(jobItemsToInsert);
+                    }
+
+                    const nextStmtNumber = await getNextNumber('statements', 'ST');
+                    await supabase.from('statements').insert([{
+                        statement_number: nextStmtNumber,
+                        customer_id: finalCustomerId,
+                        job_id: jobData?.id,
+                        date_generated: new Date().toISOString().split('T')[0],
+                        total_amount: totalAmount,
+                    }]);
+                } catch (stmtError) {
+                    console.error('Error auto-generating statement:', stmtError);
+                }
+
                 navigate('/invoices');
             }
 

@@ -62,7 +62,27 @@ const Team = () => {
 
                 setEngineers(engineers.map(eng => eng.id === editingId ? { ...eng, ...newEngineer } : eng));
             } else {
-                // Create new
+                // Create Suapbase Auth user with default password user123
+                const { error: authError } = await supabase.auth.signUp({
+                    email: newEngineer.email,
+                    password: 'user123',
+                    options: {
+                        data: {
+                            full_name: newEngineer.name,
+                            role: newEngineer.role
+                        }
+                    }
+                });
+
+                if (authError) {
+                    console.error('Auth signup error:', authError);
+                    // If user already exists, we might get an error, but we should continue or notify
+                    if (!authError.message.includes('already registered')) {
+                        throw authError;
+                    }
+                }
+
+                // Create record in engineers table
                 const { data, error } = await supabase
                     .from('engineers')
                     .insert([newEngineer])

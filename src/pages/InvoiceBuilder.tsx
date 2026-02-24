@@ -77,7 +77,7 @@ const InvoiceBuilder = () => {
         const total = calculateTotal();
         const nextNumber = await getNextNumber('invoices', 'INV');
 
-        generateInvoice(nextNumber, customer, description, vatRate, total, undefined, 'sent', job.engineer_name);
+        generateInvoice(nextNumber, customer, jobItems, vatRate, total, 'download', 'sent', job.engineer_name);
 
         const { error } = await supabase.from('invoices').insert([{
             invoice_number: nextNumber,
@@ -104,7 +104,7 @@ const InvoiceBuilder = () => {
     const handlePreviewInvoice = () => {
         if (!job || !customer) return;
         const total = calculateTotal();
-        const pdfData = generateInvoice('PREVIEW', customer, description, vatRate, total, 'preview', 'DRAFT', job.engineer_name) as unknown as string;
+        const pdfData = generateInvoice('PREVIEW', customer, jobItems, vatRate, total, 'preview', 'DRAFT', job.engineer_name) as unknown as string;
         if (pdfData) {
             window.open(pdfData, '_blank', 'noopener,noreferrer');
         }
@@ -112,7 +112,13 @@ const InvoiceBuilder = () => {
 
     const handlePreviewStatement = () => {
         if (!job || !customer) return;
-        const pdfData = generateStatement(job, jobItems, customer, 'preview') as unknown as string;
+        // The signature is (job, items, customer, statement, action)
+        const dummyStatement = {
+            statement_number: 'PREVIEW',
+            total_amount: calculateTotal(),
+            date_generated: new Date().toISOString()
+        } as any;
+        const pdfData = generateStatement(job, jobItems, customer, dummyStatement, 'preview') as unknown as string;
         if (pdfData) {
             window.open(pdfData, '_blank', 'noopener,noreferrer');
         }
@@ -122,15 +128,17 @@ const InvoiceBuilder = () => {
         if (!job || !customer) return;
         const nextNumber = await getNextNumber('statements', 'STMT');
 
-        generateStatement(job, jobItems, customer, undefined);
-
-        const { error } = await supabase.from('statements').insert([{
+        const stmtDataToSave = {
             statement_number: nextNumber,
             customer_id: job.customer_id,
             job_id: job.id,
             date_generated: new Date().toISOString(),
             total_amount: calculateTotal()
-        }]);
+        };
+
+        generateStatement(job, jobItems, customer, stmtDataToSave as any, 'download');
+
+        const { error } = await supabase.from('statements').insert([stmtDataToSave]);
 
         if (!error) {
             showToast('Success', `Statement ${nextNumber} saved.`, 'success');

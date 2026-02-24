@@ -19,6 +19,7 @@ const Quotes = () => {
             const { data, error } = await supabase
                 .from('quotes')
                 .select('*, customers(*), quote_items(*)')
+                .neq('status', 'accepted')
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -47,7 +48,8 @@ const Quotes = () => {
 
     const convertToInvoice = async (quote: Quote) => {
         try {
-            const { error } = await supabase.from('invoices').insert([{
+            // 1. Create Invoice
+            const { data: invData, error: invError } = await supabase.from('invoices').insert([{
                 invoice_number: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(3, '0')}`,
                 customer_id: quote.customer_id,
                 date_issued: new Date().toISOString().split('T')[0],
@@ -58,11 +60,52 @@ const Quotes = () => {
                 total_amount: quote.total_amount,
                 custom_description: quote.description,
                 status: 'sent'
-            }]);
-            if (error) throw error;
-            // Update quote status to accepted
+            }]).select().single();
+
+            if (invError) throw invError;
+
+            // 2. Transfer Line Items
+            if (quote.quote_items && quote.quote_items.length > 0 && invData) {
+                const itemsToInsert = quote.quote_items.map(item => ({
+                    invoice_id: invData.id,
+                    description: item.description,
+                    quantity: item.quantity,
+                    unit_price: item.unit_price,
+                    type: 'service'
+                }));
+                const { error: itemsError } = await supabase.from('invoice_items').insert(itemsToInsert);
+                if (itemsError) throw itemsError;
+            }
+
+            // 3. Mark Quote as Accepted (will hide it from view)
             await supabase.from('quotes').update({ status: 'accepted' }).eq('id', quote.id);
-            showToast('Converted!', `Quote ${quote.quote_number} converted to invoice`, 'success');
+
+            // 4. Trigger Auto-Statement
+            try {
+                // Get next statement number (simplifying for now, ideally we'd use getNextNumber helper if available here)
+                const { data: stData } = await supabase
+                    .from('statements')
+                    .select('statement_number')
+                    .order('created_at', { ascending: false })
+                    .limit(1);
+
+                let nextStNumber = 'ST-2024-001';
+                if (stData && stData.length > 0) {
+                    const lastNum = parseInt(stData[0].statement_number.split('-').pop() || '0');
+                    nextStNumber = `ST-${new Date().getFullYear()}-${String(lastNum + 1).padStart(3, '0')}`;
+                }
+
+                await supabase.from('statements').insert([{
+                    statement_number: nextStNumber,
+                    customer_id: quote.customer_id,
+                    date_generated: new Date().toISOString().split('T')[0],
+                    total_amount: quote.total_amount,
+                }]);
+            } catch (stmtError) {
+                console.error('Error auto-generating statement during conversion:', stmtError);
+            }
+
+            showToast('Converted!', `Quote ${quote.quote_number} converted to invoice and moved to Invoices`, 'success');
             fetchQuotes();
         } catch (error) {
             console.error('Error converting quote:', error);
