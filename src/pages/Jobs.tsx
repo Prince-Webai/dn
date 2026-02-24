@@ -8,6 +8,7 @@ import DatePicker from '../components/DatePicker';
 import SearchableSelect from '../components/SearchableSelect';
 import { dataService } from '../services/dataService';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 
 const Jobs = () => {
     const [jobs, setJobs] = useState<Job[]>([]);
@@ -30,6 +31,13 @@ const Jobs = () => {
     const [newItem, setNewItem] = useState({ description: '', quantity: 1, unit_price: 0, type: 'part' as const });
     const [isAddingCustom, setIsAddingCustom] = useState(false);
 
+    // Inline Customer Creation State
+    const [isAddingNewCustomer, setIsAddingNewCustomer] = useState(false);
+    const [newCustomerData, setNewCustomerData] = useState({ name: '', phone: '', email: '', address: '' });
+
+    const { user } = useAuth();
+    const [engineers, setEngineers] = useState<any[]>([]);
+
     useEffect(() => {
         loadData();
     }, [activeTab]); // Reload when tab changes (server-side filter)
@@ -46,7 +54,9 @@ const Jobs = () => {
     };
 
     const fetchJobs = async () => {
-        const data = await dataService.getJobs(activeTab);
+        const userRole = user?.user_metadata?.role;
+        const engineerName = userRole === 'Engineer' ? (user?.user_metadata?.name || user?.email?.split('@')[0]) : undefined;
+        const data = await dataService.getJobs(activeTab, engineerName);
         setJobs(data);
     };
 
@@ -55,7 +65,6 @@ const Jobs = () => {
         setCustomers(data);
     };
 
-    const [engineers, setEngineers] = useState<any[]>([]);
     const fetchEngineers = async () => {
         const data = await dataService.getEngineers();
         setEngineers(data);
@@ -118,10 +127,33 @@ const Jobs = () => {
     const handleAddJob = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            let finalCustomerId = newJob.customer_id;
+
+            // Handle inline customer creation
+            if (isAddingNewCustomer && newCustomerData.name) {
+                const { data: custData, error: custError } = await supabase
+                    .from('customers')
+                    .insert([{
+                        name: newCustomerData.name,
+                        phone: newCustomerData.phone || null,
+                        email: newCustomerData.email || null,
+                        address: newCustomerData.address || null
+                    }])
+                    .select()
+                    .single();
+
+                if (custError) throw custError;
+                if (!custData) throw new Error("Failed to create customer");
+
+                finalCustomerId = custData.id;
+            }
+
+            const jobToSave = { ...newJob, customer_id: finalCustomerId };
+
             let jobId = editingId;
             if (editingId) {
                 // Update
-                const { error } = await dataService.updateJob(editingId, newJob);
+                const { error } = await dataService.updateJob(editingId, jobToSave);
                 if (error) throw error;
 
                 // For updates, we'll keep it simple: delete old items and add new ones
@@ -129,7 +161,7 @@ const Jobs = () => {
                 await supabase.from('job_items').delete().eq('job_id', editingId);
             } else {
                 // Create
-                const { data, error } = await dataService.createJob(newJob);
+                const { data, error } = await dataService.createJob(jobToSave);
                 if (error) throw error;
                 if (!data) throw new Error("Failed to create job");
                 jobId = data.id;
@@ -335,21 +367,70 @@ const Jobs = () => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 title={editingId ? "Edit Job" : "Create New Job"}
+                size="wide"
             >
-                <form onSubmit={handleAddJob} className="space-y-4">
-                    <div>
-                        <SearchableSelect
-                            label="Customer"
-                            options={customers.map(c => ({ value: c.id, label: c.name }))}
-                            value={newJob.customer_id || ''}
-                            onChange={val => setNewJob({ ...newJob, customer_id: val })}
-                            placeholder="Search and select a customer..."
-                            icon={<User size={16} />}
-                        />
+                <form onSubmit={handleAddJob} className="space-y-4 md:space-y-6">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-slate-900">Customer Details</h3>
+                            <button
+                                type="button"
+                                onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
+                                className="text-sm font-bold text-delaval-blue hover:text-blue-800 transition-colors"
+                            >
+                                {isAddingNewCustomer ? 'Select Existing Customer' : '+ Add New Customer'}
+                            </button>
+                        </div>
+
+                        {isAddingNewCustomer ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Customer Name / Farm *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
+                                        value={newCustomerData.name}
+                                        onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                                        placeholder="e.g. John Doe Farm"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                                    <input
+                                        type="tel"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
+                                        value={newCustomerData.phone || ''}
+                                        onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                                        placeholder="e.g. +353 87 123 4567"
+                                    />
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                                    <textarea
+                                        rows={2}
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
+                                        value={newCustomerData.address || ''}
+                                        onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                                        placeholder="Full address..."
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <SearchableSelect
+                                label="Select Existing Customer *"
+                                options={customers.map(c => ({ value: c.id, label: c.name }))}
+                                value={newJob.customer_id || ''}
+                                onChange={val => setNewJob({ ...newJob, customer_id: val })}
+                                placeholder="Search and select a customer..."
+                                icon={<User size={16} />}
+                            />
+                        )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="col-span-2">
+                    <div className="bg-white p-4 rounded-xl border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="md:col-span-2">
+                            <h3 className="font-bold text-slate-900 mb-4">Job Details</h3>
                             <SearchableSelect
                                 label="Service Type"
                                 options={[

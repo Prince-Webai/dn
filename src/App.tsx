@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Layout from './layouts/Layout'
 import Dashboard from './pages/Dashboard'
+import Pipeline from './pages/Pipeline'
 import Jobs from './pages/Jobs'
 import Customers from './pages/Customers'
 import Inventory from './pages/Inventory'
@@ -51,6 +52,13 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <Dashboard />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/pipeline" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <Pipeline />
                             </Layout>
                         </ProtectedRoute>
                     } />

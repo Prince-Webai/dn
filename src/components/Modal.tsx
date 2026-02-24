@@ -7,9 +7,10 @@ interface ModalProps {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
+    size?: 'default' | 'wide' | 'xl';
 }
 
-const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
+const Modal = ({ isOpen, onClose, title, children, size = 'default' }: ModalProps) => {
     const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -30,11 +31,15 @@ const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
 
     if (!isOpen) return null;
 
+    let maxWidthClass = 'max-w-2xl';
+    if (size === 'wide') maxWidthClass = 'max-w-4xl';
+    if (size === 'xl') maxWidthClass = 'max-w-6xl';
+
     return (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div
                 ref={modalRef}
-                className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden transform transition-all animate-in zoom-in-95 duration-200"
+                className={`bg-white rounded-xl shadow-xl w-full ${maxWidthClass} max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden transform transition-all animate-in zoom-in-95 duration-200`}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex-none p-6 border-b bg-white rounded-t-xl flex items-center justify-between">

@@ -7,7 +7,7 @@ const isSupabaseConfigured = () => {
 };
 
 export const dataService = {
-    async getJobs(status?: string): Promise<Job[]> {
+    async getJobs(status?: string, engineerName?: string): Promise<Job[]> {
         if (!isSupabaseConfigured()) return [];
 
         try {
@@ -18,6 +18,10 @@ export const dataService = {
 
             if (status && status !== 'all') {
                 query = query.eq('status', status);
+            }
+
+            if (engineerName) {
+                query = query.eq('engineer_name', engineerName);
             }
 
             const { data, error } = await query;

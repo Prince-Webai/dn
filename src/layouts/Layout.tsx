@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck } from 'lucide-react';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, Kanban } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -59,6 +58,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             items: [
                 { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
                 { icon: Wrench, label: 'Jobs & Services', path: '/jobs' },
+                { icon: Kanban, label: 'Pipeline', path: '/pipeline' },
                 { icon: Users, label: 'Customers', path: '/customers' },
             ]
         },

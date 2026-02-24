@@ -5,6 +5,7 @@ import { dataService } from '../services/dataService';
 import { Job, Customer } from '../types';
 import Modal from '../components/Modal';
 import DatePicker from '../components/DatePicker';
+import { useAuth } from '../context/AuthContext';
 
 const CalendarPage = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -23,10 +24,15 @@ const CalendarPage = () => {
         notes: ''
     });
 
+    const { user } = useAuth();
+
     useEffect(() => {
         const load = async () => {
+            const userRole = user?.user_metadata?.role;
+            const engineerName = userRole === 'Engineer' ? (user?.user_metadata?.name || user?.email?.split('@')[0]) : undefined;
+
             const [jobsData, custData, engData] = await Promise.all([
-                dataService.getJobs(),
+                dataService.getJobs(undefined, engineerName),
                 dataService.getCustomers(),
                 dataService.getEngineers()
             ]);
@@ -42,7 +48,10 @@ const CalendarPage = () => {
         try {
             const { error } = await dataService.createJob(newJob);
             if (error) throw error;
-            const data = await dataService.getJobs();
+
+            const userRole = user?.user_metadata?.role;
+            const engineerName = userRole === 'Engineer' ? (user?.user_metadata?.name || user?.email?.split('@')[0]) : undefined;
+            const data = await dataService.getJobs(undefined, engineerName);
             setJobs(data);
             setIsCreateModalOpen(false);
             setNewJob({

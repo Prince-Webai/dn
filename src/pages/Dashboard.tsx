@@ -6,6 +6,7 @@ import {
 import { Link } from 'react-router-dom';
 import { Job } from '../types';
 import { dataService } from '../services/dataService';
+import { useAuth } from '../context/AuthContext';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -16,6 +17,7 @@ const Dashboard = () => {
     });
     const [recentJobs, setRecentJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useAuth();
 
     useEffect(() => {
         fetchData();
@@ -24,9 +26,12 @@ const Dashboard = () => {
     const fetchData = async () => {
         try {
             setLoading(true);
+            const userRole = user?.user_metadata?.role;
+            const engineerName = userRole === 'Engineer' ? (user?.user_metadata?.name || user?.email?.split('@')[0]) : undefined;
+
             const [invoiceData, allJobs, inventoryArray] = await Promise.all([
                 dataService.getInvoices(),
-                dataService.getJobs(),
+                dataService.getJobs(undefined, engineerName),
                 dataService.getInventory()
             ]);
 

@@ -12,6 +12,7 @@ import { dataService } from '../services/dataService';
 import { Invoice, Job, InventoryItem } from '../types';
 import { useToast } from '../context/ToastContext';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 
 // Safe render helper
 const safeRender = (val: any): string => {
@@ -27,6 +28,7 @@ interface RevenueData {
 
 const Reports = () => {
     const { showToast } = useToast();
+    const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [revenueData, setRevenueData] = useState<RevenueData[]>([]);
     const [jobStatusData, setJobStatusData] = useState<any[]>([]);
@@ -48,9 +50,12 @@ const Reports = () => {
     const fetchAnalyticsData = async () => {
         setLoading(true);
         try {
+            const userRole = user?.user_metadata?.role;
+            const engineerName = userRole === 'Engineer' ? (user?.user_metadata?.name || user?.email?.split('@')[0]) : undefined;
+
             const [invoices, jobs, inventory] = await Promise.all([
                 dataService.getInvoices(),
-                dataService.getJobs(),
+                dataService.getJobs(undefined, engineerName),
                 dataService.getInventory()
             ]);
 
