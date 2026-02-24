@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Download, Mail, CheckCircle } from 'lucide-react';
+import { X, Download, Mail, CheckCircle, ExternalLink } from 'lucide-react';
 
 interface DocumentPreviewModalProps {
     isOpen: boolean;
@@ -25,6 +25,11 @@ const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
     onMarkAsSent
 }) => {
     if (!isOpen) return null;
+
+    const handleOpenInNewTab = () => {
+        if (!pdfDataUrl) return;
+        window.open(pdfDataUrl, '_blank', 'noopener,noreferrer');
+    };
 
     const handleDownload = () => {
         const link = document.createElement('a');
@@ -97,6 +102,13 @@ const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto justify-center sm:justify-end">
+                        <button
+                            onClick={handleOpenInNewTab}
+                            className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-all"
+                        >
+                            <ExternalLink size={18} /> Open in New Tab
+                        </button>
+
                         <button
                             onClick={handleDownload}
                             className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-lg transition-all"

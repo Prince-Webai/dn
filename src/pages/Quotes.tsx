@@ -5,16 +5,10 @@ import { supabase } from '../lib/supabase';
 import { Quote } from '../types';
 import { generateQuote } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
-import DocumentPreviewModal from '../components/DocumentPreviewModal';
 
 const Quotes = () => {
     const { showToast } = useToast();
     const [quotes, setQuotes] = useState<Quote[]>([]);
-
-    // Modal State
-    const [previewModalOpen, setPreviewModalOpen] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState('');
-    const [activeQuote, setActiveQuote] = useState<Quote | null>(null);
 
     useEffect(() => {
         fetchQuotes();
@@ -45,12 +39,9 @@ const Quotes = () => {
     const handleGeneratePDF = (quote: Quote) => {
         if (!quote.customers) return;
         const items = quote.quote_items || [];
-        const pdfData = generateQuote(quote, quote.customers, items, 'preview');
-
+        const pdfData = generateQuote(quote, quote.customers, items, 'preview') as unknown as string;
         if (pdfData) {
-            setPreviewUrl(pdfData);
-            setActiveQuote(quote);
-            setPreviewModalOpen(true);
+            window.open(pdfData, '_blank', 'noopener,noreferrer');
         }
     };
 
@@ -76,19 +67,6 @@ const Quotes = () => {
         } catch (error) {
             console.error('Error converting quote:', error);
             showToast('Error', 'Failed to convert quote to invoice', 'error');
-        }
-    };
-
-    const handleMarkAsSent = async () => {
-        if (!activeQuote) return;
-        const { error } = await supabase
-            .from('quotes')
-            .update({ status: 'pending' })
-            .eq('id', activeQuote.id);
-
-        if (!error) {
-            showToast('Quote Sent', 'Quote has been marked as pending', 'success');
-            fetchQuotes();
         }
     };
 
@@ -189,20 +167,6 @@ const Quotes = () => {
                     </table>
                 </div>
             </div>
-
-            {activeQuote && activeQuote.customers && (
-                <DocumentPreviewModal
-                    isOpen={previewModalOpen}
-                    onClose={() => setPreviewModalOpen(false)}
-                    pdfDataUrl={previewUrl}
-                    documentType="Quote"
-                    documentNumber={activeQuote.quote_number}
-                    customerName={activeQuote.customers.name}
-                    customerEmail={activeQuote.customers.email || undefined}
-                    amount={`€${activeQuote.total_amount.toLocaleString()}`}
-                    onMarkAsSent={activeQuote.status === 'draft' ? handleMarkAsSent : undefined}
-                />
-            )}
         </div>
     );
 };

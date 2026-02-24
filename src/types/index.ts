@@ -73,6 +73,18 @@ export interface Invoice {
     amount_paid?: number;
     payment_date?: string;
     customers?: Customer;
+    invoice_items?: InvoiceItem[];
+}
+
+export interface InvoiceItem {
+    id: string;
+    invoice_id: string;
+    inventory_id?: string;
+    description: string;
+    quantity: number;
+    unit_price: number;
+    total: number;
+    type: 'part' | 'labor' | 'service';
 }
 
 export interface Statement {

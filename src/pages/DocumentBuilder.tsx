@@ -3,10 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer, InventoryItem } from '../types';
 import { useToast } from '../context/ToastContext';
-import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import { generateInvoice, generateQuote } from '../lib/pdfGenerator';
-import DocumentPreviewModal from '../components/DocumentPreviewModal';
 
 const DocumentBuilder = () => {
     const navigate = useNavigate();
@@ -24,10 +23,6 @@ const DocumentBuilder = () => {
     // Customer mode state
     const [customerMode, setCustomerMode] = useState<'existing' | 'new'>('existing');
     const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '', address: '' });
-
-    // Preview state
-    const [previewModalOpen, setPreviewModalOpen] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState('');
 
     const [docData, setDocData] = useState({
         customerId: '',
@@ -217,7 +212,7 @@ const DocumentBuilder = () => {
             } else {
                 // INVOICE
                 const nextNumber = await getNextNumber('invoices', 'INV');
-                const { error: invError } = await supabase.from('invoices').insert([{
+                const { data: invData, error: invError } = await supabase.from('invoices').insert([{
                     invoice_number: nextNumber,
                     customer_id: finalCustomerId,
                     subtotal: subtotal,
@@ -228,9 +223,22 @@ const DocumentBuilder = () => {
                     status: 'sent',
                     date_issued: new Date().toISOString().split('T')[0],
                     due_date: docData.validUntil
-                }]);
+                }]).select().single();
 
                 if (invError) throw invError;
+
+                if (docData.items.length > 0 && invData) {
+                    const itemsToInsert = docData.items.map(item => ({
+                        invoice_id: invData.id,
+                        description: item.description,
+                        quantity: item.quantity,
+                        unit_price: item.unitPrice,
+                        type: 'service' // Default type
+                    }));
+                    const { error: itemsError } = await supabase.from('invoice_items').insert(itemsToInsert);
+                    if (itemsError) throw itemsError;
+                }
+
                 showToast('Invoice Created', `Invoice ${nextNumber} created.`, 'success');
                 navigate('/invoices');
             }
@@ -243,9 +251,9 @@ const DocumentBuilder = () => {
         }
     };
 
-    const handlePreview = async () => {
+    const handleGeneratePDF = async (action: 'download' | 'preview' = 'preview') => {
         if (docData.items.length === 0) {
-            showToast('Error', 'Please add at least one line item to preview', 'error');
+            showToast('Error', `Please add at least one line item to ${action}`, 'error');
             return;
         }
 
@@ -306,29 +314,30 @@ const DocumentBuilder = () => {
                         unit_price: item.unitPrice,
                         total: item.quantity * item.unitPrice
                     })),
-                    'preview'
-                ) as string;
+                    action
+                ) as unknown as string;
             } else {
                 pdfData = generateInvoice(
-                    {
-                        id: 'preview',
-                        created_at: new Date().toISOString(),
-                        job_number: 9999,
-                        customer_id: customerToUse.id,
-                        status: 'completed'
-                    } as any,
+                    'PREVIEW',
                     customerToUse,
-                    customDescription || 'Services Rendered',
+                    docData.items.map(item => ({
+                        id: Math.random().toString(),
+                        invoice_id: 'preview',
+                        description: item.description,
+                        quantity: item.quantity,
+                        unit_price: item.unitPrice,
+                        total: item.quantity * item.unitPrice,
+                        type: 'service'
+                    })),
                     vatRate,
                     totalAmount,
-                    'preview',
+                    action, // Pass action here
                     'DRAFT'
-                ) as string;
+                ) as unknown as string;
             }
 
-            if (pdfData) {
-                setPreviewUrl(pdfData);
-                setPreviewModalOpen(true);
+            if (pdfData && action === 'preview') {
+                window.open(pdfData, '_blank', 'noopener,noreferrer');
             }
         } catch (error) {
             console.error('Preview Error', error);
@@ -608,15 +617,26 @@ const DocumentBuilder = () => {
                                 />
                             </div>
 
-                            <button
-                                type="button"
-                                onClick={handlePreview}
-                                disabled={loading || docData.items.length === 0}
-                                className="w-full py-3 mb-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 border border-slate-700 hover:border-slate-500"
-                            >
-                                <Eye size={18} />
-                                Preview Document
-                            </button>
+                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                <button
+                                    type="button"
+                                    onClick={() => handleGeneratePDF('preview')}
+                                    disabled={loading || docData.items.length === 0}
+                                    className="py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 border border-slate-700 hover:border-slate-500"
+                                >
+                                    <Eye size={18} />
+                                    Preview
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => handleGeneratePDF('download')}
+                                    disabled={loading || docData.items.length === 0}
+                                    className="py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg font-bold flex items-center justify-center gap-2 transition-all disabled:opacity-50 border border-slate-700 hover:border-slate-500"
+                                >
+                                    <Download size={18} />
+                                    Download
+                                </button>
+                            </div>
                             <button
                                 type="submit"
                                 disabled={loading || docData.items.length === 0}
@@ -627,27 +647,13 @@ const DocumentBuilder = () => {
                                 ) : (
                                     <CheckCircle size={18} />
                                 )}
-                                {isEditing ? 'Update' : 'Create'} {docType === 'invoice' ? 'Invoice' : 'Quote'}
+                                {isEditing ? 'Update' : 'Create & Save'} {docType === 'invoice' ? 'Invoice' : 'Quote'}
                             </button>
                         </div>
                     </div>
                 </div>
 
             </form>
-
-            <DocumentPreviewModal
-                isOpen={previewModalOpen}
-                onClose={() => setPreviewModalOpen(false)}
-                pdfDataUrl={previewUrl}
-                documentType={docType === 'invoice' ? 'Invoice' : 'Quote'}
-                documentNumber="PREVIEW"
-                customerName={
-                    customerMode === 'existing'
-                        ? (customers.find(c => c.id === docData.customerId)?.name || 'Unknown')
-                        : (newCustomer.name || 'New Customer')
-                }
-                amount={`€${docTotal.toFixed(2)}`}
-            />
         </div >
     );
 };

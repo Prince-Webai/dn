@@ -1,11 +1,10 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2 } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, Statement } from '../types';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
-import DocumentPreviewModal from '../components/DocumentPreviewModal';
 import { generateInvoice, generateStatement, generateOneTimeInvoice } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
 import { dataService } from '../services/dataService';
@@ -33,12 +32,6 @@ const Invoices = () => {
     const [description, setDescription] = useState('');
     const [vatRate, setVatRate] = useState(13.5);
 
-    // Preview Modal State
-    const [previewModalOpen, setPreviewModalOpen] = useState(false);
-    const [previewUrl, setPreviewUrl] = useState('');
-    const [previewType, setPreviewType] = useState<'Invoice' | 'Statement'>('Invoice');
-    const [activeDocument, setActiveDocument] = useState<Invoice | Statement | null>(null);
-
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
     const filteredInvoices = useMemo(() => {
@@ -54,19 +47,6 @@ const Invoices = () => {
         return invoices.filter(inv => inv.status === statusFilter);
     }, [invoices, statusFilter]);
 
-    const handleMarkAsPaid = async (inv: Invoice) => {
-        const { error } = await dataService.updateInvoice(inv.id, {
-            status: 'paid',
-            amount_paid: inv.total_amount,
-            payment_date: new Date().toISOString().split('T')[0]
-        });
-        if (!error) {
-            showToast('Invoice Paid', `${inv.invoice_number} marked as paid`, 'success');
-            fetchData();
-        } else {
-            showToast('Error', 'Failed to update invoice', 'error');
-        }
-    };
 
     useEffect(() => {
         fetchData();
@@ -98,7 +78,11 @@ const Invoices = () => {
     };
 
 
-    const handleDownloadStatement = async (statement: Statement) => {
+    const handlePreviewStatement = async (statement: Statement) => {
+        await handleDownloadStatement(statement, 'preview');
+    };
+
+    const handleDownloadStatement = async (statement: Statement, action: 'download' | 'preview' = 'download') => {
         if (!statement.jobs || !statement.customers) {
             showToast('Error', 'Missing job or customer data for this statement.', 'error');
             return;
@@ -116,12 +100,9 @@ const Invoices = () => {
                 return;
             }
 
-            const pdfData = generateStatement(statement.jobs, items, statement.customers, 'preview') as string;
-            if (pdfData) {
-                setPreviewUrl(pdfData);
-                setPreviewType('Statement');
-                setActiveDocument(statement);
-                setPreviewModalOpen(true);
+            const pdfData = generateStatement(statement.jobs, items, statement.customers, action) as unknown as string;
+            if (pdfData && action === 'preview') {
+                window.open(pdfData, '_blank', 'noopener,noreferrer');
             }
         } catch (error) {
             console.error(error);
@@ -129,60 +110,65 @@ const Invoices = () => {
         }
     };
 
-    const handleDownloadInvoice = async (invoice: Invoice) => {
+    const handlePreviewInvoice = async (invoice: Invoice) => {
+        await handleDownloadInvoice(invoice, 'preview');
+    };
+
+    const handleDownloadInvoice = async (invoice: Invoice, action: 'download' | 'preview' = 'download') => {
         if (!invoice.customers && !invoice.guest_name) {
             showToast('Error', 'Missing customer data.', 'error');
             return;
         }
 
         try {
-            // For standard invoices, we need job items if it's linked to a job
-            if (invoice.job_id && invoice.customers) {
-                // Fetch Job details if not fully present (though we selected jobs(*))
-                // We have invoice.jobs? No, the fetch select was '*, customers(*)'
-                // We need to fetch the job because generateInvoice expects a Job object
-                const { data: job } = await supabase.from('jobs').select('*').eq('id', invoice.job_id).single();
+            // For standard invoices, we need items
+            if (invoice.customers || invoice.guest_name) {
+                let items: any[] = [];
+                let engineerName = 'Prince Gaur';
 
-                if (job) {
+                if (invoice.job_id) {
+                    // Fetch Job items
+                    const { data: jobData } = await supabase.from('jobs').select('engineer_name').eq('id', invoice.job_id).single();
+                    if (jobData) engineerName = jobData.engineer_name;
+
+                    const { data: jobItems } = await supabase.from('job_items').select('*').eq('job_id', invoice.job_id);
+                    items = jobItems || [];
+                } else {
+                    // Fetch Standalone Invoice items
+                    const { data: invItems } = await supabase.from('invoice_items').select('*').eq('invoice_id', invoice.id);
+                    items = invItems || [];
+                }
+
+                if (invoice.guest_name) {
+                    // Re-construct one-time invoice data
+                    const pdfData = generateOneTimeInvoice({
+                        customerName: invoice.guest_name,
+                        total: invoice.total_amount,
+                        address: invoice.customers?.address || ''
+                    }, items.map(i => ({
+                        description: i.description,
+                        quantity: i.quantity,
+                        unitPrice: i.unit_price
+                    })), action) as unknown as string;
+
+                    if (pdfData && action === 'preview') {
+                        window.open(pdfData, '_blank', 'noopener,noreferrer');
+                    }
+                } else if (invoice.customers) {
                     const pdfData = generateInvoice(
-                        job,
+                        invoice.invoice_number,
                         invoice.customers,
-                        invoice.custom_description || job.service_type || 'Service',
+                        items,
                         invoice.vat_rate || 13.5,
                         invoice.total_amount,
-                        'preview',
-                        invoice.status.toUpperCase()
-                    ) as string;
-                    if (pdfData) {
-                        setPreviewUrl(pdfData);
-                        setPreviewType('Invoice');
-                        setActiveDocument(invoice);
-                        setPreviewModalOpen(true);
+                        action,
+                        invoice.status.toUpperCase(),
+                        engineerName
+                    ) as unknown as string;
+
+                    if (pdfData && action === 'preview') {
+                        window.open(pdfData, '_blank', 'noopener,noreferrer');
                     }
-                }
-            } else if (invoice.guest_name) {
-                // Re-construct one-time invoice data
-                // This is harder because we didn't save breakdown, just totals and description.
-                // We'll do a best-effort regeneration using the stored totals.
-
-                const pdfData = generateOneTimeInvoice({
-                    customerName: invoice.guest_name,
-                    email: '', // Not stored
-                    phone: '',
-                    date: invoice.date_issued,
-                    description: invoice.custom_description || 'One-Time Service',
-                    labourHours: 0,
-                    labourRate: 0,
-                    partsCost: 0,
-                    additional: invoice.total_amount,
-                    total: invoice.total_amount
-                } as any, 'preview') as string;
-
-                if (pdfData) {
-                    setPreviewUrl(pdfData);
-                    setPreviewType('Invoice');
-                    setActiveDocument(invoice);
-                    setPreviewModalOpen(true);
                 }
             }
         } catch (error) {
@@ -274,22 +260,6 @@ const Invoices = () => {
         const body = `Dear ${invoice.customers.name},\n\nThi is a reminder for Invoice #${invoice.invoice_number} due for €${invoice.total_amount.toFixed(2)}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\nCondon Dairy`;
 
         window.location.href = `mailto:${invoice.customers.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    };
-
-    const handleMarkInvoiceAsSent = async () => {
-        if (previewType === 'Invoice' && activeDocument) {
-            const invoice = activeDocument as Invoice;
-            if (invoice.status === 'draft') {
-                const { error } = await dataService.updateInvoice(invoice.id, {
-                    status: 'sent'
-                });
-
-                if (!error) {
-                    showToast('Success', 'Invoice marked as sent', 'success');
-                    fetchData();
-                }
-            }
-        }
     };
 
     if (loading) {
@@ -427,15 +397,20 @@ const Invoices = () => {
                                                             <CreditCard size={16} />
                                                         </button>
                                                     )}
-                                                    {inv.status !== 'paid' && (
-                                                        <button
-                                                            onClick={() => handleMarkAsPaid(inv)}
-                                                            className="p-1.5 rounded-md text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors"
-                                                            title="Mark as Fully Paid"
-                                                        >
-                                                            <CheckCircle2 size={16} />
-                                                        </button>
-                                                    )}
+                                                    <button
+                                                        onClick={() => handlePreviewInvoice(inv)}
+                                                        className="p-1.5 rounded-md text-delaval-blue bg-blue-50 hover:bg-blue-100 transition-colors"
+                                                        title="Preview Invoice"
+                                                    >
+                                                        <Eye size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDownloadInvoice(inv, 'download')}
+                                                        className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
+                                                        title="Download Invoice"
+                                                    >
+                                                        <Download size={16} />
+                                                    </button>
                                                     <button
                                                         onClick={() => handleSendReminder(inv)}
                                                         className="p-1.5 rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
@@ -449,13 +424,6 @@ const Invoices = () => {
                                                         title="Edit Invoice"
                                                     >
                                                         <Edit size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDownloadInvoice(inv)}
-                                                        className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
-                                                        title="Download Invoice"
-                                                    >
-                                                        <Download size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => setDeleteInvoiceId(inv.id)}
@@ -522,7 +490,14 @@ const Invoices = () => {
                                             <td className="px-6 py-4">
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => handleDownloadStatement(stmt)}
+                                                        onClick={() => handlePreviewStatement(stmt)}
+                                                        className="text-slate-400 hover:text-delaval-blue transition-colors p-1.5 rounded-lg hover:bg-blue-50"
+                                                        title="Preview Statement"
+                                                    >
+                                                        <Eye size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDownloadStatement(stmt, 'download')}
                                                         className="text-slate-400 hover:text-delaval-blue transition-colors p-1.5 rounded-lg hover:bg-blue-50"
                                                         title="Download Statement"
                                                     >
@@ -737,35 +712,6 @@ const Invoices = () => {
                 title="Delete Statement"
                 message="Are you sure you want to permanently delete this statement? This action cannot be undone."
             />
-            {/* Document Preview Modal */}
-            {activeDocument && (
-                <DocumentPreviewModal
-                    isOpen={previewModalOpen}
-                    onClose={() => setPreviewModalOpen(false)}
-                    pdfDataUrl={previewUrl}
-                    documentType={previewType}
-                    documentNumber={
-                        previewType === 'Invoice'
-                            ? (activeDocument as Invoice).invoice_number || 'Unknown'
-                            : (activeDocument as Statement).statement_number || 'Unknown'
-                    }
-                    customerName={
-                        previewType === 'Invoice'
-                            ? ((activeDocument as Invoice).customers?.name || (activeDocument as Invoice).guest_name || 'Guest')
-                            : ((activeDocument as Statement).customers?.name || 'Unknown')
-                    }
-                    customerEmail={
-                        previewType === 'Invoice'
-                            ? (activeDocument as Invoice).customers?.email || undefined
-                            : (activeDocument as Statement).customers?.email || undefined
-                    }
-                    amount={`€${previewType === 'Invoice'
-                        ? (activeDocument as Invoice).total_amount.toLocaleString()
-                        : ((activeDocument as Statement).jobs?.job_items?.reduce((s, i) => s + (i.total || 0), 0) || 0).toLocaleString()
-                        }`}
-                    onMarkAsSent={previewType === 'Invoice' && (activeDocument as Invoice).status === 'draft' ? handleMarkInvoiceAsSent : undefined}
-                />
-            )}
         </div>
     );
 };

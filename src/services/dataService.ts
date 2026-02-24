@@ -163,7 +163,31 @@ export const dataService = {
 
     async deleteInvoice(id: string): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+
+        // Delete related invoice items first
+        await supabase.from('invoice_items').delete().eq('invoice_id', id);
+
         return await supabase.from('invoices').delete().eq('id', id);
+    },
+
+    async getInvoiceItems(invoiceId: string): Promise<any[]> {
+        if (!isSupabaseConfigured()) return [];
+        try {
+            const { data, error } = await supabase
+                .from('invoice_items')
+                .select('*')
+                .eq('invoice_id', invoiceId);
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error fetching invoice items:', error);
+            return [];
+        }
+    },
+
+    async addInvoiceItems(items: any[]): Promise<{ data: any, error: any }> {
+        if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
+        return await supabase.from('invoice_items').insert(items).select();
     },
 
     async deleteStatement(id: string): Promise<{ error: any }> {
