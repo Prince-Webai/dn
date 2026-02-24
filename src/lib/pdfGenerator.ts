@@ -125,11 +125,11 @@ const addInfoGrid = (doc: jsPDF, data: { label: string, value: string }[], yPos:
     data.forEach((item, i) => {
         const x = leftMargin + (i * colWidth);
         doc.setFont("helvetica", "bold");
-        doc.setTextColor(80, 80, 80);
-        doc.text(String(item.label), x, yPos);
+        doc.setTextColor(100, 100, 100);
+        doc.text(String(item.label), x, yPos - 2);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(0, 0, 0);
-        doc.text(String(item.value), x, yPos + 5);
+        doc.text(String(item.value), x, yPos + 4);
     });
 
     doc.line(leftMargin, yPos + 10, pageWidth - rightMargin, yPos + 10);
