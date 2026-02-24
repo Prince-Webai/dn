@@ -108,33 +108,39 @@ const addAddressSection = (doc: jsPDF, customer: Customer, yPos: number, type: s
     return yPos + 35;
 };
 
-// Info Row Grid Helper (6 columns as in example)
+// Info Row Grid Helper — uses autoTable so columns are properly sized and text never overflows
 const addInfoGrid = (doc: jsPDF, data: { label: string, value: string }[], yPos: number) => {
     const pageWidth = doc.internal.pageSize.width;
     const leftMargin = 20;
     const rightMargin = 20;
-    const width = pageWidth - leftMargin - rightMargin;
-    const colWidth = width / 6;
+    const totalWidth = pageWidth - leftMargin - rightMargin;
 
-    // Drawing separation lines
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.5);
-    doc.line(leftMargin, yPos - 5, pageWidth - rightMargin, yPos - 5);
+    // Build head (labels) and body (values) rows from data array
+    const head = [data.map(d => String(d.label))];
+    const body = [data.map(d => String(d.value))];
 
-    doc.setFontSize(8);
-    data.forEach((item, i) => {
-        const x = leftMargin + (i * colWidth);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(100, 100, 100);
-        doc.text(String(item.label), x, yPos - 2);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
-        doc.text(String(item.value), x, yPos + 4);
+    // Distribute column widths evenly
+    const colWidth = totalWidth / data.length;
+    const columnStyles: Record<number, object> = {};
+    data.forEach((_, i) => {
+        columnStyles[i] = { cellWidth: colWidth };
     });
 
-    doc.line(leftMargin, yPos + 10, pageWidth - rightMargin, yPos + 10);
+    autoTable(doc, {
+        startY: yPos - 5,
+        head,
+        body,
+        theme: 'plain',
+        styles: { fontSize: 8, cellPadding: { top: 2, right: 2, bottom: 2, left: 2 }, overflow: 'linebreak' },
+        headStyles: { fontStyle: 'bold', textColor: [100, 100, 100], fillColor: false, lineWidth: { bottom: 0.3 }, lineColor: [200, 200, 200] },
+        bodyStyles: { textColor: [0, 0, 0], lineWidth: { bottom: 0.3 }, lineColor: [200, 200, 200] },
+        columnStyles,
+        margin: { left: leftMargin, right: rightMargin },
+        tableWidth: totalWidth,
+    });
 
-    return yPos + 25;
+    // @ts-ignore
+    return (doc.lastAutoTable.finalY as number) + 10;
 };
 
 // VAT Analysis Summary Table
