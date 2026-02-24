@@ -143,15 +143,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
           `}>
 
-                        <div className="mb-6">
-                            <Link
-                                to="/documents/new?type=invoice"
-                                onClick={closeSidebar}
-                                className="w-full flex items-center justify-center gap-2 bg-[#FF6B00] hover:bg-[#e66000] text-white py-3 rounded-xl font-bold shadow-lg shadow-[#FF6B00]/20 transition-all active:scale-95"
-                            >
-                                <span className="text-xl leading-none mt[-2px]">+</span> Create Invoice
-                            </Link>
-                        </div>
 
                         {navSections.map((section, idx) => (
                             <div key={idx} className="mb-6 last:mb-0">
