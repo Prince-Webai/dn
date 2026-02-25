@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, FileText, Wrench, Clock, Package } from 'lucide-react';
+import SearchableSelect from '../components/SearchableSelect';
 import { supabase } from '../lib/supabase';
 import { Job, JobItem, InventoryItem } from '../types';
 import jsPDF from 'jspdf';
@@ -168,11 +169,12 @@ const JobDetails = () => {
                         <div className="mt-4 bg-slate-50 p-4 rounded-lg space-y-3">
                             <div className="flex gap-4">
                                 <div className="flex-1">
-                                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Add Code / Product</label>
-                                    <select
-                                        className="w-full p-2 border rounded text-sm"
-                                        onChange={(e) => {
-                                            const item = inventory.find(i => i.id === e.target.value);
+                                    <SearchableSelect
+                                        label="Add Code / Product"
+                                        options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
+                                        value=""
+                                        onChange={(val) => {
+                                            const item = inventory.find(i => i.id === val);
                                             if (item) {
                                                 setNewItem({
                                                     ...newItem,
@@ -182,27 +184,23 @@ const JobDetails = () => {
                                                 });
                                             }
                                         }}
-                                        defaultValue=""
-                                    >
-                                        <option value="" disabled>Select generic product...</option>
-                                        {inventory.map(inv => (
-                                            <option key={inv.id} value={inv.id}>
-                                                {inv.name} (€{inv.sell_price})
-                                            </option>
-                                        ))}
-                                    </select>
+                                        placeholder="Select generic product..."
+                                        icon={<Package size={16} />}
+                                    />
                                 </div>
                                 <div className="w-1/3">
-                                    <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Type</label>
-                                    <select
-                                        className="w-full p-2 border rounded text-sm"
+                                    <SearchableSelect
+                                        label="Type"
+                                        searchable={false}
+                                        options={[
+                                            { value: 'part', label: 'Part' },
+                                            { value: 'labor', label: 'Labor' },
+                                            { value: 'service', label: 'Service' }
+                                        ]}
                                         value={newItem.type}
-                                        onChange={e => setNewItem({ ...newItem, type: e.target.value as any })}
-                                    >
-                                        <option value="part">Part</option>
-                                        <option value="labor">Labor</option>
-                                        <option value="service">Service</option>
-                                    </select>
+                                        onChange={(val) => setNewItem({ ...newItem, type: val as any })}
+                                        icon={<Clock size={16} />}
+                                    />
                                 </div>
                             </div>
 
@@ -247,16 +245,17 @@ const JobDetails = () => {
                         <h2 className="text-lg font-bold mb-4">Job Details</h2>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-slate-500">Status</label>
-                                <select
-                                    className={`w-full px-3 py-1.5 rounded-lg text-sm font-bold border outline-none capitalize
-                                        ${job.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200' :
-                                            job.status === 'in_progress' ? 'bg-orange-100 text-orange-800 border-orange-200' :
-                                                job.status === 'cancelled' ? 'bg-red-100 text-red-800 border-red-200' :
-                                                    'bg-blue-100 text-blue-800 border-blue-200'}`}
+                                <SearchableSelect
+                                    label="Status"
+                                    searchable={false}
+                                    options={[
+                                        { value: 'scheduled', label: 'Scheduled' },
+                                        { value: 'in_progress', label: 'In Progress' },
+                                        { value: 'completed', label: 'Completed' },
+                                        { value: 'cancelled', label: 'Cancelled' }
+                                    ]}
                                     value={job.status}
-                                    onChange={async (e) => {
-                                        const newStatus = e.target.value;
+                                    onChange={async (newStatus) => {
                                         const { error } = await supabase
                                             .from('jobs')
                                             .update({ status: newStatus })
@@ -266,12 +265,8 @@ const JobDetails = () => {
                                             setJob({ ...job, status: newStatus as any });
                                         }
                                     }}
-                                >
-                                    <option value="scheduled">Scheduled</option>
-                                    <option value="in_progress">In Progress</option>
-                                    <option value="completed">Completed</option>
-                                    <option value="cancelled">Cancelled</option>
-                                </select>
+                                    icon={<Wrench size={16} />}
+                                />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-slate-500">Engineer</label>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Calendar, User, FileText, Trash2, Pencil } from 'lucide-react';
+import { Search, Calendar, User, FileText, Trash2, Pencil, Wrench, Activity } from 'lucide-react';
 import { Job, Customer } from '../types';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
@@ -55,8 +55,9 @@ const Jobs = () => {
 
     const fetchJobs = async () => {
         const userRole = user?.user_metadata?.role;
-        const engineerName = userRole === 'Engineer' ? (user?.user_metadata?.name || user?.email?.split('@')[0]) : undefined;
-        const data = await dataService.getJobs(activeTab, engineerName);
+        const engineerToFetch = userRole === 'Engineer' ? (user?.user_metadata?.name || user?.email?.split('@')[0]) : undefined;
+        // Fetch ALL jobs for this context (admin/engineer) to keep tab counts accurate
+        const data = await dataService.getJobs(undefined, engineerToFetch);
         setJobs(data);
     };
 
@@ -213,14 +214,17 @@ const Jobs = () => {
     };
 
     const filteredJobs = jobs.filter(job => {
+        // Tab (Status) filtering
+        const matchesTab = activeTab === 'all' || job.status === activeTab;
+
+        // Search filtering
         const matchesSearch =
             job.customers?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             job.service_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             job.engineer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             job.job_number?.toString().toLowerCase().includes(searchTerm.toLowerCase());
 
-        // Status filter is now handled by loadData/useEffect
-        return matchesSearch;
+        return matchesTab && matchesSearch;
     });
 
     const getTabCount = (tab: string) => {
@@ -447,20 +451,18 @@ const Jobs = () => {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Assign Engineer</label>
-                            <select
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                value={newJob.engineer_name}
-                                onChange={e => setNewJob({ ...newJob, engineer_name: e.target.value })}
-                            >
-                                <option value="">Select an engineer...</option>
-                                {engineers.map(eng => (
-                                    <option key={eng.id} value={eng.name}>{eng.name}</option>
-                                ))}
-                            </select>
+                            <SearchableSelect
+                                label="Assign Engineer"
+                                options={engineers.map(eng => ({ value: eng.name, label: eng.name }))}
+                                value={newJob.engineer_name || ''}
+                                onChange={val => setNewJob({ ...newJob, engineer_name: val })}
+                                placeholder="Select an engineer..."
+                                icon={<Wrench size={16} />}
+                            />
                         </div>
 
-                        <div>
+                        <div className="md:col-span-1">
+                            {/* DatePicker is already here, no change needed for label/layout consistency */}
                             <label className="block text-sm font-medium text-slate-700 mb-1">Scheduled Date</label>
                             <DatePicker
                                 required
@@ -471,18 +473,19 @@ const Jobs = () => {
                         </div>
 
                         <div className="col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                            <select
-                                required
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                value={newJob.status}
-                                onChange={e => setNewJob({ ...newJob, status: e.target.value as Job['status'] })}
-                            >
-                                <option value="scheduled">Scheduled</option>
-                                <option value="in_progress">In Progress</option>
-                                <option value="completed">Completed</option>
-                                <option value="cancelled">Cancelled</option>
-                            </select>
+                            <SearchableSelect
+                                label="Status"
+                                searchable={false}
+                                options={[
+                                    { value: 'scheduled', label: 'Scheduled' },
+                                    { value: 'in_progress', label: 'In Progress' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'cancelled', label: 'Cancelled' }
+                                ]}
+                                value={newJob.status || 'scheduled'}
+                                onChange={val => setNewJob({ ...newJob, status: val as Job['status'] })}
+                                icon={<Activity size={16} />}
+                            />
                         </div>
 
                         <div className="col-span-2">

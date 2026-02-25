@@ -8,6 +8,8 @@ import ConfirmModal from '../components/ConfirmModal';
 import { generateInvoice, generateStatement, generateOneTimeInvoice } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
 import { dataService } from '../services/dataService';
+import SearchableSelect from '../components/SearchableSelect';
+import { Percent } from 'lucide-react';
 
 const Invoices = () => {
     const { showToast } = useToast();
@@ -107,7 +109,7 @@ const Invoices = () => {
             const finalJob = Array.isArray(statement.jobs) ? statement.jobs[0] : statement.jobs;
             const finalCustomer = Array.isArray(statement.customers) ? statement.customers[0] : statement.customers;
 
-            const pdfData = generateStatement(finalJob as any, items, finalCustomer as any, statement, action) as unknown as string;
+            const pdfData = await generateStatement(finalJob as any, items, finalCustomer as any, statement, action) as unknown as string;
             if (pdfData && action === 'preview') {
                 window.open(pdfData, '_blank', 'noopener,noreferrer');
             }
@@ -148,10 +150,10 @@ const Invoices = () => {
 
                 if (invoice.guest_name) {
                     // Re-construct one-time invoice data
-                    const pdfData = generateOneTimeInvoice({
+                    const pdfData = await generateOneTimeInvoice({
                         customerName: invoice.guest_name,
-                        total: invoice.total_amount,
-                        address: invoice.customers?.address || ''
+                        totalAmount: invoice.total_amount,
+                        customerAddress: invoice.customers?.address || ''
                     }, items.map(i => ({
                         description: i.description,
                         quantity: i.quantity,
@@ -162,7 +164,7 @@ const Invoices = () => {
                         window.open(pdfData, '_blank', 'noopener,noreferrer');
                     }
                 } else if (invoice.customers) {
-                    const pdfData = generateInvoice(
+                    const pdfData = await generateInvoice(
                         invoice.invoice_number,
                         invoice.customers,
                         items,
@@ -291,17 +293,70 @@ const Invoices = () => {
     };
 
     // --- Reminder Handler ---
-    const handleSendReminder = (invoice: Invoice) => {
+    const handleSendReminder = async (invoice: Invoice) => {
+        const settings = await dataService.getSettings();
+        const currentSentCount = invoice.sent_count || 0;
+        const isFirstMail = currentSentCount === 0;
+
+        if (settings?.webhook_url) {
+            try {
+                const response = await fetch(settings.webhook_url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: isFirstMail ? 'invoice_sent' : 'invoice_reminder',
+                        invoice_id: invoice.id,
+                        invoice_number: invoice.invoice_number,
+                        customer_email: invoice.customers?.email,
+                        customer_name: invoice.customers?.name,
+                        amount_due: invoice.total_amount - (invoice.amount_paid || 0),
+                        due_date: invoice.due_date,
+                        sent_count: currentSentCount + 1
+                    })
+                });
+
+                if (response.ok) {
+                    showToast('Success', isFirstMail ? 'Invoice sent via webhook' : 'Reminder triggered via webhook', 'success');
+
+                    // Update sent_count and status in DB
+                    const updates: Partial<Invoice> = {
+                        sent_count: currentSentCount + 1
+                    };
+                    if (isFirstMail && invoice.status === 'draft') {
+                        updates.status = 'sent';
+                    }
+
+                    await dataService.updateInvoice(invoice.id, updates);
+                    fetchData();
+                    return;
+                }
+            } catch (error) {
+                console.error('Webhook error:', error);
+            }
+        }
+
+        // Update sent_count for mailto fallback too
+        const updates: Partial<Invoice> = {
+            sent_count: currentSentCount + 1
+        };
+        if (isFirstMail && invoice.status === 'draft') {
+            updates.status = 'sent';
+        }
+        await dataService.updateInvoice(invoice.id, updates);
+        fetchData();
+
+        // Fallback to mailto
         if (!invoice.customers?.email) {
             alert('Customer does not have an email address.');
             return;
         }
 
         const subject = `Invoice Reminder: #${invoice.invoice_number}`;
-        const body = `Dear ${invoice.customers.name},\n\nThi is a reminder for Invoice #${invoice.invoice_number} due for €${invoice.total_amount.toFixed(2)}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\nCondon Dairy`;
+        const body = `Dear ${invoice.customers.name},\n\nThis is a reminder for Invoice #${invoice.invoice_number} due for €${(invoice.total_amount - (invoice.amount_paid || 0)).toFixed(2)}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'Condon Dairy'}`;
 
         window.location.href = `mailto:${invoice.customers.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     };
+
 
     if (loading) {
         return <div className="p-8 text-center text-slate-500">Loading documents...</div>;
@@ -400,22 +455,20 @@ const Invoices = () => {
                                                 <div>
                                                     <span>€{inv.total_amount.toFixed(2)}</span>
                                                     {/* Payment progress */}
-                                                    {inv.status !== 'draft' && (
-                                                        <div className="mt-1">
-                                                            <div className="w-full bg-slate-200 rounded-full h-1.5">
-                                                                <div
-                                                                    className={`h-1.5 rounded-full transition-all ${inv.amount_paid && inv.amount_paid >= inv.total_amount ? 'bg-green-500' : inv.amount_paid && inv.amount_paid > 0 ? 'bg-blue-500' : 'bg-slate-200'}`}
-                                                                    style={{ width: `${Math.min(100, ((inv.amount_paid || 0) / inv.total_amount) * 100)}%` }}
-                                                                />
-                                                            </div>
-                                                            <div className="flex justify-between mt-0.5">
-                                                                <span className="text-[10px] text-green-600 font-medium">€{(inv.amount_paid || 0).toFixed(2)} paid</span>
-                                                                {(inv.amount_paid || 0) < inv.total_amount && (
-                                                                    <span className="text-[10px] text-red-500 font-medium">€{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} due</span>
-                                                                )}
-                                                            </div>
+                                                    <div className="mt-1">
+                                                        <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                                            <div
+                                                                className={`h-1.5 rounded-full transition-all ${inv.amount_paid && inv.amount_paid >= inv.total_amount ? 'bg-green-500' : inv.amount_paid && inv.amount_paid > 0 ? 'bg-blue-500' : 'bg-slate-300'}`}
+                                                                style={{ width: `${Math.min(100, ((inv.amount_paid || 0) / inv.total_amount) * 100)}%` }}
+                                                            />
                                                         </div>
-                                                    )}
+                                                        <div className="flex justify-between mt-0.5">
+                                                            <span className="text-[10px] text-green-600 font-medium">€{(inv.amount_paid || 0).toFixed(2)} paid</span>
+                                                            {(inv.amount_paid || 0) < inv.total_amount && (
+                                                                <span className="text-[10px] text-red-500 font-medium">€{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} due</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4">
@@ -708,16 +761,18 @@ const Invoices = () => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">VAT Rate (%)</label>
-                        <select
-                            className="form-select w-full border border-slate-300 rounded-lg px-4 py-2"
-                            value={vatRate}
-                            onChange={(e) => setVatRate(parseFloat(e.target.value))}
-                        >
-                            <option value={13.5}>13.5%</option>
-                            <option value={23}>23%</option>
-                            <option value={0}>0%</option>
-                        </select>
+                        <SearchableSelect
+                            label="VAT Rate (%)"
+                            searchable={false}
+                            options={[
+                                { value: '13.5', label: '13.5%' },
+                                { value: '23', label: '23%' },
+                                { value: '0', label: '0%' }
+                            ]}
+                            value={vatRate.toString()}
+                            onChange={(val) => setVatRate(parseFloat(val))}
+                            icon={<Percent size={16} />}
+                        />
                     </div>
 
                     {/* Line Items Management */}

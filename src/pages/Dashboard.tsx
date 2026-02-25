@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
     Euro, Wrench, AlertCircle, Package,
-    Plus, Users, FileText, FilePlus, Calendar, ArrowUpRight
+    Plus, Users, FileText, FilePlus, Calendar, ArrowUpRight,
+    Filter
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Job } from '../types';
 import { dataService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
+import SearchableSelect from '../components/SearchableSelect';
+import DatePicker from '../components/DatePicker';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -19,9 +22,35 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
 
+    // Date Filtering State
+    const [filterType, setFilterType] = useState<'all' | 'month' | 'year' | 'custom'>('all');
+    const [customRange, setCustomRange] = useState({
+        start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+    });
+
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [filterType, customRange]);
+
+    const getEffectiveRange = () => {
+        const now = new Date();
+        if (filterType === 'month') {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            return { start, end: now };
+        }
+        if (filterType === 'year') {
+            const start = new Date(now.getFullYear(), 0, 1);
+            return { start, end: now };
+        }
+        if (filterType === 'custom') {
+            return {
+                start: new Date(customRange.start),
+                end: new Date(customRange.end)
+            };
+        }
+        return { start: null, end: null };
+    };
 
     const fetchData = async () => {
         try {
@@ -35,16 +64,33 @@ const Dashboard = () => {
                 dataService.getInventory()
             ]);
 
+            const { start, end } = getEffectiveRange();
 
-            const unpaidInvoices = invoiceData.filter(inv => {
+            // Filter Data by Date
+            const filteredInvoices = start && end
+                ? invoiceData.filter(inv => {
+                    const date = new Date(inv.date_issued);
+                    return date >= start && date <= end;
+                })
+                : invoiceData;
+
+            const filteredJobs = start && end
+                ? allJobs.filter(job => {
+                    if (!job.date_scheduled) return false;
+                    const date = new Date(job.date_scheduled);
+                    return date >= start && date <= end;
+                })
+                : allJobs;
+
+            const unpaidInvoices = filteredInvoices.filter(inv => {
                 const s = inv.status as string;
                 return s !== 'paid' && s !== 'void';
             });
             const outstanding = unpaidInvoices.reduce((acc, inv) => acc + (inv.total_amount - (inv.amount_paid || 0)), 0);
-            const activeJobsCount = allJobs.filter(j => ['scheduled', 'in_progress'].includes(j.status)).length;
+            const activeJobsCount = filteredJobs.filter(j => ['scheduled', 'in_progress'].includes(j.status)).length;
             const lowStockCount = inventoryArray.filter(i => i.stock_level < 5).length;
 
-            const overdueCount = invoiceData.filter(inv => {
+            const overdueCount = filteredInvoices.filter(inv => {
                 const s = inv.status as string;
                 if (s === 'paid' || s === 'void') return false;
                 if (inv.due_date && new Date(inv.due_date) < new Date()) return true;
@@ -58,7 +104,7 @@ const Dashboard = () => {
                 lowStockItems: lowStockCount
             });
 
-            setRecentJobs(allJobs.slice(0, 5));
+            setRecentJobs(filteredJobs.slice(0, 5));
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
         } finally {
@@ -114,6 +160,52 @@ const Dashboard = () => {
 
     return (
         <div className="flex flex-col gap-8">
+            {/* Header & Date Filter */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Dashboard Overview</h1>
+                    <p className="text-slate-500 text-sm">Welcome back, {user?.user_metadata?.name || 'Administrator'}</p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="w-48">
+                        <SearchableSelect
+                            label=""
+                            searchable={false}
+                            options={[
+                                { value: 'all', label: 'All Time' },
+                                { value: 'month', label: 'This Month' },
+                                { value: 'year', label: 'This Year' },
+                                { value: 'custom', label: 'Custom Range' }
+                            ]}
+                            value={filterType}
+                            onChange={(val) => setFilterType(val as any)}
+                            icon={<Filter size={14} />}
+                        />
+                    </div>
+
+                    {filterType === 'custom' && (
+                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
+                            <div className="w-40">
+                                <DatePicker
+                                    value={customRange.start}
+                                    onChange={(date) => setCustomRange({ ...customRange, start: date })}
+                                    placeholder="Start Date"
+                                />
+                            </div>
+                            <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">to</span>
+                            <div className="w-40">
+                                <DatePicker
+                                    value={customRange.end}
+                                    onChange={(date) => setCustomRange({ ...customRange, end: date })}
+                                    placeholder="End Date"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {statCards.map((stat, index) => {

@@ -16,8 +16,8 @@ export default {
                 'error-red': '#DC3545',
             },
             fontFamily: {
-                sans: ['"Plus Jakarta Sans"', 'sans-serif'],
-                display: ['"Space Grotesk"', 'sans-serif'],
+                sans: ['"Inter"', 'sans-serif'],
+                display: ['"Inter"', 'sans-serif'],
             }
         },
     },

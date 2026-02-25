@@ -77,7 +77,7 @@ const InvoiceBuilder = () => {
         const total = calculateTotal();
         const nextNumber = await getNextNumber('invoices', 'INV');
 
-        generateInvoice(nextNumber, customer, jobItems, vatRate, total, 'download', 'sent', job.engineer_name);
+        await generateInvoice(nextNumber, customer, jobItems, vatRate, total, 'download', 'sent', job.engineer_name);
 
         const { error } = await supabase.from('invoices').insert([{
             invoice_number: nextNumber,
@@ -88,7 +88,7 @@ const InvoiceBuilder = () => {
             vat_amount: total - (total / (1 + vatRate / 100)),
             total_amount: total,
             custom_description: description,
-            status: 'sent',
+            status: 'draft',
             date_issued: new Date().toISOString()
         }]);
 
@@ -101,16 +101,16 @@ const InvoiceBuilder = () => {
         }
     };
 
-    const handlePreviewInvoice = () => {
+    const handlePreviewInvoice = async () => {
         if (!job || !customer) return;
         const total = calculateTotal();
-        const pdfData = generateInvoice('PREVIEW', customer, jobItems, vatRate, total, 'preview', 'DRAFT', job.engineer_name) as unknown as string;
+        const pdfData = await generateInvoice('PREVIEW', customer, jobItems, vatRate, total, 'preview', 'DRAFT', job.engineer_name) as unknown as string;
         if (pdfData) {
             window.open(pdfData, '_blank', 'noopener,noreferrer');
         }
     };
 
-    const handlePreviewStatement = () => {
+    const handlePreviewStatement = async () => {
         if (!job || !customer) return;
         // The signature is (job, items, customer, statement, action)
         const dummyStatement = {
@@ -118,7 +118,7 @@ const InvoiceBuilder = () => {
             total_amount: calculateTotal(),
             date_generated: new Date().toISOString()
         } as any;
-        const pdfData = generateStatement(job, jobItems, customer, dummyStatement, 'preview') as unknown as string;
+        const pdfData = await generateStatement(job, jobItems, customer, dummyStatement, 'preview') as unknown as string;
         if (pdfData) {
             window.open(pdfData, '_blank', 'noopener,noreferrer');
         }
@@ -136,7 +136,7 @@ const InvoiceBuilder = () => {
             total_amount: calculateTotal()
         };
 
-        generateStatement(job, jobItems, customer, stmtDataToSave as any, 'download');
+        await generateStatement(job, jobItems, customer, stmtDataToSave as any, 'download');
 
         const { error } = await supabase.from('statements').insert([stmtDataToSave]);
 

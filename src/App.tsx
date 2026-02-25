@@ -13,7 +13,9 @@ import DocumentBuilder from './pages/DocumentBuilder'
 import Payments from './pages/Payments'
 import Reports from './pages/Reports'
 import Team from './pages/Team'
+import Settings from './pages/Settings'
 import JobDetails from './pages/JobDetails'
+
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
 
@@ -132,6 +134,14 @@ function App() {
                             </Layout>
                         </ProtectedRoute>
                     } />
+                    <Route path="/settings" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <Settings />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+
                     <Route path="/jobs/:id" element={
                         <ProtectedRoute>
                             <Layout>

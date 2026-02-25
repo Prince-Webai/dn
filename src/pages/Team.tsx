@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Trash2, Mail, Phone, Pencil } from 'lucide-react';
+import { Plus, Search, Trash2, Mail, Phone, Pencil, ShieldCheck, UserCheck } from 'lucide-react';
+import SearchableSelect from '../components/SearchableSelect';
 import { supabase } from '../lib/supabase';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
@@ -231,23 +232,35 @@ const Team = () => {
                         <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
                             value={newEngineer.name} onChange={e => setNewEngineer({ ...newEngineer, name: e.target.value })} />
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
-                        <select className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                            value={newEngineer.role} onChange={e => setNewEngineer({ ...newEngineer, role: e.target.value })}>
-                            <option value="Engineer">Engineer</option>
-                            <option value="Senior Engineer">Senior Engineer</option>
-                            <option value="Admin">Admin</option>
-                            <option value="Office Staff">Office Staff</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                        <select className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                            value={newEngineer.status} onChange={e => setNewEngineer({ ...newEngineer, status: e.target.value as 'active' | 'inactive' })}>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="col-span-2 md:col-span-1">
+                            <SearchableSelect
+                                label="Role"
+                                searchable={false}
+                                options={[
+                                    { value: 'Engineer', label: 'Engineer' },
+                                    { value: 'Senior Engineer', label: 'Senior Engineer' },
+                                    { value: 'Admin', label: 'Admin' },
+                                    { value: 'Office Staff', label: 'Office Staff' }
+                                ]}
+                                value={newEngineer.role}
+                                onChange={(val) => setNewEngineer({ ...newEngineer, role: val })}
+                                icon={<ShieldCheck size={16} />}
+                            />
+                        </div>
+                        <div className="col-span-2 md:col-span-1">
+                            <SearchableSelect
+                                label="Status"
+                                searchable={false}
+                                options={[
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'inactive', label: 'Inactive' }
+                                ]}
+                                value={newEngineer.status}
+                                onChange={(val) => setNewEngineer({ ...newEngineer, status: val as 'active' | 'inactive' })}
+                                icon={<UserCheck size={16} />}
+                            />
+                        </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>

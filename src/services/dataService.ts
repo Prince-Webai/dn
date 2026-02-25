@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Job, Invoice, Customer, InventoryItem } from '../types';
+import { Job, Invoice, Customer, InventoryItem, Settings } from '../types';
 
 // Helper to check if Supabase is configured
 const isSupabaseConfigured = () => {
@@ -142,6 +142,57 @@ export const dataService = {
 
     async updateJob(id: string, updates: Partial<Job>): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+
+        // Handle automatic customer balance updates on status change
+        if (updates.status) {
+            // Get current job to check if status is actually changing
+            const { data: currentJob, error: fetchError } = await supabase
+                .from('jobs')
+                .select('status, customer_id')
+                .eq('id', id)
+                .single();
+
+            if (!fetchError && currentJob) {
+                const oldStatus = currentJob.status;
+                const newStatus = updates.status;
+
+                // Only proceed if status is changing to or from 'completed'
+                if (oldStatus !== newStatus && (oldStatus === 'completed' || newStatus === 'completed')) {
+                    // Fetch job items to calculate total value
+                    const { data: jobItems } = await supabase
+                        .from('job_items')
+                        .select('total')
+                        .eq('job_id', id);
+
+                    const jobTotal = (jobItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
+
+                    if (jobTotal > 0) {
+                        // Fetch current customer balance
+                        const { data: customer } = await supabase
+                            .from('customers')
+                            .select('account_balance')
+                            .eq('id', currentJob.customer_id)
+                            .single();
+
+                        if (customer) {
+                            let newBalance = customer.account_balance || 0;
+                            if (newStatus === 'completed') {
+                                newBalance += jobTotal; // Add to balance
+                            } else if (oldStatus === 'completed') {
+                                newBalance -= jobTotal; // Remove from balance
+                            }
+
+                            // Update customer balance silently
+                            await supabase
+                                .from('customers')
+                                .update({ account_balance: newBalance })
+                                .eq('id', currentJob.customer_id);
+                        }
+                    }
+                }
+            }
+        }
+
         return await supabase.from('jobs').update(updates).eq('id', id);
     },
 
@@ -197,5 +248,32 @@ export const dataService = {
     async deleteStatement(id: string): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
         return await supabase.from('statements').delete().eq('id', id);
+    },
+
+    async getSettings(): Promise<Settings | null> {
+        if (!isSupabaseConfigured()) return null;
+        try {
+            const { data, error } = await supabase
+                .from('settings')
+                .select('*')
+                .single();
+            if (error) throw error;
+            return data;
+        } catch (error) {
+            console.error('Error fetching settings:', error);
+            return null;
+        }
+    },
+
+    async updateSettings(updates: Partial<Settings>): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+        return await supabase
+            .from('settings')
+            .upsert({
+                ...updates,
+                id: '00000000-0000-0000-0000-000000000000',
+                updated_at: new Date().toISOString()
+            });
     }
+
 };

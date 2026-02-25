@@ -13,6 +13,9 @@ import { Invoice, Job, InventoryItem } from '../types';
 import { useToast } from '../context/ToastContext';
 import Modal from '../components/Modal';
 import { useAuth } from '../context/AuthContext';
+import SearchableSelect from '../components/SearchableSelect';
+import DatePicker from '../components/DatePicker';
+import { Filter } from 'lucide-react';
 
 // Safe render helper
 const safeRender = (val: any): string => {
@@ -37,15 +40,52 @@ const Reports = () => {
     const [allInvoices, setAllInvoices] = useState<Invoice[]>([]);
 
     // Date Range Filter State
-    const [dateRangeFilter, setDateRangeFilter] = useState<'6months' | 'ytd' | '12months'>('6months');
+    const [filterType, setFilterType] = useState<'all' | 'month' | 'year' | 'custom'>('all');
+    const [customRange, setCustomRange] = useState({
+        start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
+        end: new Date().toISOString().split('T')[0]
+    });
 
     // Tony Condon UX States
     const [sendingReminder, setSendingReminder] = useState<string | null>(null);
     const [selectedInvoiceForDetail, setSelectedInvoiceForDetail] = useState<Invoice | null>(null);
 
+    // Chart Granularity State
+    const [granularity, setGranularity] = useState<'daily' | 'weekly' | 'monthly' | 'custom'>('monthly');
+    const [isRangeModalOpen, setIsRangeModalOpen] = useState(false);
+
+    // Separate effect for auto-switching granularity on filter change
+    useEffect(() => {
+        if (filterType === 'month') {
+            setGranularity('daily');
+        } else if (filterType === 'year' || filterType === 'all') {
+            setGranularity('monthly');
+        }
+    }, [filterType]);
+
+    // Main data fetching effect
     useEffect(() => {
         fetchAnalyticsData();
-    }, []);
+    }, [filterType, customRange, granularity]);
+
+    const getEffectiveRange = () => {
+        const now = new Date();
+        if (filterType === 'month') {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            return { start, end: now };
+        }
+        if (filterType === 'year') {
+            const start = new Date(now.getFullYear(), 0, 1);
+            return { start, end: now };
+        }
+        if (filterType === 'custom') {
+            return {
+                start: new Date(customRange.start),
+                end: new Date(customRange.end)
+            };
+        }
+        return { start: null, end: null };
+    };
 
     const fetchAnalyticsData = async () => {
         setLoading(true);
@@ -59,11 +99,30 @@ const Reports = () => {
                 dataService.getInventory()
             ]);
 
-            setAllInvoices(invoices);
-            processRevenueData(invoices, dateRangeFilter);
-            processJobStatusData(jobs);
+            const { start, end } = getEffectiveRange();
+
+            // Filter Data by Date
+            const filteredInvoices = start && end
+                ? invoices.filter(inv => {
+                    const date = new Date(inv.date_issued);
+                    return date >= start && date <= end;
+                })
+                : invoices;
+
+            const filteredJobs = start && end
+                ? jobs.filter(job => {
+                    if (!job.date_scheduled) return false;
+                    const date = new Date(job.date_scheduled);
+                    return date >= start && date <= end;
+                })
+                : jobs;
+
+            setAllInvoices(filteredInvoices);
+            // Chart always uses unfiltered invoices for Monthly view to show trend
+            processRevenueData(invoices);
+            processJobStatusData(filteredJobs);
             processInventoryData(inventory);
-            processTopCustomers(invoices);
+            processTopCustomers(filteredInvoices);
 
         } catch (error) {
             console.error("Error fetching analytics:", error);
@@ -72,51 +131,97 @@ const Reports = () => {
         }
     };
 
-    useEffect(() => {
-        if (allInvoices.length > 0) {
-            processRevenueData(allInvoices, dateRangeFilter);
-        }
-    }, [dateRangeFilter, allInvoices]);
-
-    const processRevenueData = (invoices: Invoice[], range: '6months' | 'ytd' | '12months') => {
+    const processRevenueData = (invoices: Invoice[]) => {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const chartData: RevenueData[] = [];
         const now = new Date();
+        const { start, end } = getEffectiveRange();
 
-        if (range === '6months' || range === '12months') {
-            const count = range === '6months' ? 6 : 12;
-            for (let i = count - 1; i >= 0; i--) {
+        if (granularity === 'monthly') {
+            // Logic for Monthly View - Default to last 12 months to show trend
+            for (let i = 11; i >= 0; i--) {
                 const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                 chartData.push({
-                    name: months[d.getMonth()] + (range === '12months' ? ` '${d.getFullYear().toString().slice(2)}` : ''),
+                    name: months[d.getMonth()] + " '" + d.getFullYear().toString().slice(2),
                     revenue: 0,
-                    target: 5000 // Mock target
+                    target: 5000
                 });
             }
-        } else if (range === 'ytd') {
-            for (let i = 0; i <= now.getMonth(); i++) {
+        } else if (granularity === 'weekly') {
+            // Logic for Weekly View - Cleaner Labels
+            const rangeStart = start || new Date(now.getTime() - 60 * 86400000);
+            const rangeEnd = end || now;
+            const diffDays = Math.ceil((rangeEnd.getTime() - rangeStart.getTime()) / (1000 * 60 * 60 * 24));
+            const weeks = Math.max(1, Math.ceil(diffDays / 7));
+
+            for (let i = 0; i < weeks; i++) {
+                const d = new Date(rangeStart.getTime() + i * 7 * 86400000);
                 chartData.push({
-                    name: months[i],
+                    name: `${d.getDate()} ${months[d.getMonth()]}`,
                     revenue: 0,
-                    target: 5000 // Mock target
+                    target: 1200
                 });
             }
+        } else if (granularity === 'daily') {
+            // Logic for Daily View
+            if (!start || !end) {
+                // Default to last 30 days if no range
+                for (let i = 29; i >= 0; i--) {
+                    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+                    chartData.push({
+                        name: d.getDate() + ' ' + months[d.getMonth()],
+                        revenue: 0,
+                        target: 200
+                    });
+                }
+            } else {
+                const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+                const actualDays = Math.min(diffDays, 60);
+                for (let i = 0; i <= actualDays; i++) {
+                    const d = new Date(start);
+                    d.setDate(start.getDate() + i);
+                    chartData.push({
+                        name: d.getDate() + ' ' + months[d.getMonth()],
+                        revenue: 0,
+                        target: 200
+                    });
+                }
+            }
+        } else {
+            // Custom/Consolidated View
+            chartData.push({
+                name: 'Total Revenue',
+                revenue: 0,
+                target: 5000
+            });
         }
 
+        // Aggregate Data
         invoices.forEach(inv => {
             if (inv.status !== 'void' && inv.date_issued) {
                 const date = new Date(inv.date_issued);
-
-                // Only include if it fits the range logic implicitly defined by chartData names
                 const monthName = months[date.getMonth()];
-                const fullName = range === '12months' ? monthName + ` '${date.getFullYear().toString().slice(2)}` : monthName;
+                const fullMonthName = monthName + " '" + date.getFullYear().toString().slice(2);
+                const dayName = date.getDate() + ' ' + monthName;
 
-                // YTD Check - must be current year
-                if (range === 'ytd' && date.getFullYear() !== now.getFullYear()) return;
+                let dataPoint: RevenueData | undefined;
 
-                const monthData = chartData.find(m => m.name === fullName || m.name === monthName);
-                if (monthData) {
-                    monthData.revenue += (inv.total_amount || 0);
+                if (granularity === 'monthly') {
+                    dataPoint = chartData.find(d => d.name === fullMonthName);
+                } else if (granularity === 'daily') {
+                    dataPoint = chartData.find(d => d.name === dayName);
+                } else if (granularity === 'weekly') {
+                    const effectiveStart = start || new Date(now.getTime() - 60 * 86400000);
+                    const weekIndex = Math.floor((date.getTime() - effectiveStart.getTime()) / (7 * 86400000));
+                    if (weekIndex >= 0 && weekIndex < chartData.length) {
+                        dataPoint = chartData[weekIndex];
+                    }
+                } else {
+                    dataPoint = chartData[0];
+                }
+
+                if (dataPoint) {
+                    dataPoint.revenue += (inv.total_amount || 0);
                 }
             }
         });
@@ -150,6 +255,34 @@ const Reports = () => {
 
     const handleSendReminder = async (inv: Invoice) => {
         setSendingReminder(inv.id);
+        const settings = await dataService.getSettings();
+
+        if (settings?.webhook_url) {
+            try {
+                const response = await fetch(settings.webhook_url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'invoice_reminder',
+                        invoice_id: inv.id,
+                        invoice_number: inv.invoice_number,
+                        customer_email: inv.customers?.email,
+                        customer_name: inv.customers?.name || inv.guest_name,
+                        amount_due: inv.total_amount - (inv.amount_paid || 0),
+                        due_date: inv.due_date
+                    })
+                });
+
+                if (response.ok) {
+                    showToast('Success', 'Reminder triggered via webhook', 'success');
+                    setSendingReminder(null);
+                    setSelectedInvoiceForDetail(null);
+                    return;
+                }
+            } catch (error) {
+                console.error('Webhook error:', error);
+            }
+        }
 
         const days = getDaysOverdue(inv);
         const remaining = inv.total_amount - (inv.amount_paid || 0);
@@ -157,21 +290,22 @@ const Reports = () => {
 
         let message = '';
         if (days > 0) {
-            message = `Dear ${customerName},\n\nThis is a friendly reminder that invoice ${inv.invoice_number} for €${remaining.toLocaleString()} is currently ${days} days overdue.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\nCondon Dairy Services`;
+            message = `Dear ${customerName},\n\nThis is a friendly reminder that invoice ${inv.invoice_number} for €${remaining.toLocaleString()} is currently ${days} days overdue.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'Condon Dairy Services'}`;
         } else {
-            message = `Dear ${customerName},\n\nThis is a quick reminder that invoice ${inv.invoice_number} for €${remaining.toLocaleString()} is due soon.\n\nThank you for your prompt payment,\nCondon Dairy Services`;
+            message = `Dear ${customerName},\n\nThis is a quick reminder that invoice ${inv.invoice_number} for €${remaining.toLocaleString()} is due soon.\n\nThank you for your prompt payment,\n${settings?.company_name || 'Condon Dairy Services'}`;
         }
 
         await new Promise(r => setTimeout(r, 800)); // Simulate sending
 
-        showToast('Reminder Sent', `Payment reminder sent for ${customerName}`, 'success');
+        showToast('Reminder Sent', `Payment reminder prepared for ${customerName}`, 'success');
         setSendingReminder(null);
         setSelectedInvoiceForDetail(null);
 
         setTimeout(() => {
-            alert(`Email Draft Ready:\n\n${message}\n\n(In a real setup, this would instantly email the client).`);
+            alert(`Email Draft Ready:\n\n${message}\n\n(In a real setup, this would instantly email the client or use the webhook).`);
         }, 100);
     };
+
 
     const getDaysOverdue = (inv: Invoice) => {
         if (!inv.due_date) return 0;
@@ -226,9 +360,49 @@ const Reports = () => {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold font-display text-slate-900">Analytics & Reports</h1>
-                <p className="text-slate-500">Overview of business performance and metrics</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold font-display text-slate-900">Analytics & Reports</h1>
+                    <p className="text-slate-500 text-sm">Overview of business performance and metrics</p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="w-48">
+                        <SearchableSelect
+                            label=""
+                            searchable={false}
+                            options={[
+                                { value: 'all', label: 'All Time' },
+                                { value: 'month', label: 'This Month' },
+                                { value: 'year', label: 'This Year' },
+                                { value: 'custom', label: 'Custom Range' }
+                            ]}
+                            value={filterType}
+                            onChange={(val) => setFilterType(val as any)}
+                            icon={<Filter size={14} />}
+                        />
+                    </div>
+
+                    {filterType === 'custom' && (
+                        <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2 duration-300">
+                            <div className="w-40">
+                                <DatePicker
+                                    value={customRange.start}
+                                    onChange={(date) => setCustomRange({ ...customRange, start: date })}
+                                    placeholder="Start Date"
+                                />
+                            </div>
+                            <span className="text-slate-400 text-xs font-bold uppercase tracking-widest">to</span>
+                            <div className="w-40">
+                                <DatePicker
+                                    value={customRange.end}
+                                    onChange={(date) => setCustomRange({ ...customRange, end: date })}
+                                    placeholder="End Date"
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
 
             {/* KPI Cards */}
@@ -254,9 +428,9 @@ const Reports = () => {
                 </div>
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                     <div>
-                        <p className="text-slate-500 text-sm font-medium">Revenue (Last 6M)</p>
+                        <p className="text-slate-500 text-sm font-medium">Revenue ({filterType === 'all' ? 'All Time' : filterType === 'year' ? 'This Year' : 'Selected Period'})</p>
                         <h3 className="text-2xl font-bold text-slate-900 mt-1">
-                            €{revenueData.reduce((acc, curr) => acc + curr.revenue, 0).toLocaleString()}
+                            €{allInvoices.reduce((acc, curr) => acc + (curr.total_amount || 0), 0).toLocaleString()}
                         </h3>
                     </div>
                     <div className="w-12 h-12 bg-delaval-light-blue text-delaval-blue rounded-lg flex items-center justify-center">
@@ -265,6 +439,7 @@ const Reports = () => {
                 </div>
             </div>
 
+            {/* Main Visualizations Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Payment Action Center */}
                 <div className="section-card border-none shadow-md overflow-hidden bg-white hover:border-transparent">
@@ -283,12 +458,7 @@ const Reports = () => {
                     </div>
 
                     <div className="divide-y divide-slate-100 max-h-[440px] overflow-y-auto custom-scrollbar bg-slate-50/30 p-4 space-y-3">
-                        {loading ? (
-                            <div className="py-20 flex flex-col items-center justify-center text-slate-400">
-                                <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-delaval-blue animate-spin mb-4" />
-                                <div className="text-sm font-bold uppercase tracking-widest animate-pulse">Scanning Accounts</div>
-                            </div>
-                        ) : reminderCandidates.length === 0 ? (
+                        {reminderCandidates.length === 0 ? (
                             <div className="py-16 text-center">
                                 <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white shadow-xl shadow-green-900/5 border border-green-50 flex items-center justify-center">
                                     <CheckCircle2 size={32} className="text-green-500" />
@@ -319,12 +489,6 @@ const Reports = () => {
                                                 </div>
                                                 <div className="flex items-center gap-3 text-xs text-slate-500 font-medium">
                                                     <span className="flex items-center gap-1"><FileText size={12} /> {inv.invoice_number}</span>
-                                                    {(inv.customers?.phone || inv.guest_name) && (
-                                                        <>
-                                                            <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                                                            <span className="flex items-center gap-1"><Phone size={12} /> {inv.customers?.phone || 'No Phone'}</span>
-                                                        </>
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -338,71 +502,14 @@ const Reports = () => {
                                                     {isOverdue ? `${days} Days Overdue` : 'Due Soon'}
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); handleSendReminder(inv); }}
-                                                disabled={sendingReminder === inv.id}
-                                                className={`flex items-center justify-center gap-2 p-2.5 rounded-lg transition-all ${sendingReminder === inv.id
-                                                    ? 'bg-slate-100 text-slate-400 cursor-wait'
-                                                    : 'bg-delaval-blue text-white hover:bg-blue-700 shadow-sm hover:shadow-md hover:-translate-y-0.5'
-                                                    }`}
-                                                title="Send AI Reminder"
-                                            >
-                                                {sendingReminder === inv.id ? (
-                                                    <Activity size={16} className="animate-spin" />
-                                                ) : (
-                                                    <Send size={16} />
-                                                )}
-                                            </button>
+                                            <div className={`flex items-center justify-center p-2 rounded-lg ${sendingReminder === inv.id ? 'bg-slate-100' : 'bg-delaval-blue text-white'}`}>
+                                                {sendingReminder === inv.id ? <Activity size={16} className="animate-spin" /> : <Send size={16} />}
+                                            </div>
                                         </div>
                                     </div>
                                 );
                             })
                         )}
-                    </div>
-                </div>
-
-                {/* Revenue Chart */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <BarChart2 size={20} className="text-slate-400" />
-                            Revenue Trends
-                        </h3>
-                        <div className="flex items-center bg-slate-100 p-1 rounded-lg">
-                            <button
-                                onClick={() => setDateRangeFilter('6months')}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${dateRangeFilter === '6months' ? 'bg-white text-delaval-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                6M
-                            </button>
-                            <button
-                                onClick={() => setDateRangeFilter('12months')}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${dateRangeFilter === '12months' ? 'bg-white text-delaval-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                1Y
-                            </button>
-                            <button
-                                onClick={() => setDateRangeFilter('ytd')}
-                                className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${dateRangeFilter === 'ytd' ? 'bg-white text-delaval-blue shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                            >
-                                YTD
-                            </button>
-                        </div>
-                    </div>
-                    <div className="h-80">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={revenueData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} tickFormatter={(value) => `€${value}`} />
-                                <RechartsTooltip
-                                    formatter={(value: any) => [`€${Number(value).toLocaleString()}`, 'Revenue']}
-                                    cursor={{ fill: '#f8fafc' }}
-                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                                />
-                                <Bar dataKey="revenue" fill="#0051A5" radius={[4, 4, 0, 0]} maxBarSize={50} />
-                            </BarChart>
-                        </ResponsiveContainer>
                     </div>
                 </div>
 
@@ -435,9 +542,82 @@ const Reports = () => {
                         </ResponsiveContainer>
                     </div>
                 </div>
+
+                {/* Expanded Revenue Chart - Full width */}
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                                <BarChart2 size={24} className="text-delaval-blue" />
+                                Revenue Trends
+                            </h3>
+                            <p className="text-sm text-slate-500 mt-1">Detailed performance analysis for the selected period</p>
+                        </div>
+
+                        {/* Granularity Toggle Buttons - Updated for all options */}
+                        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+                            {[
+                                { id: 'daily', label: 'Daily' },
+                                { id: 'weekly', label: 'Weekly' },
+                                { id: 'monthly', label: 'Monthly' },
+                            ].map((opt) => (
+                                <button
+                                    key={opt.id}
+                                    onClick={() => setGranularity(opt.id as any)}
+                                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all ${granularity === opt.id
+                                        ? 'bg-white text-delaval-blue shadow-sm'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                        }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setIsRangeModalOpen(true)}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-tight transition-all flex items-center gap-1.5 ${filterType === 'custom'
+                                    ? 'bg-white text-delaval-blue shadow-sm'
+                                    : 'text-slate-500 hover:text-slate-700'
+                                    }`}
+                            >
+                                <Calendar size={12} />
+                                Select Range
+                            </button>
+                        </div>
+                    </div>
+                    <div className="h-[400px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={revenueData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis
+                                    dataKey="name"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 500 }}
+                                    dy={10}
+                                    interval="preserveStartEnd"
+                                    minTickGap={70}
+                                />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }} tickFormatter={(value) => `€${value}`} />
+                                <RechartsTooltip
+                                    formatter={(value: any) => [`€${Number(value).toLocaleString()}`, 'Revenue']}
+                                    cursor={{ fill: '#f8fafc' }}
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                                />
+                                <Bar dataKey="revenue" fill="url(#colorRevenue)" radius={[6, 6, 0, 0]} maxBarSize={60}>
+                                    <defs>
+                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#0051A5" stopOpacity={1} />
+                                            <stop offset="100%" stopColor="#003875" stopOpacity={1} />
+                                        </linearGradient>
+                                    </defs>
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
             </div>
 
-            {/* Top Customers Table */}
+            {/* Bottom Row: Top Customers */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                 <div className="p-6 border-b border-slate-100">
                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
@@ -479,7 +659,7 @@ const Reports = () => {
                 </div>
             </div>
 
-            {/* Client Detail Modal */}
+            {/* Modal remains at top level of return */}
             <Modal
                 isOpen={!!selectedInvoiceForDetail}
                 onClose={() => setSelectedInvoiceForDetail(null)}
@@ -493,7 +673,6 @@ const Reports = () => {
 
                     return (
                         <div className="space-y-6">
-                            {/* Giant Overdue Indicator */}
                             <div className={`p-8 rounded-2xl flex flex-col items-center justify-center text-center ${isOverdue ? 'bg-red-50 border-2 border-red-100' : 'bg-blue-50 border-2 border-blue-100'}`}>
                                 <div className={`text-6xl font-black font-display tracking-tighter mb-2 ${isOverdue ? 'text-red-500' : 'text-blue-500'}`}>
                                     {isOverdue ? days : 0}
@@ -503,7 +682,6 @@ const Reports = () => {
                                 </div>
                             </div>
 
-                            {/* Balance Breakdown */}
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Bill</div>
@@ -519,7 +697,6 @@ const Reports = () => {
                                 </div>
                             </div>
 
-                            {/* Contact Info */}
                             <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
                                 <div>
                                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Customer / Farm</div>
@@ -548,7 +725,6 @@ const Reports = () => {
                                 </div>
                             </div>
 
-                            {/* Actions */}
                             <div className="flex gap-3 pt-4">
                                 <Link
                                     to={`/invoices`}
@@ -573,7 +749,67 @@ const Reports = () => {
                     );
                 })()}
             </Modal>
-        </div >
+
+            {/* Select Range Modal */}
+            <Modal
+                isOpen={isRangeModalOpen}
+                onClose={() => setIsRangeModalOpen(false)}
+                title="Select Custom Date Range"
+            >
+                <div className="space-y-6 py-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Start Date</label>
+                            <DatePicker
+                                value={customRange.start}
+                                onChange={(date) => setCustomRange({ ...customRange, start: date })}
+                                placeholder="Start Date"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">End Date</label>
+                            <DatePicker
+                                value={customRange.end}
+                                onChange={(date) => setCustomRange({ ...customRange, end: date })}
+                                placeholder="End Date"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 flex items-start gap-3">
+                        <TrendingUp size={18} className="text-delaval-blue mt-0.5" />
+                        <div className="text-xs text-blue-700 leading-relaxed font-medium">
+                            Selecting a custom range will automatically update all dashboard KPIs and the Trends chart below.
+                        </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2">
+                        <button
+                            onClick={() => setIsRangeModalOpen(false)}
+                            className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-colors text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => {
+                                setFilterType('custom');
+                                setIsRangeModalOpen(false);
+                                // Set sensible granularity based on range
+                                const d1 = new Date(customRange.start);
+                                const d2 = new Date(customRange.end);
+                                const diff = Math.ceil((d2.getTime() - d1.getTime()) / (86400000));
+                                if (diff <= 31) setGranularity('daily');
+                                else if (diff <= 180) setGranularity('weekly');
+                                else setGranularity('monthly');
+                            }}
+                            className="flex-[2] py-3 px-4 bg-delaval-blue hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-900/20 hover:shadow-blue-900/40 flex items-center justify-center gap-2 text-sm"
+                        >
+                            Apply Custom Range
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+        </div>
     );
 };
 

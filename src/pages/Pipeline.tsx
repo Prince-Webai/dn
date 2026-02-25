@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   DragDropContext,
   Droppable,
@@ -16,6 +17,7 @@ import {
   Calendar,
   Filter,
 } from "lucide-react";
+import SearchableSelect from "../components/SearchableSelect";
 
 const COLUMNS = [
   {
@@ -53,6 +55,7 @@ const COLUMNS = [
 ];
 
 const Pipeline = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,18 +163,18 @@ const Pipeline = () => {
           </p>
         </div>
         {isAdmin && (
-          <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-xl border border-slate-200 shadow-sm">
-            <Filter className="w-5 h-5 text-slate-400" />
-            <select
-              className="bg-transparent border-none text-sm font-medium text-slate-700 focus:outline-none cursor-pointer"
+          <div className="w-64">
+            <SearchableSelect
+              label="Filter by Engineer"
+              options={[
+                { value: 'all', label: 'All Engineers' },
+                ...engineers.map(eng => ({ value: eng.name, label: eng.name }))
+              ]}
               value={selectedEngineer}
-              onChange={(e) => setSelectedEngineer(e.target.value)}
-            >
-              <option value="all">All Engineers</option>
-              {engineers.map(eng => (
-                <option key={eng.id} value={eng.name}>{eng.name}</option>
-              ))}
-            </select>
+              onChange={(val) => setSelectedEngineer(val)}
+              searchable={false}
+              icon={<Filter size={16} />}
+            />
           </div>
         )}
       </div>
@@ -202,8 +205,8 @@ const Pipeline = () => {
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       className={`flex-1 rounded-2xl p-3 border-2 border-dashed transition-colors duration-200 flex flex-col ${snapshot.isDraggingOver
-                          ? "border-delaval-blue bg-blue-50/50"
-                          : "border-transparent bg-slate-50"
+                        ? "border-delaval-blue bg-blue-50/50"
+                        : "border-transparent bg-slate-50"
                         }`}
                     >
                       <div className="flex flex-col gap-3 min-h-[150px] h-full flex-grow">
@@ -218,9 +221,10 @@ const Pipeline = () => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`bg-white p-4 rounded-xl border shadow-sm transition-all duration-200 ${snapshot.isDragging
-                                    ? "shadow-xl ring-2 ring-delaval-blue/20 border-delaval-blue scale-105 opacity-90"
-                                    : "border-slate-200 hover:border-slate-300 hover:shadow-md"
+                                onClick={() => navigate(`/jobs/${job.id}`)}
+                                className={`bg-white p-4 rounded-xl border shadow-sm transition-all duration-200 cursor-pointer ${snapshot.isDragging
+                                  ? "shadow-xl ring-2 ring-delaval-blue/20 border-delaval-blue scale-105 opacity-90"
+                                  : "border-slate-200 hover:border-slate-300 hover:shadow-md"
                                   }`}
                               >
                                 <div className="flex justify-between items-start mb-2">

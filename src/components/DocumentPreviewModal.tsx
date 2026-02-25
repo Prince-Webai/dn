@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Download, Mail, CheckCircle, ExternalLink } from 'lucide-react';
+import { dataService } from '../services/dataService';
 
 interface DocumentPreviewModalProps {
     isOpen: boolean;
@@ -38,19 +39,60 @@ const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
         link.click();
     };
 
-    const handleEmail = () => {
+    const handleEmail = async () => {
         if (!customerEmail) {
             alert('No email address on file for this customer.');
             return;
         }
 
+        try {
+            const settings = await dataService.getSettings();
+            if (settings?.webhook_url) {
+                // Determine if this is a quote, invoice, or statement for the event type
+                const eventType = documentType.toLowerCase() === 'quote' ? 'quote_sent'
+                    : documentType.toLowerCase() === 'statement' ? 'statement_sent'
+                        : 'invoice_sent';
+
+                const payload = {
+                    event: eventType,
+                    document_type: documentType,
+                    document_number: documentNumber,
+                    customer_name: customerName,
+                    customer_email: customerEmail,
+                    amount: amount,
+                    pdf_data_url: pdfDataUrl, // base64 pdf data string
+                    timestamp: new Date().toISOString()
+                };
+
+                const response = await fetch(settings.webhook_url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    alert(`${documentType} successfully sent via webhook!`);
+                    if (onMarkAsSent) onMarkAsSent();
+                    return; // Webhook succeeded, do not open mailto
+                } else {
+                    console.error('Webhook returned error status:', response.status);
+                    alert(`Webhook failed (${response.status}). Falling back to email client.`);
+                }
+            } else {
+                alert('No webhook URL configured in Settings. Falling back to email client.');
+            }
+        } catch (error) {
+            console.error('Error sending webhook:', error);
+            alert('Error connecting to webhook. Falling back to email client.');
+        }
+
+        // Fallback to mailto if webhook fails or is not configured
         const subject = encodeURIComponent(`Your ${documentType} from Condon Dairy: ${documentNumber}`);
         const body = encodeURIComponent(
             `Hi ${customerName},\n\nPlease find attached your ${documentType} (${documentNumber}) for the amount of ${amount}.\n\nIf you have any questions, feel free to reply to this email.\n\nBest regards,\nCondon Dairy Team`
         );
         window.location.href = `mailto:${customerEmail}?subject=${subject}&body=${body}`;
 
-        // Optional: Auto-mark as sent when they click email
         if (onMarkAsSent) {
             onMarkAsSent();
         }

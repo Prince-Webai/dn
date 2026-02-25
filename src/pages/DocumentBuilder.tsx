@@ -3,8 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer, InventoryItem } from '../types';
 import { useToast } from '../context/ToastContext';
-import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download, Receipt } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
+import SearchableSelect from '../components/SearchableSelect';
 import { generateInvoice, generateQuote } from '../lib/pdfGenerator';
 
 const DocumentBuilder = () => {
@@ -18,6 +19,7 @@ const DocumentBuilder = () => {
     const [docType, setDocType] = useState<'invoice' | 'quote'>(initialType as 'invoice' | 'quote');
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [loading, setLoading] = useState(false);
+    const [vatRate, setVatRate] = useState<number>(13.5);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
 
     // Customer mode state
@@ -150,6 +152,7 @@ const DocumentBuilder = () => {
                             description: customDescription,
                             valid_until: docData.validUntil,
                             subtotal,
+                            vat_rate: vatRate,
                             vat_amount: vatAmount,
                             total_amount: totalAmount,
                             notes: docData.notes,
@@ -220,7 +223,7 @@ const DocumentBuilder = () => {
                     vat_amount: vatAmount,
                     total_amount: totalAmount,
                     custom_description: customDescription,
-                    status: 'sent',
+                    status: 'draft',
                     date_issued: new Date().toISOString().split('T')[0],
                     due_date: docData.validUntil
                 }]).select().single();
@@ -248,8 +251,7 @@ const DocumentBuilder = () => {
                         customer_id: finalCustomerId,
                         service_type: docType === 'invoice' ? 'Detailed Invoice Statement' : 'Quote Statement',
                         status: 'completed',
-                        date_completed: new Date().toISOString(),
-                        notes: `Auto-generated from ${docType} ${nextNumber}`
+                        date_completed: new Date().toISOString()
                     }]).select().single();
 
                     if (jobError) throw jobError;
@@ -327,7 +329,7 @@ const DocumentBuilder = () => {
             let pdfData: string | void = undefined;
 
             if (docType === 'quote') {
-                pdfData = generateQuote(
+                pdfData = await generateQuote(
                     {
                         id: 'preview',
                         created_at: new Date().toISOString(),
@@ -354,7 +356,7 @@ const DocumentBuilder = () => {
                     action
                 ) as unknown as string;
             } else {
-                pdfData = generateInvoice(
+                pdfData = await generateInvoice(
                     'PREVIEW',
                     customerToUse,
                     docData.items.map(item => ({
@@ -408,7 +410,7 @@ const DocumentBuilder = () => {
     };
 
     const docSubtotal = docData.items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
-    const docVat = docSubtotal * 0.135;
+    const docVat = docSubtotal * (vatRate / 100);
     const docTotal = docSubtotal + docVat;
 
     return (
@@ -485,18 +487,15 @@ const DocumentBuilder = () => {
 
                                 {customerMode === 'existing' ? (
                                     <div className="form-group pb-2">
-                                        <label className="block text-xs font-bold text-slate-500 mb-1">Select Customer *</label>
-                                        <select
-                                            className="form-select w-full px-4 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                        <SearchableSelect
+                                            label="Select Customer"
+                                            required
+                                            options={customers.map(c => ({ value: c.id, label: c.name }))}
                                             value={docData.customerId}
-                                            onChange={(e) => setDocData({ ...docData, customerId: e.target.value })}
-                                            required={customerMode === 'existing'}
-                                        >
-                                            <option value="">Select an existing customer...</option>
-                                            {customers.map(c => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
+                                            onChange={(val) => setDocData({ ...docData, customerId: val })}
+                                            placeholder="Search for a customer..."
+                                            icon={<Users size={16} />}
+                                        />
                                     </div>
                                 ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-2">
@@ -526,6 +525,21 @@ const DocumentBuilder = () => {
                                     <DatePicker
                                         value={docData.validUntil}
                                         onChange={(v) => setDocData({ ...docData, validUntil: v })}
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <SearchableSelect
+                                        label="VAT Rate"
+                                        searchable={false}
+                                        options={[
+                                            { value: '23', label: 'Standard (23%)' },
+                                            { value: '13.5', label: 'Reduced (13.5%)' },
+                                            { value: '4.8', label: 'Livestock (4.8%)' },
+                                            { value: '0', label: 'Zero Rated (0%)' },
+                                        ]}
+                                        value={vatRate.toString()}
+                                        onChange={(val) => setVatRate(parseFloat(val))}
+                                        icon={<Receipt size={16} />}
                                     />
                                 </div>
                             </div>

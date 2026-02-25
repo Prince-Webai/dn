@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Plus, Search, ArrowLeft, Package, Briefcase, Euro, Upload, Trash2 } from 'lucide-react';
+import { Plus, Search, ArrowLeft, Package, Briefcase, Euro, Upload, Trash2, Download, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
@@ -8,6 +8,8 @@ import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
 import { dataService } from '../services/dataService';
 import { useToast } from '../context/ToastContext';
+import SearchableSelect from '../components/SearchableSelect';
+import { generateInvoice, generateQuote, generateStatement } from '../lib/pdfGenerator';
 
 const Customers = () => {
     const { showToast } = useToast();
@@ -310,6 +312,66 @@ const Customers = () => {
     };
 
 
+    const handlePreviewInvoice = async (invoice: any, action: 'preview' | 'download' = 'preview') => {
+        try {
+            let items: any[] = [];
+            let engineerName = 'Admin';
+
+            if (invoice.job_id) {
+                const { data: jobData } = await supabase.from('jobs').select('engineer_name').eq('id', invoice.job_id).single();
+                if (jobData) engineerName = jobData.engineer_name;
+                const { data: jobItems } = await supabase.from('job_items').select('*').eq('job_id', invoice.job_id);
+                items = jobItems || [];
+            } else {
+                const { data: invItems } = await supabase.from('invoice_items').select('*').eq('invoice_id', invoice.id);
+                items = invItems || [];
+            }
+
+            const pdfData = await generateInvoice(
+                invoice.invoice_number,
+                selectedCustomer as any,
+                items,
+                invoice.vat_rate || 13.5,
+                invoice.total_amount,
+                action,
+                invoice.status.toUpperCase(),
+                engineerName
+            ) as unknown as string;
+
+            if (pdfData && action === 'preview') window.open(pdfData, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            console.error(error);
+            showToast('Error', 'Failed to generate invoice.', 'error');
+        }
+    };
+
+    const handlePreviewQuote = async (quote: any, action: 'preview' | 'download' = 'preview') => {
+        try {
+            const { data: quoteItems } = await supabase.from('quote_items').select('*').eq('quote_id', quote.id);
+            const items = quoteItems || [];
+            const pdfData = await generateQuote(quote, selectedCustomer as any, items, action) as unknown as string;
+            if (pdfData && action === 'preview') window.open(pdfData, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            console.error(error);
+            showToast('Error', 'Failed to generate quote.', 'error');
+        }
+    };
+
+    const handlePreviewStatement = async (statement: any, action: 'preview' | 'download' = 'preview') => {
+        try {
+            let items: any[] = [];
+            if (statement.job_id) {
+                const { data: jobItems } = await supabase.from('job_items').select('*').eq('job_id', statement.job_id);
+                if (jobItems) items = jobItems;
+            }
+            const pdfData = await generateStatement(null, items, selectedCustomer as any, statement, action) as unknown as string;
+            if (pdfData && action === 'preview') window.open(pdfData, '_blank', 'noopener,noreferrer');
+        } catch (error) {
+            console.error(error);
+            showToast('Error', 'Failed to generate statement.', 'error');
+        }
+    };
+
     return (
         <div className="space-y-6">
             {selectedCustomer ? (
@@ -432,7 +494,7 @@ const Customers = () => {
                     <div className="section-card">
                         <div className="border-b border-slate-200 px-6">
                             <div className="flex gap-8 overflow-x-auto">
-                                {['service-history', 'parts-history', 'invoices', 'quotes', 'documents'].map((tab) => (
+                                {['service-history', 'parts-history', 'invoices', 'quotes', 'statements'].map((tab) => (
                                     <button
                                         key={tab}
                                         onClick={() => setActiveTab(tab)}
@@ -554,8 +616,13 @@ const Customers = () => {
                                                     <td className="px-6 py-4">
                                                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : inv.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600'}`}>{inv.status}</span>
                                                     </td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        {inv.pdf_url && <a href={inv.pdf_url} target="_blank" rel="noopener noreferrer" className="text-delaval-blue hover:underline text-sm font-medium">View PDF</a>}
+                                                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                                        <button onClick={() => handlePreviewInvoice(inv, 'preview')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Preview PDF">
+                                                            <Eye size={18} />
+                                                        </button>
+                                                        <button onClick={() => handlePreviewInvoice(inv, 'download')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Download PDF">
+                                                            <Download size={18} />
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -590,6 +657,14 @@ const Customers = () => {
                                                     <td className="px-6 py-4">
                                                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${quote.status === 'accepted' ? 'bg-green-100 text-green-800' : quote.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600'}`}>{quote.status}</span>
                                                     </td>
+                                                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                                        <button onClick={() => handlePreviewQuote(quote, 'preview')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Preview PDF">
+                                                            <Eye size={18} />
+                                                        </button>
+                                                        <button onClick={() => handlePreviewQuote(quote, 'download')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Download PDF">
+                                                            <Download size={18} />
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -597,7 +672,7 @@ const Customers = () => {
                                 </div>
                             )}
 
-                            {activeTab === 'documents' && (
+                            {activeTab === 'statements' && (
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
                                         <thead className="bg-[#F8FAFB] border-b border-slate-100">
@@ -618,8 +693,13 @@ const Customers = () => {
                                                     <td className="px-6 py-4 text-slate-600">{new Date(stmt.date_generated).toLocaleDateString()}</td>
                                                     <td className="px-6 py-4 font-bold text-slate-900">{stmt.statement_number}</td>
                                                     <td className="px-6 py-4 font-bold text-slate-900">€{stmt.total_amount.toLocaleString()}</td>
-                                                    <td className="px-6 py-4 text-right">
-                                                        {stmt.pdf_url && <a href={stmt.pdf_url} target="_blank" rel="noopener noreferrer" className="text-delaval-blue hover:underline text-sm font-medium">View PDF</a>}
+                                                    <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                                        <button onClick={() => handlePreviewStatement(stmt, 'preview')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Preview PDF">
+                                                            <Eye size={18} />
+                                                        </button>
+                                                        <button onClick={() => handlePreviewStatement(stmt, 'download')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Download PDF">
+                                                            <Download size={18} />
+                                                        </button>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -785,13 +865,18 @@ const Customers = () => {
                             <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
                             <input type="email" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Payment Terms</label>
-                            <select className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20 mb-2" value={newCustomer.payment_terms} onChange={e => setNewCustomer({ ...newCustomer, payment_terms: e.target.value })}>
-                                <option>Net 30</option>
-                                <option>Net 60</option>
-                                <option>Immediate</option>
-                            </select>
+                        <div className="col-span-2">
+                            <SearchableSelect
+                                label="Payment Terms"
+                                searchable={false}
+                                options={[
+                                    { value: 'Net 30', label: 'Net 30' },
+                                    { value: 'Net 60', label: 'Net 60' },
+                                    { value: 'Immediate', label: 'Immediate' }
+                                ]}
+                                value={newCustomer.payment_terms}
+                                onChange={(val) => setNewCustomer({ ...newCustomer, payment_terms: val })}
+                            />
                         </div>
                     </div>
                     <div className="pt-4 flex justify-end gap-3">

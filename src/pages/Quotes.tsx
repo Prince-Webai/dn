@@ -37,10 +37,10 @@ const Quotes = () => {
         }
     };
 
-    const handleGeneratePDF = (quote: Quote) => {
+    const handleGeneratePDF = async (quote: Quote) => {
         if (!quote.customers) return;
         const items = quote.quote_items || [];
-        const pdfData = generateQuote(quote, quote.customers, items, 'preview') as unknown as string;
+        const pdfData = await generateQuote(quote, quote.customers, items, 'preview') as unknown as string;
         if (pdfData) {
             window.open(pdfData, '_blank', 'noopener,noreferrer');
         }
@@ -124,16 +124,18 @@ const Quotes = () => {
 
     return (
         <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold font-display text-slate-900">Quotes & Estimates</h1>
-                <p className="text-slate-500">Manage and track customer quotes</p>
+            <div className="flex justify-between items-center">
+                <div>
+                    <h1 className="text-2xl font-bold font-display text-slate-900">Quotes & Estimates</h1>
+                    <p className="text-slate-500">Manage and track customer quotes</p>
+                </div>
+                <Link
+                    to="/documents/new?type=quote"
+                    className="btn btn-primary shadow-lg shadow-blue-900/20 flex items-center gap-2 w-fit"
+                >
+                    <Plus size={20} /> Create Quote
+                </Link>
             </div>
-            <Link
-                to="/documents/new?type=quote"
-                className="btn btn-primary shadow-lg shadow-blue-900/20 flex items-center gap-2"
-            >
-                <Plus size={20} /> Create Quote
-            </Link>
 
             <div className="section-card">
                 <div className="p-6 border-b border-slate-100">
@@ -210,7 +212,7 @@ const Quotes = () => {
                     </table>
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

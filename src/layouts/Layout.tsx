@@ -1,34 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, Kanban } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, Kanban, Settings as SettingsIcon } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabase';
-import Modal from '../components/Modal';
 import logoImg from '../assets/logo_v2.png';
+
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const location = useLocation();
+    const navigate = useNavigate();
     const { user, signOut } = useAuth();
-    const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-    // Form state for profile editing
-    const [profileForm, setProfileForm] = useState({
-        name: '',
-        email: ''
-    });
+    // State for user name display
+    const [userName, setUserName] = useState('Admin User');
 
     // Update form state when user loads
     useEffect(() => {
         if (user) {
-            setProfileForm({
-                name: user.user_metadata?.name || user.email?.split('@')[0] || 'Admin User',
-                email: user.email || ''
-            });
+            setUserName(user.user_metadata?.name || user.email?.split('@')[0] || 'Admin User');
         }
     }, [user]);
 
     const handleSignOut = async () => {
+
         try {
             await signOut();
             // Navigation to login is handled by ProtectedRoute/AuthContext state change
@@ -37,19 +32,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    const handleProfileUpdate = async (e: React.FormEvent) => {
-        e.preventDefault();
-        try {
-            const { error } = await supabase.auth.updateUser({
-                data: { name: profileForm.name }
-            });
-            if (error) throw error;
-            setIsProfileModalOpen(false);
-        } catch (error: any) {
-            console.error('Error updating profile:', error);
-            alert(`Failed to update profile: ${error.message}`);
-        }
-    };
+
 
     // Prototype Sidebar Structure
     const navSections = [
@@ -63,13 +46,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             ]
         },
         {
-            title: 'Inventory',
-            items: [
-                { icon: Package, label: 'Parts Inventory', path: '/inventory' },
-                // { icon: Package, label: 'Parts Allocation', path: '/inventory' }, // Combined in React App
-            ]
-        },
-        {
             title: 'Financial',
             items: [
                 { icon: FileText, label: 'Invoices', path: '/invoices' },
@@ -78,12 +54,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             ]
         },
         {
+            title: 'Inventory',
+            items: [
+                { icon: Package, label: 'Parts Inventory', path: '/inventory' },
+                // { icon: Package, label: 'Parts Allocation', path: '/inventory' }, // Combined in React App
+            ]
+        },
+        {
             title: 'Reports & Admin',
             items: [
                 { icon: PieChart, label: 'Analytics', path: '/reports' },
                 { icon: Users, label: 'Team & Engineers', path: '/team' },
+                { icon: SettingsIcon, label: 'Settings', path: '/settings' },
             ]
         },
+
     ];
 
     const closeSidebar = () => setIsSidebarOpen(false);
@@ -106,16 +91,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <div className="flex items-center gap-4">
                         <div
                             onClick={() => {
-                                setIsProfileModalOpen(true);
+                                navigate('/settings');
                             }}
                             className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-full border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
                             <div className="w-9 h-9 rounded-full bg-delaval-blue text-white flex items-center justify-center font-bold">
                                 <User size={20} />
                             </div>
                             <div className="text-slate-700 text-sm font-medium pr-2">
-                                {profileForm.name}
+                                {userName}
                             </div>
                         </div>
+
 
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -191,52 +177,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 <main className="min-w-0">
                     {children}
                 </main>
-
             </div>
-
-            {/* Edit Profile Modal */}
-            {isProfileModalOpen && (
-                <Modal isOpen={isProfileModalOpen} onClose={() => setIsProfileModalOpen(false)} title="Edit Profile">
-                    <form onSubmit={handleProfileUpdate} className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                            <input
-                                type="text"
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                value={profileForm.name}
-                                onChange={e => setProfileForm({ ...profileForm, name: e.target.value })}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                            <input
-                                type="email"
-                                // Emails are usually immutable in basic auth implementations or require re-confirmation
-                                disabled
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 bg-slate-100 text-slate-500 cursor-not-allowed"
-                                value={profileForm.email}
-                            />
-                        </div>
-                        <div className="flex justify-end gap-3 mt-6">
-                            <button
-                                type="button"
-                                onClick={() => setIsProfileModalOpen(false)}
-                                className="px-4 py-2 text-slate-600 hover:text-slate-800"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-4 py-2 bg-delaval-blue text-white rounded-lg hover:bg-delaval-blue/90"
-                            >
-                                Save Changes
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
-            )}
         </div>
     );
 };
+
 
 export default Layout;

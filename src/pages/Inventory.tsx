@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import { InventoryItem } from '../types';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
+import SearchableSelect from '../components/SearchableSelect';
 
 const Inventory = () => {
     const [items, setItems] = useState<InventoryItem[]>([]);
@@ -214,18 +215,18 @@ const Inventory = () => {
                 </div>
 
                 {activeTab === 'inventory' && categories.length > 0 && (
-                    <div className="flex items-center gap-2">
-                        <Tag size={16} className="text-slate-400" />
-                        <select
+                    <div className="w-64">
+                        <SearchableSelect
+                            label="Filter Category"
+                            searchable={false}
+                            options={[
+                                { value: 'all', label: 'All Categories' },
+                                ...categories.map(cat => ({ value: cat, label: cat }))
+                            ]}
                             value={categoryFilter}
-                            onChange={e => setCategoryFilter(e.target.value)}
-                            className="text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                        >
-                            <option value="all">All Categories</option>
-                            {categories.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                        </select>
+                            onChange={(val) => setCategoryFilter(val)}
+                            icon={<Tag size={16} />}
+                        />
                     </div>
                 )}
             </div>
@@ -457,23 +458,24 @@ const Inventory = () => {
                                 </div>
                             ) : (
                                 <div className="flex gap-2">
-                                    <select
-                                        className="flex-1 px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
+                                    <SearchableSelect
+                                        label="Category"
+                                        options={[
+                                            ...categories.map(cat => ({ value: cat, label: cat })),
+                                            ...(newItem.category && !categories.includes(newItem.category) ? [{ value: newItem.category, label: newItem.category }] : []),
+                                            { value: '__new__', label: '➕ Create New Category' }
+                                        ]}
                                         value={newItem.category}
-                                        onChange={e => {
-                                            if (e.target.value === '__new__') {
+                                        onChange={(val) => {
+                                            if (val === '__new__') {
                                                 setIsNewCategory(true);
                                             } else {
-                                                setNewItem({ ...newItem, category: e.target.value });
+                                                setNewItem({ ...newItem, category: val });
                                             }
                                         }}
-                                    >
-                                        <option value="">Select category...</option>
-                                        {categories.map(cat => (
-                                            <option key={cat} value={cat}>{cat}</option>
-                                        ))}
-                                        <option value="__new__">➕ Create New Category</option>
-                                    </select>
+                                        placeholder="Select category..."
+                                        icon={<Tag size={16} />}
+                                    />
                                 </div>
                             )}
                         </div>

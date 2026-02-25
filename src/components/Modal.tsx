@@ -43,7 +43,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'default' }: ModalProp
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex-none p-6 border-b bg-white rounded-t-xl flex items-center justify-between">
-                    <h2 className="text-xl font-bold font-display text-gray-900">{title}</h2>
+                    <h2 className="text-xl font-bold font-display text-gray-900 m-0">{title}</h2>
                     <button
                         onClick={onClose}
                         className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"

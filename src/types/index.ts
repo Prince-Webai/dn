@@ -69,6 +69,7 @@ export interface Invoice {
     custom_description?: string;
     status: 'draft' | 'sent' | 'paid' | 'void' | 'partial' | 'overdue';
     pdf_url?: string;
+    sent_count?: number;
     guest_name?: string; // For one-time invoices
     amount_paid?: number;
     payment_date?: string;
@@ -127,4 +128,19 @@ export interface QuoteItem {
     quantity: number;
     unit_price: number;
     total: number;
+}
+export interface Settings {
+    id: string;
+    company_name: string;
+    company_address: string;
+    company_phone: string;
+    company_email: string;
+    contact_name: string;
+    bank_name: string;
+    account_name: string;
+    iban: string;
+    bic: string;
+    vat_reg_number: string;
+    webhook_url: string;
+    updated_at: string;
 }
