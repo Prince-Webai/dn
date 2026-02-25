@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, C
 import DatePicker from '../components/DatePicker';
 import SearchableSelect from '../components/SearchableSelect';
 import { generateInvoice, generateQuote } from '../lib/pdfGenerator';
+import { dataService } from '../services/dataService';
 
 const DocumentBuilder = () => {
     const navigate = useNavigate();
@@ -279,6 +280,9 @@ const DocumentBuilder = () => {
                     console.error('Error auto-generating statement:', stmtError);
                 }
 
+                if (finalCustomerId) {
+                    await dataService.recalculateCustomerBalance(finalCustomerId);
+                }
                 navigate('/invoices');
             }
 

@@ -57,9 +57,12 @@ const JobDetails = () => {
     const handleAddItem = async () => {
         if (!id) return;
         try {
+            const itemTotal = newItem.quantity * newItem.unit_price;
+            const itemToInsert = { ...newItem, job_id: id, total: itemTotal };
+
             const { data, error } = await supabase
                 .from('job_items')
-                .insert([{ ...newItem, job_id: id }])
+                .insert([itemToInsert])
                 .select();
 
             if (error) throw error;

@@ -219,6 +219,9 @@ const Invoices = () => {
         });
 
         if (!error) {
+            if (paymentInvoice.customer_id) {
+                await dataService.recalculateCustomerBalance(paymentInvoice.customer_id);
+            }
             showToast('Success', 'Payment recorded successfully', 'success');
             setIsPaymentOpen(false);
             fetchData();

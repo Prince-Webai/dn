@@ -143,57 +143,33 @@ export const dataService = {
     async updateJob(id: string, updates: Partial<Job>): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
 
-        // Handle automatic customer balance updates on status change
+        let shouldRecalculate = false;
+        let customerIdToRecalculate: string | null = null;
+
+        // Determine if status is changing to or from 'completed'
         if (updates.status) {
-            // Get current job to check if status is actually changing
-            const { data: currentJob, error: fetchError } = await supabase
+            const { data: currentJob } = await supabase
                 .from('jobs')
                 .select('status, customer_id')
                 .eq('id', id)
                 .single();
 
-            if (!fetchError && currentJob) {
-                const oldStatus = currentJob.status;
-                const newStatus = updates.status;
-
-                // Only proceed if status is changing to or from 'completed'
-                if (oldStatus !== newStatus && (oldStatus === 'completed' || newStatus === 'completed')) {
-                    // Fetch job items to calculate total value
-                    const { data: jobItems } = await supabase
-                        .from('job_items')
-                        .select('total')
-                        .eq('job_id', id);
-
-                    const jobTotal = (jobItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
-
-                    if (jobTotal > 0) {
-                        // Fetch current customer balance
-                        const { data: customer } = await supabase
-                            .from('customers')
-                            .select('account_balance')
-                            .eq('id', currentJob.customer_id)
-                            .single();
-
-                        if (customer) {
-                            let newBalance = customer.account_balance || 0;
-                            if (newStatus === 'completed') {
-                                newBalance += jobTotal; // Add to balance
-                            } else if (oldStatus === 'completed') {
-                                newBalance -= jobTotal; // Remove from balance
-                            }
-
-                            // Update customer balance silently
-                            await supabase
-                                .from('customers')
-                                .update({ account_balance: newBalance })
-                                .eq('id', currentJob.customer_id);
-                        }
-                    }
-                }
+            if (currentJob && currentJob.status !== updates.status &&
+                (currentJob.status === 'completed' || updates.status === 'completed')) {
+                shouldRecalculate = true;
+                customerIdToRecalculate = currentJob.customer_id;
             }
         }
 
-        return await supabase.from('jobs').update(updates).eq('id', id);
+        const result = await supabase.from('jobs').update(updates).eq('id', id);
+
+        // Trigger secure synchronized recalculation
+        if (shouldRecalculate && customerIdToRecalculate && !result.error) {
+            // Using logic added earlier
+            await this.recalculateCustomerBalance(customerIdToRecalculate);
+        }
+
+        return result;
     },
 
     async deleteJob(id: string): Promise<{ error: any }> {
@@ -274,6 +250,38 @@ export const dataService = {
                 id: '00000000-0000-0000-0000-000000000000',
                 updated_at: new Date().toISOString()
             });
+    },
+
+    async recalculateCustomerBalance(customerId: string): Promise<number> {
+        if (!isSupabaseConfigured()) return 0;
+        try {
+            // 1. Sum of all completed jobs
+            const { data: completedJobs } = await supabase.from('jobs').select('id').eq('customer_id', customerId).eq('status', 'completed');
+            let totalJobValue = 0;
+            if (completedJobs && completedJobs.length > 0) {
+                const jobIds = completedJobs.map(j => j.id);
+                // Chunk queries if too many jobs, but simple array is fine for normal loads
+                const { data: jobItems } = await supabase.from('job_items').select('total').in('job_id', jobIds);
+                totalJobValue = (jobItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
+            }
+
+            // 2. Sum of all standalone invoices (where job_id is null)
+            const { data: standaloneInvoices } = await supabase.from('invoices').select('total_amount').eq('customer_id', customerId).is('job_id', null);
+            const totalStandaloneInvoices = (standaloneInvoices || []).reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+
+            // 3. Sum of all payments (across all invoices)
+            const { data: allInvoices } = await supabase.from('invoices').select('amount_paid').eq('customer_id', customerId);
+            const totalPaid = (allInvoices || []).reduce((sum, inv) => sum + (inv.amount_paid || 0), 0);
+
+            // 4. Calculate proper balance
+            const newBalance = totalJobValue + totalStandaloneInvoices - totalPaid;
+
+            await supabase.from('customers').update({ account_balance: newBalance }).eq('id', customerId);
+            return newBalance;
+        } catch (error) {
+            console.error('Error recalculating bounds:', error);
+            return 0;
+        }
     }
 
 };

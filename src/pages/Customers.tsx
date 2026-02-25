@@ -253,6 +253,8 @@ const Customers = () => {
 
     const fetchCustomerDetails = async (customerId: string) => {
         try {
+            await dataService.recalculateCustomerBalance(customerId);
+
             const [jobsRes, invoicesRes, quotesRes, statementsRes] = await Promise.all([
                 supabase
                     .from('jobs')
@@ -519,6 +521,7 @@ const Customers = () => {
                                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Engineer</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -546,6 +549,11 @@ const Customers = () => {
                                                                             'bg-slate-100 text-slate-600'}`}>
                                                                 {job.status}
                                                             </span>
+                                                        </td>
+                                                        <td className="px-6 py-4 text-right">
+                                                            <Link to={`/jobs/${job.id}`} className="inline-block p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="View Job Details">
+                                                                <Eye size={18} />
+                                                            </Link>
                                                         </td>
                                                     </tr>
                                                 ))
