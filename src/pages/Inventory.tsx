@@ -399,7 +399,7 @@ const Inventory = () => {
                                                     : (alloc.jobs?.date_scheduled ? new Date(alloc.jobs.date_scheduled).toLocaleDateString() : 'N/A')}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+                                                <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium 
                                                     ${alloc.jobs?.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-orange-100 text-orange-800'}`}>
                                                     {alloc.jobs?.status === 'completed' ? 'Used' : 'Reserved'}
                                                 </span>

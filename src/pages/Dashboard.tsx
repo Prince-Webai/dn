@@ -314,7 +314,7 @@ const Dashboard = () => {
                                     <td className="px-6 py-4 text-sm text-slate-600">{job.engineer_name}</td>
                                     <td className="px-6 py-4 text-sm text-slate-600">{job.date_scheduled?.split('T')[0]}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
+                                        <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
                                                                 ${job.status === 'completed' ? 'bg-green-100 text-green-800' :
                                                 job.status === 'in_progress' ? 'bg-orange-100 text-orange-800' :
                                                     'bg-blue-100 text-blue-800'}`}>
