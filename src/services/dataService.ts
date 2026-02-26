@@ -175,11 +175,37 @@ export const dataService = {
     async deleteJob(id: string): Promise<{ error: any }> {
         if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
 
-        // Delete related job items first to satisfy foreign key constraints
-        const { error: itemsError } = await supabase.from('job_items').delete().eq('job_id', id);
-        if (itemsError) return { error: itemsError };
+        try {
+            // 1. Delete job items
+            const { error: itemsError } = await supabase.from('job_items').delete().eq('job_id', id);
+            if (itemsError) return { error: itemsError };
 
-        return await supabase.from('jobs').delete().eq('id', id);
+            // 2. Safely delete associated invoices and their items
+            const { data: invoices } = await supabase.from('invoices').select('id').eq('job_id', id);
+            if (invoices && invoices.length > 0) {
+                const invoiceIds = invoices.map(i => i.id);
+                // Invoices might have payments in the future, but right now we just delete invoice_items
+                await supabase.from('invoice_items').delete().in('invoice_id', invoiceIds);
+                await supabase.from('invoices').delete().in('id', invoiceIds);
+            }
+
+            // 3. Safely delete associated quotes and their items
+            const { data: quotes } = await supabase.from('quotes').select('id').eq('job_id', id);
+            if (quotes && quotes.length > 0) {
+                const quoteIds = quotes.map(q => q.id);
+                await supabase.from('quote_items').delete().in('quote_id', quoteIds);
+                await supabase.from('quotes').delete().in('id', quoteIds);
+            }
+
+            // 4. Delete statements linked to this job
+            await supabase.from('statements').delete().eq('job_id', id);
+
+            // 5. Finally, delete the job
+            return await supabase.from('jobs').delete().eq('id', id);
+        } catch (error) {
+            console.error("Failed to delete job safely", error);
+            return { error };
+        }
     },
 
     async deleteCustomer(id: string): Promise<{ error: any }> {

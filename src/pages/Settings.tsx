@@ -1,13 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Save, Globe, Phone, Mail, MapPin, Building, CreditCard, Receipt, Activity } from 'lucide-react';
+import { Save, Globe, Phone, Mail, MapPin, Building, CreditCard, Receipt, Activity, User } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { Settings as SettingsType } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const Settings = () => {
     const [settings, setSettings] = useState<SettingsType | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const { user } = useAuth();
+    const [userName, setUserName] = useState('');
+
+    useEffect(() => {
+        if (user) {
+            setUserName(user.user_metadata?.name || user.email?.split('@')[0] || 'Admin User');
+        }
+    }, [user]);
 
     useEffect(() => {
         fetchSettings();
@@ -52,6 +62,13 @@ const Settings = () => {
         setMessage(null);
 
         try {
+            if (user && userName !== (user.user_metadata?.name || user.email?.split('@')[0])) {
+                const { error: authError } = await supabase.auth.updateUser({
+                    data: { name: userName }
+                });
+                if (authError) throw authError;
+            }
+
             const { error } = await dataService.updateSettings(settings);
             if (error) throw error;
             setMessage({ type: 'success', text: 'Settings saved successfully.' });
@@ -95,6 +112,33 @@ const Settings = () => {
             )}
 
             <form onSubmit={handleSave} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+                {/* User Profile */}
+                <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-6 lg:col-span-2">
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                            <User size={20} />
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-800">User Profile</h2>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Dashboard Display Name</label>
+                            <p className="text-xs text-slate-500 mb-2 ml-1">Shown in the top right corner of the app layout.</p>
+                            <div className="relative">
+                                <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                    value={userName}
+                                    onChange={e => setUserName(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Company Details */}
                 <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-6">
                     <div className="flex items-center gap-3 border-b border-slate-100 pb-4">

@@ -404,63 +404,38 @@ export const generateQuote = async (
     y = tableBottom + 15;
     doc.setFontSize(9);
 
-    // Subtotal
-    doc.setFont('helvetica', 'normal');
-    doc.text('Total Net', totalsX, y);
-    doc.text(`€${quote.subtotal.toFixed(2)}`, pageWidth - RIGHT, y, { align: 'right' });
-    y += 6;
-
-    // Discount (0 for quotes currently)
-    doc.text('Total Discount', totalsX, y);
-    doc.text('€0.00', pageWidth - RIGHT, y, { align: 'right' });
-    y += 6;
-
-    // VAT
-    doc.text('Total VAT', totalsX, y);
     const vatAmount = quote.vat_amount || (quote.total_amount - quote.subtotal);
-    doc.text(`€${vatAmount.toFixed(2)}`, pageWidth - RIGHT, y, { align: 'right' });
-    y += 6;
 
-    // Gross
-    doc.text('Total Gross', totalsX, y);
-    doc.text(`€${quote.total_amount.toFixed(2)}`, pageWidth - RIGHT, y, { align: 'right' });
-    y += 6;
+    const totals: [string, string][] = [
+        ['Total Net', `€${quote.subtotal.toFixed(2)}`],
+        ['Total Discount', '€0.00'],
+        ['Total VAT', `€${vatAmount.toFixed(2)}`],
+        ['Total Gross', `€${quote.total_amount.toFixed(2)}`],
+        ['Less Deposit', '€0.00'],
+    ];
 
-    // Deposit
-    doc.text('Less Deposit', totalsX, y);
-    doc.text('€0.00', pageWidth - RIGHT, y, { align: 'right' });
-    y += 10;
-
-    // Total Payable
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(11);
-    doc.text('Quote Total', totalsX, y);
-    doc.text(`€${quote.total_amount.toFixed(2)}`, pageWidth - RIGHT, y, { align: 'right' });
-
-    // --- VAT Analysis Table (Aligned Bottom Left) ---
-    // Start it slightly above the totals block to align visually
-    const vatY = tableBottom + 15;
-    const vatRate = quote.vat_rate || 13.5;
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('VAT Analysis', LEFT, vatY);
-
-    autoTable(doc, {
-        startY: vatY + 4,
-        head: [['VAT Rate %', 'Net', 'VAT', 'Gross']],
-        body: [[
-            `${vatRate.toFixed(2)}%`,
-            `€${quote.subtotal.toFixed(2)}`,
-            `€${vatAmount.toFixed(2)}`,
-            `€${quote.total_amount.toFixed(2)}`
-        ]],
-        theme: 'grid',
-        styles: { fontSize: 8, cellPadding: 2 },
-        headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold' },
-        margin: { left: LEFT },
-        tableWidth: 120 // Keep it small and on the left
+    totals.forEach(([label, val]) => {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(60, 60, 60);
+        doc.text(label, totalsX, y);
+        doc.text(val, pageWidth - RIGHT, y, { align: 'right' });
+        y += 6;
     });
+
+    // Line + Total Payable
+    doc.setDrawColor(180, 180, 180);
+    doc.line(totalsX, y + 1, pageWidth - RIGHT, y + 1);
+    y += 6;
+    const totalPayableY = y;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Quote Total', totalsX, totalPayableY);
+    doc.text(`€${quote.total_amount.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
+
+    // VAT Analysis on left at same y
+    const vatRate = quote.vat_rate || 13.5;
+    addVATAnalysis(doc, vatRate, quote.subtotal, vatAmount, totalPayableY);
 
     addBankDetails(doc, doc.internal.pageSize.height - 55, settings);
     addFooter(doc);
@@ -508,12 +483,14 @@ export const generateStatement = async (
             { content: 'Price', styles: { halign: 'right' } },
             { content: 'Total', styles: { halign: 'right' } }
         ]],
-        body: (items || []).map(item => [
+        body: items && items.length > 0 ? items.map(item => [
             String(item?.description || 'N/A'),
             String(item?.quantity || 1),
             `€${(item?.unit_price || 0).toFixed(2)}`,
             `€${(item?.total || item?.quantity * item?.unit_price || 0).toFixed(2)}`,
-        ]),
+        ]) : [
+            ['Monthly Services & Account Balance', '1', `€${(statement.total_amount || 0).toFixed(2)}`, `€${(statement.total_amount || 0).toFixed(2)}`]
+        ],
         theme: 'plain',
         styles: { fontSize: 10, cellPadding: 2 },
         headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
@@ -528,13 +505,55 @@ export const generateStatement = async (
 
     const subtotal = statement.total_amount ||
         (items || []).reduce((s, i) => s + (i.total || i.quantity * i.unit_price || 0), 0);
+
+    // Calculate VAT mathematically out of subtotal if not explicitly provided
+    const vatRate = 13.5;
+    const netAmount = subtotal / (1 + vatRate / 100);
+    const vatAmount = subtotal - netAmount;
+
     // @ts-ignore
-    y = doc.lastAutoTable.finalY + 12;
+    const tableBottom = doc.lastAutoTable.finalY as number;
     const pageWidth = doc.internal.pageSize.width;
+    const totalsX = pageWidth - RIGHT - 60;
+
+    // Separator line above totals
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(totalsX, tableBottom + 8, pageWidth - RIGHT, tableBottom + 8);
+
+    // Totals rows
+    y = tableBottom + 15;
+    doc.setFontSize(9);
+
+    const totals: [string, string][] = [
+        ['Total Net', `€${netAmount.toFixed(2)}`],
+        ['Total Discount', '€0.00'],
+        ['Total VAT', `€${vatAmount.toFixed(2)}`],
+        ['Total Gross', `€${subtotal.toFixed(2)}`],
+        ['Less Deposit', '€0.00'],
+    ];
+
+    totals.forEach(([label, val]) => {
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(60, 60, 60);
+        doc.text(label, totalsX, y);
+        doc.text(val, pageWidth - RIGHT, y, { align: 'right' });
+        y += 6;
+    });
+
+    // Line + Total Payable
+    doc.setDrawColor(180, 180, 180);
+    doc.line(totalsX, y + 1, pageWidth - RIGHT, y + 1);
+    y += 6;
+    const totalPayableY = y;
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Total Value:', pageWidth - RIGHT - 60, y);
-    doc.text(`€${subtotal.toFixed(2)}`, pageWidth - RIGHT, y, { align: 'right' });
+    doc.setFontSize(13);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Statement Total', totalsX, totalPayableY);
+    doc.text(`€${subtotal.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
+
+    // VAT Analysis on left at same y
+    addVATAnalysis(doc, vatRate, netAmount, vatAmount, totalPayableY);
 
     addBankDetails(doc, doc.internal.pageSize.height - 55, settings);
     addFooter(doc);

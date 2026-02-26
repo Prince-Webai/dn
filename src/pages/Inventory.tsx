@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Package, CheckCircle, Clock, Tag } from 'lucide-react';
+import { Plus, Search, Package, CheckCircle, Clock, Tag, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { InventoryItem } from '../types';
 import Modal from '../components/Modal';
@@ -329,24 +329,26 @@ const Inventory = () => {
                                                         <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Out of Stock
                                                     </span>
                                                 )}
-                                                <div className="flex items-center gap-3">
+                                                <div className="flex items-center gap-2">
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleEditClick(item);
                                                         }}
-                                                        className="text-xs font-medium text-delaval-blue hover:text-delaval-dark-blue hover:underline"
+                                                        className="p-1.5 text-slate-400 hover:text-delaval-blue transition-colors rounded hover:bg-slate-100"
+                                                        title="Edit Part"
                                                     >
-                                                        Edit
+                                                        <Pencil size={18} />
                                                     </button>
                                                     <button
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleDeleteClick(item.id);
                                                         }}
-                                                        className="text-xs font-medium text-red-500 hover:text-red-700 hover:underline"
+                                                        className="p-1.5 text-slate-400 hover:text-red-500 transition-colors rounded hover:bg-slate-100"
+                                                        title="Delete Part"
                                                     >
-                                                        Delete
+                                                        <Trash2 size={18} />
                                                     </button>
                                                 </div>
                                             </td>

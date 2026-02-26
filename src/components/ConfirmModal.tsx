@@ -1,4 +1,4 @@
-
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmModalProps {
@@ -26,7 +26,7 @@ const ConfirmModal = ({
 }: ConfirmModalProps) => {
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div
                 className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
@@ -88,7 +88,8 @@ const ConfirmModal = ({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 

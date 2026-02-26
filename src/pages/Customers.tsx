@@ -352,7 +352,11 @@ const Customers = () => {
             const { data: quoteItems } = await supabase.from('quote_items').select('*').eq('quote_id', quote.id);
             const items = quoteItems || [];
             const pdfData = await generateQuote(quote, selectedCustomer as any, items, action) as unknown as string;
-            if (pdfData && action === 'preview') window.open(pdfData, '_blank', 'noopener,noreferrer');
+            if (pdfData && action === 'preview') {
+                window.open(pdfData, '_blank', 'noopener,noreferrer');
+            } else if (action === 'download') {
+                showToast('Success', 'Quote downloaded successfully', 'success');
+            }
         } catch (error) {
             console.error(error);
             showToast('Error', 'Failed to generate quote.', 'error');
@@ -367,7 +371,11 @@ const Customers = () => {
                 if (jobItems) items = jobItems;
             }
             const pdfData = await generateStatement(null, items, selectedCustomer as any, statement, action) as unknown as string;
-            if (pdfData && action === 'preview') window.open(pdfData, '_blank', 'noopener,noreferrer');
+            if (pdfData && action === 'preview') {
+                window.open(pdfData, '_blank', 'noopener,noreferrer');
+            } else if (action === 'download') {
+                showToast('Success', 'Statement downloaded successfully', 'success');
+            }
         } catch (error) {
             console.error(error);
             showToast('Error', 'Failed to generate statement.', 'error');

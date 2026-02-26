@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Download, ArrowRight, Pencil } from 'lucide-react';
+import { Plus, Download, ArrowRight, Pencil, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Quote } from '../types';
@@ -37,12 +37,14 @@ const Quotes = () => {
         }
     };
 
-    const handleGeneratePDF = async (quote: Quote) => {
+    const handleGeneratePDF = async (quote: Quote, action: 'download' | 'preview' = 'preview') => {
         if (!quote.customers) return;
         const items = quote.quote_items || [];
-        const pdfData = await generateQuote(quote, quote.customers, items, 'preview') as unknown as string;
-        if (pdfData) {
-            window.open(pdfData, '_blank', 'noopener,noreferrer');
+        const result = await generateQuote(quote, quote.customers, items, action);
+        if (action === 'preview' && result) {
+            window.open(result as unknown as string, '_blank', 'noopener,noreferrer');
+        } else if (action === 'download') {
+            showToast('Success', 'Quote downloaded successfully', 'success');
         }
     };
 
@@ -179,9 +181,16 @@ const Quotes = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex gap-2">
                                                 <button
-                                                    onClick={() => handleGeneratePDF(quote)}
+                                                    onClick={() => handleGeneratePDF(quote, 'preview')}
                                                     className="p-1 text-slate-400 hover:text-delaval-blue transition-colors"
-                                                    title="Preview PDF"
+                                                    title="View Quote"
+                                                >
+                                                    <Eye size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleGeneratePDF(quote, 'download')}
+                                                    className="p-1 text-slate-400 hover:text-delaval-blue transition-colors"
+                                                    title="Download PDF"
                                                 >
                                                     <Download size={18} />
                                                 </button>

@@ -111,10 +111,21 @@ const Dashboard = () => {
             setLoading(false);
         }
     };
+
+    const formatCurrency = (value: number) => {
+        if (value >= 1000000) {
+            return `€${(value / 1000000).toFixed(1)}M`;
+        }
+        if (value >= 1000) {
+            return `€${(value / 1000).toFixed(1)}K`;
+        }
+        return `€${value.toLocaleString()}`;
+    };
+
     const statCards = [
         {
             label: 'Outstanding Balance',
-            value: `€${stats.outstandingBalance.toLocaleString()}`,
+            value: formatCurrency(stats.outstandingBalance),
             icon: Euro,
             color: 'bg-[#E6F0FF] text-[#0051A5]',
             change: `${stats.overdueInvoices} overdue`,
