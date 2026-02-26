@@ -115,7 +115,7 @@ const addAddressSection = (
         }
     });
 
-    // @ts-expect-error
+    // @ts-expect-error - ts ignore legacy
     return (doc.lastAutoTable.finalY as number) + 12;
 };
 
@@ -142,7 +142,7 @@ const addInfoGrid = (
         }
     });
 
-    // @ts-expect-error
+    // @ts-expect-error - ts ignore legacy
     return (doc.lastAutoTable.finalY as number) + 10;
 };
 
@@ -163,7 +163,7 @@ const addVATAnalysis = (doc: jsPDF, vatRate: number, net: number, vat: number, y
         margin: { left: LEFT, right: RIGHT },
         tableWidth: 90,
     });
-    // @ts-expect-error
+    // @ts-expect-error - ts ignore legacy
     return (doc.lastAutoTable.finalY as number) + 10;
 };
 
@@ -285,7 +285,7 @@ export const generateInvoice = async (
         },
     });
 
-    // @ts-expect-error
+    // @ts-expect-error - ts ignore legacy
     const tableBottom = doc.lastAutoTable.finalY as number;
     const pageWidth = doc.internal.pageSize.width;
     const totalsX = pageWidth - RIGHT - 60;
@@ -390,7 +390,7 @@ export const generateQuote = async (
         },
     });
 
-    // @ts-expect-error
+    // @ts-expect-error - ts ignore legacy
     const tableBottom = doc.lastAutoTable.finalY as number;
     const pageWidth = doc.internal.pageSize.width;
     const totalsX = pageWidth - RIGHT - 60;
@@ -511,7 +511,7 @@ export const generateStatement = async (
     const netAmount = subtotal / (1 + vatRate / 100);
     const vatAmount = subtotal - netAmount;
 
-    // @ts-expect-error
+    // @ts-expect-error - ts ignore legacy
     const tableBottom = doc.lastAutoTable.finalY as number;
     const pageWidth = doc.internal.pageSize.width;
     const totalsX = pageWidth - RIGHT - 60;
@@ -630,7 +630,7 @@ export const generateOneTimeInvoice = async (
         },
     });
 
-    // @ts-expect-error
+    // @ts-expect-error - ts ignore legacy
     y = doc.lastAutoTable.finalY + 12;
     const pageWidth = doc.internal.pageSize.width;
     doc.setFont('helvetica', 'bold');

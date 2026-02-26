@@ -1,4 +1,4 @@
-import { Bell, Search, Plug as Plus, Users, FileText, FilePlus, Calendar, ArrowUpRight, Filter, Euro, Wrench, AlertCircle, Package } from 'lucide-react';
+import { Bell, Plug as Plus, Users, FileText, Calendar, ArrowUpRight, Filter, Euro, Wrench, AlertCircle, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Job } from '../types';
@@ -6,6 +6,7 @@ import { dataService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
 import SearchableSelect from '../components/SearchableSelect';
 import DatePicker from '../components/DatePicker';
+import { useToast } from '../context/ToastContext';
 
 const Dashboard = () => {
     const [stats, setStats] = useState({
@@ -18,6 +19,7 @@ const Dashboard = () => {
     const [recentJobs, setRecentJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
+    const { showToast } = useToast();
 
     // Date Filtering State
     const [filterType, setFilterType] = useState<'all' | 'month' | 'year' | 'custom'>('all');
@@ -342,7 +344,10 @@ const Dashboard = () => {
 
                 {/* Fixed App Header */}
                 <div className="bg-[#0051A5] text-white pt-10 pb-20 px-6 relative w-full">
-                    <div className="absolute top-10 right-6 opacity-80 backdrop-blur border border-white/20 rounded-full p-2 bg-white/10 z-10 w-9 h-9 flex items-center justify-center">
+                    <div
+                        onClick={() => showToast('Notifications', 'You have no new notifications at this time.', 'info')}
+                        className="absolute top-10 right-6 opacity-80 backdrop-blur border border-white/20 rounded-full p-2 bg-white/10 z-10 w-9 h-9 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+                    >
                         <Bell size={18} />
                         {stats.overdueInvoices > 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>}
                     </div>
