@@ -32,8 +32,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-
-
     // Prototype Sidebar Structure
     const navSections = [
         {
@@ -71,11 +69,20 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
     ];
 
+    // Mobile Bottom Nav Structure
+    const mobileNavItems = [
+        { icon: LayoutDashboard, label: 'Home', path: '/' },
+        { icon: FileText, label: 'Jobs', path: '/jobs' },
+        { icon: Users, label: 'Customers', path: '/customers' },
+        { icon: Wrench, label: 'Parts', path: '/inventory' },
+    ];
+
     const closeSidebar = () => setIsSidebarOpen(false);
 
     return (
         <div className="min-h-screen bg-[#F8FAFB] font-sans text-[#1a1a1a]">
-            <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white shadow-sm">
+            {/* Desktop Header */}
+            <header className="hidden md:block sticky top-0 z-[1000] border-b border-slate-200 bg-white shadow-sm">
                 <div className="max-w-[1600px] mx-auto px-8 py-2 flex justify-between items-center flex-wrap gap-4">
 
                     {/* Logo Section */}
@@ -114,11 +121,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </header>
 
             {/* Main Container */}
-            <div className="max-w-[1600px] mx-auto p-4 lg:p-8 grid lg:grid-cols-[280px_1fr] gap-8">
+            <div className="max-w-[1600px] mx-auto min-h-screen md:p-4 lg:p-8 flex flex-col md:grid lg:grid-cols-[280px_1fr] gap-0 md:gap-8 bg-[#F8FAFB]">
 
-                {/* Sidebar - Matching Prototype Card Style */}
+                {/* Desktop Sidebar - Matching Prototype Card Style */}
                 <aside className={`
-          fixed inset-0 z-50 lg:static lg:block lg:z-auto bg-black/50 lg:bg-transparent
+          hidden md:block
+          fixed inset-0 z-50 lg:static lg:z-auto bg-black/50 lg:bg-transparent
           transition-all duration-300
           ${isSidebarOpen ? 'opacity-100 visible' : 'opacity-0 invisible lg:opacity-100 lg:visible'}
         `} onClick={closeSidebar}>
@@ -174,13 +182,34 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     </div>
                 </aside>
 
-                <main className="min-w-0">
+                <main className="min-w-0 flex-1 w-full pb-28 md:pb-0">
                     {children}
                 </main>
             </div>
+
+            {/* Mobile Bottom Navigation */}
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center px-4 pt-3 pb-8 z-[2000] shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+                {mobileNavItems.map((item) => {
+                    const Icon = item.icon;
+                    // Strict active checking for home, looser for others
+                    const isActive = item.path === '/'
+                        ? location.pathname === '/'
+                        : location.pathname.startsWith(item.path);
+
+                    return (
+                        <Link
+                            key={item.path}
+                            to={item.path}
+                            className={`flex flex-col items-center gap-1 transition-colors px-4 ${isActive ? 'text-[#0051A5]' : 'text-slate-400'}`}
+                        >
+                            <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                            <span className="text-[10px] uppercase font-bold tracking-wider">{item.label}</span>
+                        </Link>
+                    );
+                })}
+            </nav>
         </div>
     );
 };
-
 
 export default Layout;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Calendar, User, FileText, Trash2, Pencil, Wrench, Activity } from 'lucide-react';
+import { Search, Calendar, User, FileText, Trash2, Pencil, Wrench, Activity, Plus, ArrowRight } from 'lucide-react';
 import { Job, Customer } from '../types';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
@@ -234,366 +234,610 @@ const Jobs = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold font-display text-slate-900">Jobs & Services</h1>
-                    <p className="text-slate-500">Track service calls and maintenance schedules</p>
-                </div>
-            </div>
-
-            <div className="section-card">
-                <div className="flex flex-col sm:flex-row justify-between items-center p-6 border-b border-slate-100 gap-4">
-                    <h2 className="text-lg font-bold text-slate-900">Job List</h2>
-                    <div className="flex gap-2 w-full sm:w-auto">
-                        <button className="btn btn-secondary text-sm">Export</button>
-                        <button onClick={() => {
-                            setEditingId(null);
-                            setNewJob({
-                                customer_id: '',
-                                engineer_name: '',
-                                service_type: '',
-                                status: 'scheduled',
-                                date_scheduled: new Date().toISOString().split('T')[0],
-                                notes: ''
-                            });
-                            setModalItems([]);
-                            setIsModalOpen(true);
-                        }} className="btn btn-primary text-sm shadow-md shadow-blue-900/10">
-                            + New Job
-                        </button>
+            {/* DESKTOP VIEW */}
+            <div className="hidden md:block space-y-6">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <h1 className="text-2xl font-bold font-display text-slate-900">Jobs & Services</h1>
+                        <p className="text-slate-500">Track service calls and maintenance schedules</p>
                     </div>
                 </div>
 
-                <div className="border-b border-slate-200 px-6">
-                    <div className="flex gap-6 overflow-x-auto">
+                <div className="section-card">
+                    <div className="flex flex-col sm:flex-row justify-between items-center p-6 border-b border-slate-100 gap-4">
+                        <h2 className="text-lg font-bold text-slate-900">Job List</h2>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                            <button className="btn btn-secondary text-sm">Export</button>
+                            <button onClick={() => {
+                                setEditingId(null);
+                                setNewJob({
+                                    customer_id: '',
+                                    engineer_name: '',
+                                    service_type: '',
+                                    status: 'scheduled',
+                                    date_scheduled: new Date().toISOString().split('T')[0],
+                                    notes: ''
+                                });
+                                setModalItems([]);
+                                setIsModalOpen(true);
+                            }} className="btn btn-primary text-sm shadow-md shadow-blue-900/10">
+                                + New Job
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="border-b border-slate-200 px-6">
+                        <div className="flex gap-6 overflow-x-auto">
+                            {['all', 'scheduled', 'in_progress', 'completed'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`py-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap capitalize
+                                    ${activeTab === tab
+                                            ? 'border-delaval-blue text-delaval-blue'
+                                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                                        }`}
+                                >
+                                    {tab.replace('_', ' ')} ({getTabCount(tab)})
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="p-6">
+                        <div className="relative mb-6">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder="Search jobs by customer, engineer, or job ID..."
+                                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-[#F8FAFB] border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job Details</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Service Type</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Engineer</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {loading ? (
+                                        <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-500">Loading jobs...</td></tr>
+                                    ) : filteredJobs.map((job) => (
+                                        <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">#{job.job_number}</div>
+                                                <div className="text-xs text-slate-500">ID</div>
+                                            </td>
+                                            <td className="px-6 py-4 font-medium text-slate-700">{job.customers?.name || 'Unknown'}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-600">{job.service_type}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                                <div className="flex items-center gap-2">
+                                                    <User size={14} className="text-slate-400" />
+                                                    {job.engineer_name || 'Unassigned'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar size={14} className="text-slate-400" />
+                                                    {job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {getStatusBadge(job.status)}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="flex gap-2">
+                                                    <Link to={`/jobs/${job.id}`} className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors inline-block" title="View Details">
+                                                        <FileText size={18} />
+                                                    </Link>
+
+
+                                                    <button
+                                                        onClick={() => handleEditClick(job)}
+                                                        className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors"
+                                                        title="Edit Job"
+                                                    >
+                                                        <Pencil size={18} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteClick(job.id)}
+                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Delete Job"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredJobs.length === 0 && !loading && (
+                                        <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">No jobs found</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* MOBILE VIEW */}
+            <div className="block md:hidden pb-24 bg-[#F8FAFB] min-h-screen text-[#1a1a1a]">
+
+                {/* Modern Mobile Header with extra safe-area padding pt-14 */}
+                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pt-14 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+                    <div className="flex justify-between items-center mb-5">
+                        <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Jobs</h1>
+                        <button
+                            onClick={() => {
+                                setEditingId(null);
+                                setNewJob({
+                                    customer_id: '',
+                                    engineer_name: '',
+                                    service_type: '',
+                                    status: 'scheduled',
+                                    date_scheduled: new Date().toISOString().split('T')[0],
+                                    notes: ''
+                                });
+                                setModalItems([]);
+                                setIsModalOpen(true);
+                            }}
+                            className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                        >
+                            <Plus size={20} />
+                        </button>
+                    </div>
+
+                    {/* Integrated Search Bar */}
+                    <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
+                        <Search size={18} className="text-slate-400 mr-3 shrink-0" />
+                        <input
+                            type="text"
+                            placeholder="Search jobs, farms, engineers..."
+                            className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {/* Status Tabs Slider - Sticky below header */}
+                <div className="sticky top-[146px] z-10 bg-[#F8FAFB]/95 backdrop-blur-sm pt-4 pb-3 border-b border-slate-100/50">
+                    <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5">
                         {['all', 'scheduled', 'in_progress', 'completed'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`py-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap capitalize
+                                className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap transition-all shadow-sm
                                     ${activeTab === tab
-                                        ? 'border-delaval-blue text-delaval-blue'
-                                        : 'border-transparent text-slate-500 hover:text-slate-700'
+                                        ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95'
+                                        : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
                                     }`}
                             >
-                                {tab.replace('_', ' ')} ({getTabCount(tab)})
+                                {tab.replace('_', ' ')} <span className="opacity-60 ml-1">({getTabCount(tab)})</span>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div className="p-6">
-                    <div className="relative mb-6">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Search jobs by customer, engineer, or job ID..."
-                            className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#F8FAFB] border-b border-slate-100">
-                                <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job Details</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Service Type</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Engineer</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {loading ? (
-                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-500">Loading jobs...</td></tr>
-                                ) : filteredJobs.map((job) => (
-                                    <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-slate-900">#{job.job_number}</div>
-                                            <div className="text-xs text-slate-500">ID</div>
-                                        </td>
-                                        <td className="px-6 py-4 font-medium text-slate-700">{job.customers?.name || 'Unknown'}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">{job.service_type}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">
-                                            <div className="flex items-center gap-2">
-                                                <User size={14} className="text-slate-400" />
-                                                {job.engineer_name || 'Unassigned'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">
-                                            <div className="flex items-center gap-2">
-                                                <Calendar size={14} className="text-slate-400" />
-                                                {job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            {getStatusBadge(job.status)}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex gap-2">
-                                                <Link to={`/jobs/${job.id}`} className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors inline-block" title="View Details">
-                                                    <FileText size={18} />
-                                                </Link>
-
-
-                                                <button
-                                                    onClick={() => handleEditClick(job)}
-                                                    className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors"
-                                                    title="Edit Job"
-                                                >
-                                                    <Pencil size={18} />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteClick(job.id)}
-                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Delete Job"
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredJobs.length === 0 && !loading && (
-                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">No jobs found</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                {/* Job Cards List */}
+                <div className="px-5 space-y-3">
+                    {loading ? (
+                        <div className="text-center py-10 text-slate-400 font-medium text-sm">Loading jobs...</div>
+                    ) : (
+                        filteredJobs.map((job) => (
+                            <Link key={job.id} to={`/jobs/${job.id}`} className="block bg-white border border-slate-100 rounded-[1.25rem] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] active:scale-[0.99] transition-transform">
+                                <div className="flex justify-between items-start mb-3">
+                                    <div className="text-[11px] font-bold text-slate-400 tracking-wider">#{job.job_number}</div>
+                                    <div className="flex items-center gap-1.5">
+                                        {job.status === 'completed' && <><div className="w-1.5 h-1.5 rounded-full bg-[#00A862]"></div><span className="text-[10px] font-bold uppercase tracking-wider text-[#00A862]">COMPLETED</span></>}
+                                        {job.status === 'in_progress' && <><div className="w-1.5 h-1.5 rounded-full bg-[#FF6B00]"></div><span className="text-[10px] font-bold uppercase tracking-wider text-[#FF6B00]">IN PROGRESS</span></>}
+                                        {job.status === 'scheduled' && <><div className="w-1.5 h-1.5 rounded-full bg-[#0051A5]"></div><span className="text-[10px] font-bold uppercase tracking-wider text-[#0051A5]">SCHEDULED</span></>}
+                                        {job.status === 'cancelled' && <><div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div><span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">CANCELLED</span></>}
+                                    </div>
+                                </div>
+                                <div className="mb-4">
+                                    <h3 className="font-bold text-slate-900 text-[17px] leading-tight mb-1">{job.customers?.name || 'Unknown Farm'}</h3>
+                                    <p className="text-[13px] text-slate-500">{job.customers?.address || 'No address provided'}</p>
+                                </div>
+                                <div className="flex flex-wrap items-center gap-2 mb-4">
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#F0F5FA] text-[#0051A5] text-[11px] font-bold tracking-wide">
+                                        VMS V300 {/* Mock Data matching design */}
+                                    </span>
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold tracking-wide">
+                                        {job.service_type}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center pt-3 border-t border-slate-50 text-[#64748B] text-[12px] font-semibold">
+                                    <div className="flex items-center gap-1.5">
+                                        <Calendar size={13} className="text-slate-400" />
+                                        <span>{job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Not set'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                        <User size={13} className="text-slate-400" />
+                                        <span>{job.engineer_name?.split(' ')[0] || 'Unassigned'}</span>
+                                    </div>
+                                </div>
+                            </Link>
+                        ))
+                    )}
+                    {filteredJobs.length === 0 && !loading && (
+                        <div className="text-center py-10 text-slate-400 italic">No jobs found matching your criteria.</div>
+                    )}
                 </div>
             </div>
 
-            <Modal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                title={editingId ? "Edit Job" : "Create New Job"}
-                size="wide"
-            >
-                <form onSubmit={handleAddJob} className="space-y-4 md:space-y-6">
-                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-slate-900">Customer Details</h3>
-                            <button
-                                type="button"
-                                onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
-                                className="text-sm font-bold text-delaval-blue hover:text-blue-800 transition-colors"
-                            >
-                                {isAddingNewCustomer ? 'Select Existing Customer' : '+ Add New Customer'}
+            <div className="hidden md:block">
+                <Modal
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    title={editingId ? "Edit Job" : "Create New Job"}
+                    size="wide"
+                >
+                    <form onSubmit={handleAddJob} className="space-y-4 md:space-y-6">
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-slate-900">Customer Details</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
+                                    className="text-sm font-bold text-delaval-blue hover:text-blue-800 transition-colors"
+                                >
+                                    {isAddingNewCustomer ? 'Select Existing Customer' : '+ Add New Customer'}
+                                </button>
+                            </div>
+
+                            {isAddingNewCustomer ? (
+                                <div className="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Customer Name / Farm *</label>
+                                        <input
+                                            type="text"
+                                            required
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                            value={newCustomerData.name}
+                                            onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                                        <input
+                                            type="tel"
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                            value={newCustomerData.phone || ''}
+                                            onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                                        <textarea
+                                            rows={2}
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                            value={newCustomerData.address || ''}
+                                            onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <SearchableSelect
+                                    label="Select Existing Customer *"
+                                    options={customers.map(c => ({ value: c.id, label: c.name }))}
+                                    value={newJob.customer_id || ''}
+                                    onChange={val => setNewJob({ ...newJob, customer_id: val })}
+                                    placeholder="Search and select..."
+                                    icon={<User size={16} />}
+                                />
+                            )}
+                        </div>
+
+                        <div className="bg-white p-4 rounded-xl border border-slate-100 grid grid-cols-2 gap-4">
+                            <div className="col-span-2">
+                                <h3 className="font-bold text-slate-900 mb-4">Job Details</h3>
+                                <SearchableSelect
+                                    label="Service Type"
+                                    options={[
+                                        { value: 'Machine Service', label: 'Machine Service' },
+                                        { value: 'Breakdown', label: 'Breakdown' },
+                                        { value: 'Emergency Call Out', label: 'Emergency Call Out' }
+                                    ]}
+                                    allowCustom={true}
+                                    value={newJob.service_type || ''}
+                                    onChange={val => setNewJob({ ...newJob, service_type: val })}
+                                    icon={<FileText size={16} />}
+                                />
+                            </div>
+
+                            <div className="col-span-1">
+                                <SearchableSelect
+                                    label="Assign Engineer"
+                                    options={engineers.map(eng => ({ value: eng.name, label: eng.name }))}
+                                    value={newJob.engineer_name || ''}
+                                    onChange={val => setNewJob({ ...newJob, engineer_name: val })}
+                                    icon={<Wrench size={16} />}
+                                />
+                            </div>
+
+                            <div className="col-span-1">
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                                <DatePicker
+                                    required
+                                    value={newJob.date_scheduled || ''}
+                                    onChange={(date) => setNewJob({ ...newJob, date_scheduled: date })}
+                                />
+                            </div>
+
+                            <div className="col-span-2">
+                                <SearchableSelect
+                                    label="Status"
+                                    searchable={false}
+                                    options={[
+                                        { value: 'scheduled', label: 'Scheduled' },
+                                        { value: 'in_progress', label: 'In Progress' },
+                                        { value: 'completed', label: 'Completed' },
+                                        { value: 'cancelled', label: 'Cancelled' }
+                                    ]}
+                                    value={newJob.status || 'scheduled'}
+                                    onChange={val => setNewJob({ ...newJob, status: val as Job['status'] })}
+                                    icon={<Activity size={16} />}
+                                />
+                            </div>
+
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                                <textarea
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                    rows={2}
+                                    value={newJob.notes}
+                                    onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="pt-4 flex justify-end gap-3">
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
+                            <button type="submit" className="px-6 py-2 bg-delaval-blue hover:bg-delaval-dark-blue text-white rounded-lg font-bold shadow-lg shadow-blue-900/10">
+                                {editingId ? 'Save Changes' : 'Create Job'}
                             </button>
                         </div>
+                    </form>
+                </Modal>
+            </div>
 
-                        {isAddingNewCustomer ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Customer Name / Farm *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                        value={newCustomerData.name}
-                                        onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
-                                        placeholder="e.g. John Doe Farm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                                    <input
-                                        type="tel"
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                        value={newCustomerData.phone || ''}
-                                        onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
-                                        placeholder="e.g. +353 87 123 4567"
-                                    />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                                    <textarea
-                                        rows={2}
-                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                        value={newCustomerData.address || ''}
-                                        onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
-                                        placeholder="Full address..."
-                                    />
-                                </div>
+            {/* FULL SCREEN MOBILE MODAL */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-[#F8FAFB] z-[100] md:hidden flex flex-col overflow-hidden">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-5 pt-12 pb-4 bg-white border-b border-slate-100 shrink-0">
+                        <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center text-slate-400 bg-slate-50 rounded-full hover:text-slate-600 transition-colors">
+                            <div className="w-4 h-4 relative">
+                                <span className="absolute left-0 top-1/2 w-4 h-0.5 bg-current -translate-y-1/2 rotate-45 rounded-full"></span>
+                                <span className="absolute left-0 top-1/2 w-4 h-0.5 bg-current -translate-y-1/2 -rotate-45 rounded-full"></span>
                             </div>
-                        ) : (
-                            <SearchableSelect
-                                label="Select Existing Customer *"
-                                options={customers.map(c => ({ value: c.id, label: c.name }))}
-                                value={newJob.customer_id || ''}
-                                onChange={val => setNewJob({ ...newJob, customer_id: val })}
-                                placeholder="Search and select a customer..."
-                                icon={<User size={16} />}
-                            />
-                        )}
+                        </button>
+                        <h2 className="text-lg font-bold text-slate-900 tracking-tight">{editingId ? "Edit Job" : "New Job"}</h2>
+                        <div className="w-10"></div> {/* Spacer */}
                     </div>
 
-                    <div className="bg-white p-4 rounded-xl border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="md:col-span-2">
-                            <h3 className="font-bold text-slate-900 mb-4">Job Details</h3>
-                            <SearchableSelect
-                                label="Service Type"
-                                options={[
-                                    { value: 'Machine Service', label: 'Machine Service' },
-                                    { value: 'Breakdown', label: 'Breakdown' },
-                                    { value: 'Emergency Call Out', label: 'Emergency Call Out' }
-                                ]}
-                                allowCustom={true}
-                                value={newJob.service_type || ''}
-                                onChange={val => setNewJob({ ...newJob, service_type: val })}
-                                placeholder="Choose or type service type..."
-                                icon={<FileText size={16} />}
-                            />
-                        </div>
+                    {/* Form Content */}
+                    <div className="flex-1 overflow-y-auto px-5 py-6">
+                        <form id="mobile-job-form" onSubmit={handleAddJob} className="space-y-6 pb-24">
 
-                        <div>
-                            <SearchableSelect
-                                label="Assign Engineer"
-                                options={engineers.map(eng => ({ value: eng.name, label: eng.name }))}
-                                value={newJob.engineer_name || ''}
-                                onChange={val => setNewJob({ ...newJob, engineer_name: val })}
-                                placeholder="Select an engineer..."
-                                icon={<Wrench size={16} />}
-                            />
-                        </div>
-
-                        <div className="md:col-span-1">
-                            {/* DatePicker is already here, no change needed for label/layout consistency */}
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Scheduled Date</label>
-                            <DatePicker
-                                required
-                                value={newJob.date_scheduled || ''}
-                                onChange={(date) => setNewJob({ ...newJob, date_scheduled: date })}
-                                placeholder="Pick a date..."
-                            />
-                        </div>
-
-                        <div className="col-span-2">
-                            <SearchableSelect
-                                label="Status"
-                                searchable={false}
-                                options={[
-                                    { value: 'scheduled', label: 'Scheduled' },
-                                    { value: 'in_progress', label: 'In Progress' },
-                                    { value: 'completed', label: 'Completed' },
-                                    { value: 'cancelled', label: 'Cancelled' }
-                                ]}
-                                value={newJob.status || 'scheduled'}
-                                onChange={val => setNewJob({ ...newJob, status: val as Job['status'] })}
-                                icon={<Activity size={16} />}
-                            />
-                        </div>
-
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
-                            <textarea
-                                className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue outline-none"
-                                rows={2}
-                                value={newJob.notes}
-                                onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
-                            />
-                        </div>
-
-                        {/* Line Items Editor */}
-                        <div className="col-span-2 mt-4">
-                            <div className="flex justify-between items-center mb-2">
-                                <label className="block text-sm font-bold text-slate-700 uppercase tracking-widest">Parts & Labor</label>
-                                <div className="text-xs font-bold text-delaval-blue">
-                                    Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
+                            {/* Schedule Section */}
+                            <div className="space-y-4">
+                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Schedule</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                        <div className="flex items-center gap-2 mb-2 text-[#0051A5]">
+                                            <Calendar size={16} />
+                                            <span className="font-bold text-sm">Date</span>
+                                        </div>
+                                        <input
+                                            type="date"
+                                            className="w-full text-slate-900 font-medium text-sm outline-none bg-transparent"
+                                            value={newJob.date_scheduled || ''}
+                                            onChange={(e) => setNewJob({ ...newJob, date_scheduled: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                        <div className="flex items-center gap-2 mb-2 text-[#FF6B00]">
+                                            <Activity size={16} />
+                                            <span className="font-bold text-sm">Status</span>
+                                        </div>
+                                        <select
+                                            className="w-full text-slate-900 font-medium text-sm outline-none bg-transparent appearance-none"
+                                            value={newJob.status || 'scheduled'}
+                                            onChange={e => setNewJob({ ...newJob, status: e.target.value as Job['status'] })}
+                                        >
+                                            <option value="scheduled">Scheduled</option>
+                                            <option value="in_progress">In Progress</option>
+                                            <option value="completed">Completed</option>
+                                            <option value="cancelled">Cancelled</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="space-y-2 max-h-[200px] overflow-y-auto mb-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                {modalItems.length === 0 ? (
-                                    <div className="text-center py-4 text-xs text-slate-400 italic">No parts or labor added yet</div>
-                                ) : (
-                                    modalItems.map((item, idx) => (
-                                        <div key={idx} className="flex gap-2 items-center bg-white p-2 rounded border border-slate-200 shadow-sm group">
-                                            <div className="flex-1 text-xs font-medium text-slate-700 truncate">{item.description}</div>
-                                            <div className="w-12 text-[10px] text-slate-500 text-center">x{item.quantity}</div>
-                                            <div className="w-16 text-xs font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</div>
+                            {/* Details Section */}
+                            <div className="space-y-4">
+                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Details</label>
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] divide-y divide-slate-50">
+                                    <div className="p-4">
+                                        <div className="text-xs font-bold text-slate-500 mb-1">Service Type</div>
+                                        <select
+                                            className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
+                                            value={newJob.service_type || ''}
+                                            onChange={e => setNewJob({ ...newJob, service_type: e.target.value })}
+                                        >
+                                            <option value="">Select Service Type...</option>
+                                            <option value="Machine Service">Machine Service</option>
+                                            <option value="Breakdown">Breakdown</option>
+                                            <option value="Emergency Call Out">Emergency Call Out</option>
+                                        </select>
+                                    </div>
+                                    <div className="p-4">
+                                        <div className="text-xs font-bold text-slate-500 mb-1">Assigned Engineer</div>
+                                        <select
+                                            className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
+                                            value={newJob.engineer_name || ''}
+                                            onChange={e => setNewJob({ ...newJob, engineer_name: e.target.value })}
+                                        >
+                                            <option value="">Select Engineer...</option>
+                                            {engineers.map(eng => <option key={eng.id} value={eng.name}>{eng.name}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Customer Section */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between pl-1">
+                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Customer</label>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
+                                        className="text-[11px] font-bold text-[#0051A5] uppercase tracking-wider"
+                                    >
+                                        {isAddingNewCustomer ? 'Select Existing' : 'Add New'}
+                                    </button>
+                                </div>
+                                <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-4">
+                                    {isAddingNewCustomer ? (
+                                        <div className="space-y-4">
+                                            <div>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Farm Name *"
+                                                    required
+                                                    className="w-full text-slate-900 font-bold text-[15px] outline-none border-b border-slate-100 pb-2"
+                                                    value={newCustomerData.name}
+                                                    onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <input
+                                                    type="tel"
+                                                    placeholder="Phone Number"
+                                                    className="w-full text-slate-900 text-[15px] outline-none border-b border-slate-100 pb-2"
+                                                    value={newCustomerData.phone || ''}
+                                                    onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                                                />
+                                            </div>
+                                            <div>
+                                                <textarea
+                                                    placeholder="Full Address"
+                                                    rows={2}
+                                                    className="w-full text-slate-900 text-[15px] outline-none"
+                                                    value={newCustomerData.address || ''}
+                                                    onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <select
+                                            className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
+                                            value={newJob.customer_id || ''}
+                                            onChange={e => setNewJob({ ...newJob, customer_id: e.target.value })}
+                                            required
+                                        >
+                                            <option value="">Select a customer...</option>
+                                            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        </select>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Line Items Editor */}
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center pl-1">
+                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Parts & Labor</label>
+                                    <div className="text-[11px] font-bold text-[#0051A5] bg-[#E6F0FF] px-2 py-0.5 rounded-full">
+                                        Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    {modalItems.map((item, idx) => (
+                                        <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center gap-3">
+                                            <div className="flex-1 min-w-0">
+                                                <div className="font-bold text-slate-900 text-sm truncate">{item.description}</div>
+                                                <div className="text-xs text-slate-500 font-medium">Qty: {item.quantity} × €{item.unit_price.toFixed(2)}</div>
+                                            </div>
+                                            <div className="text-sm font-black text-slate-900 pr-2">€{(item.quantity * item.unit_price).toFixed(2)}</div>
                                             <button
                                                 type="button"
                                                 onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
-                                                className="p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                className="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 shrink-0"
                                             >
                                                 <Trash2 size={14} />
                                             </button>
                                         </div>
-                                    ))
-                                )}
-                            </div>
+                                    ))}
+                                </div>
 
-                            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                {isAddingCustom ? (
-                                    <div className="space-y-3">
-                                        <div className="grid grid-cols-12 gap-2">
-                                            <div className="col-span-12 sm:col-span-6">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Item description (e.g. Labor, Mileage, Oil)..."
-                                                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                                                    value={newItem.description}
-                                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="col-span-6 sm:col-span-2">
-                                                <input
-                                                    type="number"
-                                                    placeholder="Qty"
-                                                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                                                    value={newItem.quantity}
-                                                    onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
-                                                />
-                                            </div>
-                                            <div className="col-span-6 sm:col-span-4">
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
+                                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                    {isAddingCustom ? (
+                                        <div className="space-y-3">
+                                            <input
+                                                type="text"
+                                                placeholder="Item description..."
+                                                className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
+                                                value={newItem.description}
+                                                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                            />
+                                            <div className="flex gap-4">
+                                                <div className="flex-1">
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Qty</div>
                                                     <input
                                                         type="number"
-                                                        placeholder="Rate"
-                                                        className="w-full pl-7 pr-3 py-2 text-sm rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                                        className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
+                                                        value={newItem.quantity}
+                                                        onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
+                                                    />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Price (€)</div>
+                                                    <input
+                                                        type="number"
+                                                        className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
                                                         value={newItem.unit_price}
                                                         onChange={e => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
                                                     />
                                                 </div>
                                             </div>
+                                            <div className="flex justify-end gap-2 pt-2">
+                                                <button type="button" onClick={() => setIsAddingCustom(false)} className="px-4 py-2 text-xs font-bold text-slate-500 bg-slate-50 rounded-lg">Cancel</button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (newItem.description) {
+                                                            setModalItems([...modalItems, { ...newItem, type: 'labor' }]);
+                                                            setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
+                                                            setIsAddingCustom(false);
+                                                        }
+                                                    }}
+                                                    className="px-4 py-2 text-xs font-bold text-white bg-[#0051A5] rounded-lg"
+                                                >
+                                                    Add Item
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="flex justify-end gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsAddingCustom(false)}
-                                                className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => {
-                                                    if (newItem.description) {
-                                                        setModalItems([...modalItems, { ...newItem, type: 'labor' }]);
-                                                        setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
-                                                        setIsAddingCustom(false);
-                                                    }
-                                                }}
-                                                className="px-4 py-1.5 text-xs font-bold bg-delaval-blue text-white rounded-lg hover:bg-delaval-dark-blue transition-colors shadow-sm"
-                                            >
-                                                Add Item
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-12 gap-3 items-center">
-                                        <div className="col-span-7">
-                                            <SearchableSelect
-                                                placeholder="Search products..."
-                                                options={inventory.map(i => ({ value: i.id, label: `${i.name} (€${i.sell_price})` }))}
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <select
+                                                className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
                                                 value=""
-                                                onChange={(id) => {
+                                                onChange={(e) => {
+                                                    const id = e.target.value;
                                                     const invItem = inventory.find(i => i.id === id);
                                                     if (invItem) {
                                                         setModalItems([...modalItems, {
@@ -605,43 +849,52 @@ const Jobs = () => {
                                                         }]);
                                                     }
                                                 }}
-                                            />
-                                        </div>
-                                        <div className="col-span-5 flex gap-2">
+                                            >
+                                                <option value="">Select an inventory item...</option>
+                                                {inventory.map(i => <option key={i.id} value={i.id}>{i.name} (€{i.sell_price})</option>)}
+                                            </select>
+
                                             <button
                                                 type="button"
                                                 onClick={() => setIsAddingCustom(true)}
-                                                className="flex-1 py-2 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
+                                                className="w-full py-3 bg-[#F0F5FA] text-[#0051A5] rounded-xl text-sm font-bold active:scale-[0.98] transition-transform flex justify-center gap-2 items-center"
                                             >
-                                                + Custom / Labor
+                                                <FileText size={16} />
+                                                Add Custom / Labor
                                             </button>
-                                            <div className="flex flex-col items-center justify-center text-[9px] text-slate-400 font-black uppercase leading-tight tracking-tighter shrink-0">
-                                                Add<br />Item
-                                            </div>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
-                        </div>
+
+                            {/* Notes Section */}
+                            <div className="space-y-4">
+                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Notes</label>
+                                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                    <textarea
+                                        className="w-full text-slate-900 text-[15px] outline-none bg-transparent min-h-[80px]"
+                                        placeholder="Add any specific requirements or notes..."
+                                        value={newJob.notes || ''}
+                                        onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        </form>
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-3">
-                        <button
-                            type="button"
-                            onClick={() => setIsModalOpen(false)}
-                            className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium"
-                        >
-                            Cancel
-                        </button>
+                    {/* Fixed Bottom Action Bar */}
+                    <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-slate-100 shrink-0 pb-8 rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
                         <button
                             type="submit"
-                            className="px-6 py-2 bg-delaval-blue hover:bg-delaval-dark-blue text-white rounded-lg font-bold shadow-lg shadow-blue-900/10"
+                            form="mobile-job-form"
+                            className="w-full py-4 bg-[#0051A5] text-white rounded-[1.25rem] font-bold text-[15px] shadow-[0_8px_20px_rgba(0,81,165,0.25)] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
                         >
                             {editingId ? 'Save Changes' : 'Create Job'}
+                            <ArrowRight size={18} />
                         </button>
                     </div>
-                </form>
-            </Modal>
+                </div>
+            )}
 
             <ConfirmModal
                 isOpen={isDeleteModalOpen}
@@ -653,7 +906,7 @@ const Jobs = () => {
                 isLoading={isDeleting}
                 confirmText="Delete Job"
             />
-        </div >
+        </div>
     );
 };
 
