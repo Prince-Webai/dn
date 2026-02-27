@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, FileText, Wrench, Clock, Package, Receipt } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, FileText, Wrench, Clock, Package, Receipt, CheckCircle } from 'lucide-react';
 import SearchableSelect from '../components/SearchableSelect';
 import { supabase } from '../lib/supabase';
 import { Job, JobItem, InventoryItem } from '../types';
@@ -163,7 +163,7 @@ const JobDetails = () => {
                                             <th className="px-4 py-2">Description</th>
                                             <th className="px-4 py-2">Qty</th>
                                             <th className="px-4 py-2">Cost</th>
-                                            <th className="px-4 py-2">Action</th>
+                                            {job.status !== 'completed' && <th className="px-4 py-2">Action</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -172,88 +172,92 @@ const JobDetails = () => {
                                                 <td className="px-4 py-3">{item.description}</td>
                                                 <td className="px-4 py-3">{item.quantity}</td>
                                                 <td className="px-4 py-3">€{item.unit_price}</td>
-                                                <td className="px-4 py-3">
-                                                    <button onClick={() => handleDeleteItem(item.id)} className="text-red-500 hover:bg-red-50 p-1 rounded">
-                                                        <Trash2 size={16} />
-                                                    </button>
-                                                </td>
+                                                {job.status !== 'completed' && (
+                                                    <td className="px-4 py-3">
+                                                        <button onClick={() => handleDeleteItem(item.id)} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
 
-                            <div className="mt-4 bg-slate-50 p-4 rounded-lg space-y-3">
-                                <div className="flex gap-4">
-                                    <div className="flex-1">
-                                        <SearchableSelect
-                                            label="Add Code / Product"
-                                            options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
-                                            value=""
-                                            onChange={(val) => {
-                                                const item = inventory.find(i => i.id === val);
-                                                if (item) {
-                                                    setNewItem({
-                                                        ...newItem,
-                                                        description: item.name,
-                                                        unit_price: item.sell_price,
-                                                        type: 'part'
-                                                    });
-                                                }
-                                            }}
-                                            placeholder="Select generic product..."
-                                            icon={<Package size={16} />}
-                                        />
+                            {job.status !== 'completed' && (
+                                <div className="mt-4 bg-slate-50 p-4 rounded-lg space-y-3">
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <SearchableSelect
+                                                label="Add Code / Product"
+                                                options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
+                                                value=""
+                                                onChange={(val) => {
+                                                    const item = inventory.find(i => i.id === val);
+                                                    if (item) {
+                                                        setNewItem({
+                                                            ...newItem,
+                                                            description: item.name,
+                                                            unit_price: item.sell_price,
+                                                            type: 'part'
+                                                        });
+                                                    }
+                                                }}
+                                                placeholder="Select generic product..."
+                                                icon={<Package size={16} />}
+                                            />
+                                        </div>
+                                        <div className="w-1/3">
+                                            <SearchableSelect
+                                                label="Type"
+                                                searchable={false}
+                                                options={[
+                                                    { value: 'part', label: 'Part' },
+                                                    { value: 'labor', label: 'Labor' },
+                                                    { value: 'service', label: 'Service' }
+                                                ]}
+                                                value={newItem.type}
+                                                onChange={(val) => setNewItem({ ...newItem, type: val as any })}
+                                                icon={<Clock size={16} />}
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="w-1/3">
-                                        <SearchableSelect
-                                            label="Type"
-                                            searchable={false}
-                                            options={[
-                                                { value: 'part', label: 'Part' },
-                                                { value: 'labor', label: 'Labor' },
-                                                { value: 'service', label: 'Service' }
-                                            ]}
-                                            value={newItem.type}
-                                            onChange={(val) => setNewItem({ ...newItem, type: val as any })}
-                                            icon={<Clock size={16} />}
-                                        />
-                                    </div>
-                                </div>
 
-                                <div className="flex gap-2 items-end">
-                                    <div className="flex-1">
-                                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
-                                        <input
-                                            className="w-full p-2 border rounded"
-                                            placeholder="Item description or service details..."
-                                            value={newItem.description}
-                                            onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                        />
+                                    <div className="flex gap-2 items-end">
+                                        <div className="flex-1">
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
+                                            <input
+                                                className="w-full p-2 border rounded"
+                                                placeholder="Item description or service details..."
+                                                value={newItem.description}
+                                                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="w-20">
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
+                                            <input
+                                                type="number"
+                                                className="w-full p-2 border rounded"
+                                                value={newItem.quantity}
+                                                onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                        <div className="w-24">
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Cost (€)</label>
+                                            <input
+                                                type="number"
+                                                className="w-full p-2 border rounded"
+                                                value={newItem.unit_price}
+                                                onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
+                                            />
+                                        </div>
+                                        <button onClick={handleAddItem} className="bg-delaval-blue text-white p-2.5 rounded hover:bg-delaval-dark-blue">
+                                            <Plus size={20} />
+                                        </button>
                                     </div>
-                                    <div className="w-20">
-                                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
-                                        <input
-                                            type="number"
-                                            className="w-full p-2 border rounded"
-                                            value={newItem.quantity}
-                                            onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
-                                        />
-                                    </div>
-                                    <div className="w-24">
-                                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Cost (€)</label>
-                                        <input
-                                            type="number"
-                                            className="w-full p-2 border rounded"
-                                            value={newItem.unit_price}
-                                            onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
-                                        />
-                                    </div>
-                                    <button onClick={handleAddItem} className="bg-delaval-blue text-white p-2.5 rounded hover:bg-delaval-dark-blue">
-                                        <Plus size={20} />
-                                    </button>
                                 </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
@@ -262,28 +266,35 @@ const JobDetails = () => {
                             <h2 className="text-lg font-bold mb-4">Job Details</h2>
                             <div className="space-y-4">
                                 <div>
-                                    <SearchableSelect
-                                        label="Status"
-                                        searchable={false}
-                                        options={[
-                                            { value: 'scheduled', label: 'Scheduled' },
-                                            { value: 'in_progress', label: 'In Progress' },
-                                            { value: 'completed', label: 'Completed' },
-                                            { value: 'cancelled', label: 'Cancelled' }
-                                        ]}
-                                        value={job.status}
-                                        onChange={async (newStatus) => {
-                                            const { error } = await supabase
-                                                .from('jobs')
-                                                .update({ status: newStatus })
-                                                .eq('id', job.id);
+                                    <label className="block text-sm font-medium text-slate-500 mb-2">Status</label>
+                                    {job.status === 'completed' ? (
+                                        <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2.5 rounded-lg border border-green-200 font-medium w-full">
+                                            <CheckCircle size={18} /> Completed
+                                        </div>
+                                    ) : (
+                                        <SearchableSelect
+                                            label=""
+                                            searchable={false}
+                                            options={[
+                                                { value: 'scheduled', label: 'Scheduled' },
+                                                { value: 'in_progress', label: 'In Progress' },
+                                                { value: 'completed', label: 'Completed' },
+                                                { value: 'cancelled', label: 'Cancelled' }
+                                            ]}
+                                            value={job.status}
+                                            onChange={async (newStatus) => {
+                                                const { error } = await supabase
+                                                    .from('jobs')
+                                                    .update({ status: newStatus })
+                                                    .eq('id', job.id);
 
-                                            if (!error) {
-                                                setJob({ ...job, status: newStatus as any });
-                                            }
-                                        }}
-                                        icon={<Wrench size={16} />}
-                                    />
+                                                if (!error) {
+                                                    setJob({ ...job, status: newStatus as any });
+                                                }
+                                            }}
+                                            icon={<Wrench size={16} />}
+                                        />
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-500">Engineer</label>
@@ -333,26 +344,33 @@ const JobDetails = () => {
 
                     {/* Status Update */}
                     <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100">
-                        <SearchableSelect
-                            label="Current Status"
-                            searchable={false}
-                            options={[
-                                { value: 'scheduled', label: 'Scheduled' },
-                                { value: 'in_progress', label: 'In Progress' },
-                                { value: 'completed', label: 'Completed' },
-                                { value: 'cancelled', label: 'Cancelled' }
-                            ]}
-                            value={job.status}
-                            onChange={async (newStatus) => {
-                                const { error } = await supabase
-                                    .from('jobs')
-                                    .update({ status: newStatus })
-                                    .eq('id', job.id);
-                                if (!error) {
-                                    setJob({ ...job, status: newStatus as any });
-                                }
-                            }}
-                        />
+                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Current Status</label>
+                        {job.status === 'completed' ? (
+                            <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-3 rounded-lg border border-green-200 font-bold">
+                                <CheckCircle size={18} /> Completed
+                            </div>
+                        ) : (
+                            <SearchableSelect
+                                label=""
+                                searchable={false}
+                                options={[
+                                    { value: 'scheduled', label: 'Scheduled' },
+                                    { value: 'in_progress', label: 'In Progress' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'cancelled', label: 'Cancelled' }
+                                ]}
+                                value={job.status}
+                                onChange={async (newStatus) => {
+                                    const { error } = await supabase
+                                        .from('jobs')
+                                        .update({ status: newStatus })
+                                        .eq('id', job.id);
+                                    if (!error) {
+                                        setJob({ ...job, status: newStatus as any });
+                                    }
+                                }}
+                            />
+                        )}
                     </div>
 
                     {/* Equipment Card */}
@@ -440,57 +458,59 @@ const JobDetails = () => {
                         {mobileTab === 'parts' && (
                             <div className="space-y-4">
                                 {/* Add Part Form (Mobile logic reused from desktop) */}
-                                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6 space-y-3">
-                                    <h3 className="text-sm font-bold text-slate-900">Add Part</h3>
-                                    <SearchableSelect
-                                        label=""
-                                        options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
-                                        value=""
-                                        onChange={(val) => {
-                                            const item = inventory.find(i => i.id === val);
-                                            if (item) {
-                                                setNewItem({
-                                                    ...newItem,
-                                                    description: item.name,
-                                                    unit_price: item.sell_price,
-                                                    type: 'part'
-                                                });
-                                            }
-                                        }}
-                                        placeholder="Search parts catalog..."
-                                    />
-                                    <div className="flex gap-3 pt-2">
-                                        <div className="w-1/3">
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
-                                            <input
-                                                type="number"
-                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                                value={newItem.quantity}
-                                                onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                        <div className="w-1/3">
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Price (€)</label>
-                                            <input
-                                                type="number"
-                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                                value={newItem.unit_price}
-                                                onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                        <div className="w-1/3 flex items-end">
-                                            <button
-                                                onClick={() => {
-                                                    setNewItem(prev => ({ ...prev, type: 'part' }));
-                                                    handleAddItem();
-                                                }}
-                                                className="w-full bg-delaval-blue text-white p-2.5 rounded-lg flex items-center justify-center hover:bg-delaval-dark-blue h-[42px]"
-                                            >
-                                                <Plus size={20} />
-                                            </button>
+                                {job.status !== 'completed' && (
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6 space-y-3">
+                                        <h3 className="text-sm font-bold text-slate-900">Add Part</h3>
+                                        <SearchableSelect
+                                            label=""
+                                            options={inventory.map(inv => ({ value: inv.id, label: `${inv.name} (€${inv.sell_price})` }))}
+                                            value=""
+                                            onChange={(val) => {
+                                                const item = inventory.find(i => i.id === val);
+                                                if (item) {
+                                                    setNewItem({
+                                                        ...newItem,
+                                                        description: item.name,
+                                                        unit_price: item.sell_price,
+                                                        type: 'part'
+                                                    });
+                                                }
+                                            }}
+                                            placeholder="Search parts catalog..."
+                                        />
+                                        <div className="flex gap-3 pt-2">
+                                            <div className="w-1/3">
+                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                                    value={newItem.quantity}
+                                                    onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
+                                                />
+                                            </div>
+                                            <div className="w-1/3">
+                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Price (€)</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                                    value={newItem.unit_price}
+                                                    onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
+                                                />
+                                            </div>
+                                            <div className="w-1/3 flex items-end">
+                                                <button
+                                                    onClick={() => {
+                                                        setNewItem(prev => ({ ...prev, type: 'part' }));
+                                                        handleAddItem();
+                                                    }}
+                                                    className="w-full bg-delaval-blue text-white p-2.5 rounded-lg flex items-center justify-center hover:bg-delaval-dark-blue h-[42px]"
+                                                >
+                                                    <Plus size={20} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Parts List */}
                                 <div className="flex justify-between items-center px-1 mb-2">
@@ -509,9 +529,11 @@ const JobDetails = () => {
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</span>
-                                                    <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
-                                                        <Trash2 size={18} />
-                                                    </button>
+                                                    {job.status !== 'completed' && (
+                                                        <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))
@@ -523,49 +545,51 @@ const JobDetails = () => {
                         {mobileTab === 'labor' && (
                             <div className="space-y-4">
                                 {/* Add Labor Form */}
-                                <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6 space-y-3">
-                                    <h3 className="text-sm font-bold text-slate-900">Add Time/Labour</h3>
-                                    <div>
-                                        <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
-                                        <input
-                                            className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                            placeholder="e.g. Travel time, Service hours..."
-                                            value={newItem.description}
-                                            onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="flex gap-3 pt-2">
-                                        <div className="w-1/3">
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Hours</label>
+                                {job.status !== 'completed' && (
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-100 mb-6 space-y-3">
+                                        <h3 className="text-sm font-bold text-slate-900">Add Time/Labour</h3>
+                                        <div>
+                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Description</label>
                                             <input
-                                                type="number"
                                                 className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                                value={newItem.quantity}
-                                                onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
+                                                placeholder="e.g. Travel time, Service hours..."
+                                                value={newItem.description}
+                                                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
                                             />
                                         </div>
-                                        <div className="w-1/3">
-                                            <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Rate (€)</label>
-                                            <input
-                                                type="number"
-                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
-                                                value={newItem.unit_price}
-                                                onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                        <div className="w-1/3 flex items-end">
-                                            <button
-                                                onClick={() => {
-                                                    setNewItem(prev => ({ ...prev, type: 'labor' }));
-                                                    handleAddItem();
-                                                }}
-                                                className="w-full bg-delaval-blue text-white p-2.5 rounded-lg flex items-center justify-center hover:bg-delaval-dark-blue h-[42px]"
-                                            >
-                                                <Plus size={20} />
-                                            </button>
+                                        <div className="flex gap-3 pt-2">
+                                            <div className="w-1/3">
+                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Hours</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                                    value={newItem.quantity}
+                                                    onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
+                                                />
+                                            </div>
+                                            <div className="w-1/3">
+                                                <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Rate (€)</label>
+                                                <input
+                                                    type="number"
+                                                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                                    value={newItem.unit_price}
+                                                    onChange={e => setNewItem({ ...newItem, unit_price: Number(e.target.value) })}
+                                                />
+                                            </div>
+                                            <div className="w-1/3 flex items-end">
+                                                <button
+                                                    onClick={() => {
+                                                        setNewItem(prev => ({ ...prev, type: 'labor' }));
+                                                        handleAddItem();
+                                                    }}
+                                                    className="w-full bg-delaval-blue text-white p-2.5 rounded-lg flex items-center justify-center hover:bg-delaval-dark-blue h-[42px]"
+                                                >
+                                                    <Plus size={20} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
 
                                 {/* Labor List */}
                                 <div className="flex justify-between items-center px-1 mb-2">
@@ -584,9 +608,11 @@ const JobDetails = () => {
                                                 </div>
                                                 <div className="flex items-center gap-3">
                                                     <span className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</span>
-                                                    <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
-                                                        <Trash2 size={18} />
-                                                    </button>
+                                                    {job.status !== 'completed' && (
+                                                        <button onClick={() => handleDeleteItem(item.id)} className="text-slate-300 hover:text-red-500 p-2">
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
                                         ))
