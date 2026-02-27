@@ -14,6 +14,7 @@ const DocumentBuilder = () => {
     const [searchParams] = useSearchParams();
     const initialType = searchParams.get('type') === 'quote' ? 'quote' : 'invoice';
     const documentId = searchParams.get('id');
+    const jobId = searchParams.get('jobId');
     const { showToast } = useToast();
 
     const [isEditing] = useState(!!documentId);
@@ -40,8 +41,10 @@ const DocumentBuilder = () => {
         fetchInventory();
         if (documentId) {
             loadExistingDocument(documentId);
+        } else if (jobId) {
+            loadJobData(jobId);
         }
-    }, [documentId]);
+    }, [documentId, jobId]);
 
     const loadExistingDocument = async (id: string) => {
         try {
@@ -72,6 +75,38 @@ const DocumentBuilder = () => {
         } catch (error) {
             console.error('Error loading document:', error);
             showToast('Error', 'Failed to load existing document', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadJobData = async (id: string) => {
+        try {
+            setLoading(true);
+            const { data: job, error } = await supabase
+                .from('jobs')
+                .select('*, job_items(*)')
+                .eq('id', id)
+                .single();
+
+            if (error) throw error;
+            if (job) {
+                setDocData({
+                    customerId: job.customer_id || '',
+                    description: job.service_type || job.description || 'Service Call',
+                    validUntil: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
+                    notes: job.notes || '',
+                    items: (job.job_items || []).map((item: any) => ({
+                        description: item.description,
+                        quantity: item.quantity,
+                        unitPrice: item.unit_price || 0
+                    }))
+                });
+                setCustomerMode('existing');
+            }
+        } catch (error) {
+            console.error('Error loading job for invoice:', error);
+            showToast('Error', 'Failed to load job details', 'error');
         } finally {
             setLoading(false);
         }
