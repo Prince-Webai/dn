@@ -437,7 +437,7 @@ const Inventory = () => {
             {/* MOBILE VIEW */}
             <div className="block md:hidden pb-24 bg-[#F8FAFB] min-h-screen text-[#1a1a1a]">
                 {/* Modern Mobile Header */}
-                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pt-4 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pt-2 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
                     <div className="flex justify-between items-center mb-5">
                         <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Parts</h1>
                         <button
@@ -468,8 +468,18 @@ const Inventory = () => {
                 </div>
 
                 {/* Category Pills Scroll Area - Sticky below header */}
-                <div className="sticky top-[138px] z-10 bg-[#F8FAFB]/95 backdrop-blur-sm pt-4 pb-3 border-b border-slate-100/50">
-                    <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5">
+                <div className="sticky top-[118px] z-10 bg-[#F8FAFB]/95 backdrop-blur-sm pt-4 pb-3 border-b border-slate-100/50">
+                    <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5 items-center">
+                        <select
+                            className="bg-white border text-sm font-bold text-slate-700 outline-none border-slate-200 rounded-[1rem] px-3 py-2.5 shadow-sm min-w-[max-content]"
+                            value={categoryFilter}
+                            onChange={(e) => setCategoryFilter(e.target.value)}
+                        >
+                            <option value="all">Categories</option>
+                            {categories.map(cat => (
+                                <option key={cat} value={cat}>{cat}</option>
+                            ))}
+                        </select>
                         <button
                             onClick={() => setCategoryFilter('all')}
                             className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'all' || (!['all', 'low_stock', 'out_of_stock'].includes(categoryFilter) && categoryFilter) ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}

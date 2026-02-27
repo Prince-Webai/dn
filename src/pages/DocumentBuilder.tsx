@@ -629,14 +629,30 @@ const DocumentBuilder = () => {
 
                                 {docData.items.map((item, idx) => (
                                     <div key={idx} className="grid grid-cols-12 gap-3 items-center bg-slate-50 p-2 rounded-lg group">
-                                        <input
-                                            list="inventory-products"
-                                            placeholder="Search product or type description..."
-                                            className="col-span-6 text-sm bg-white border border-slate-200 px-3 py-2 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                                            value={item.description}
-                                            onChange={e => updateLineItem(idx, 'description', e.target.value)}
-                                            required
-                                        />
+                                        <div className="col-span-6">
+                                            <SearchableSelect
+                                                options={inventory.map(prod => ({
+                                                    value: prod.id,
+                                                    label: `${prod.sku ? `[${prod.sku}] ` : ''}${prod.name} (€${prod.sell_price.toFixed(2)})`
+                                                }))}
+                                                value={item.description} // Using description as value is intentional to support free-text, handled in onChange
+                                                onChange={(val) => {
+                                                    // Check if an inventory item was selected by ID
+                                                    const selectedProduct = inventory.find(p => p.id === val);
+                                                    if (selectedProduct) {
+                                                        // They picked a product from dropdown
+                                                        updateLineItem(idx, 'description', selectedProduct.name);
+                                                        updateLineItem(idx, 'unitPrice', selectedProduct.sell_price);
+                                                    } else {
+                                                        // They typed a custom description
+                                                        updateLineItem(idx, 'description', val);
+                                                    }
+                                                }}
+                                                placeholder="Search product or type description..."
+                                                allowCustom={true}
+                                                fullWidth={true}
+                                            />
+                                        </div>
                                         <input
                                             type="number"
                                             min="1"
@@ -666,13 +682,7 @@ const DocumentBuilder = () => {
                                 ))}
                             </div>
                         )}
-                        <datalist id="inventory-products">
-                            {inventory.map(prod => (
-                                <option key={prod.id} value={prod.name}>
-                                    {prod.sku ? `[${prod.sku}] ` : ''}€{prod.sell_price.toFixed(2)}
-                                </option>
-                            ))}
-                        </datalist>
+
                     </div>
                 </div>
 

@@ -863,7 +863,7 @@ const Customers = () => {
             {/* MOBILE VIEW */}
             <div className="block md:hidden pb-24 bg-[#F8FAFB] min-h-screen text-[#1a1a1a]">
                 {selectedCustomer ? (
-                    <div className="px-4 pb-6 pt-4">
+                    <div className="px-4 pb-6 pt-2">
                         {/* Header Navigation */}
                         <div className="flex items-center justify-between mb-8">
                             <button
@@ -1008,7 +1008,7 @@ const Customers = () => {
                 ) : (
                     <>
                         {/* Modern Mobile Header with extra safe-area padding pt-4 */}
-                        <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pt-4 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+                        <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pt-2 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
                             <div className="flex justify-between items-center mb-5">
                                 <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Customers</h1>
                                 <button
