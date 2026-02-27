@@ -21,6 +21,7 @@ export interface InventoryItem {
     cost_price: number;
     sell_price: number;
     stock_level: number;
+    low_stock_threshold?: number;
     location?: string;
 }
 
@@ -31,7 +32,7 @@ export interface Job {
     customer_id: string;
     engineer_name?: string;
     service_type?: string;
-    status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+    status: 'scheduled' | 'in_progress' | 'awaiting_parts' | 'completed' | 'cancelled';
     date_scheduled?: string;
     date_completed?: string;
     notes?: string;

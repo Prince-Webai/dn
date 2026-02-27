@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Plus, Download, ArrowRight, Pencil, Eye } from 'lucide-react';
+import { Plus, Download, ArrowRight, Pencil, Eye, Trash2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Quote } from '../types';
 import { generateQuote } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 const Quotes = () => {
     const { showToast } = useToast();
     const [quotes, setQuotes] = useState<Quote[]>([]);
+    const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchQuotes();
@@ -45,6 +47,20 @@ const Quotes = () => {
             window.open(result as unknown as string, '_blank', 'noopener,noreferrer');
         } else if (action === 'download') {
             showToast('Success', 'Quote downloaded successfully', 'success');
+        }
+    };
+
+    const handleDeleteQuote = async () => {
+        if (!deleteQuoteId) return;
+        try {
+            const { error } = await supabase.from('quotes').delete().eq('id', deleteQuoteId);
+            if (error) throw error;
+            showToast('Success', 'Quote deleted successfully', 'success');
+            setDeleteQuoteId(null);
+            fetchQuotes();
+        } catch (error) {
+            console.error('Error deleting quote:', error);
+            showToast('Error', 'Failed to delete quote', 'error');
         }
     };
 
@@ -212,6 +228,13 @@ const Quotes = () => {
                                                         <ArrowRight size={18} />
                                                     </button>
                                                 )}
+                                                <button
+                                                    onClick={() => setDeleteQuoteId(quote.id)}
+                                                    className="p-1 text-slate-400 hover:text-red-600 transition-colors"
+                                                    title="Delete Quote"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -221,7 +244,16 @@ const Quotes = () => {
                     </table>
                 </div>
             </div>
-        </div >
+
+            <ConfirmModal
+                isOpen={!!deleteQuoteId}
+                onClose={() => setDeleteQuoteId(null)}
+                onConfirm={handleDeleteQuote}
+                title="Delete Quote"
+                message="Are you sure you want to delete this quote? This action cannot be undone."
+                confirmText="Delete Quote"
+            />
+        </div>
     );
 };
 

@@ -20,6 +20,7 @@ const Inventory = () => {
         cost_price: 0,
         sell_price: 0,
         stock_level: 0,
+        low_stock_threshold: 5,
         location: ''
     });
     const [allocations, setAllocations] = useState<any[]>([]);
@@ -65,6 +66,7 @@ const Inventory = () => {
             cost_price: item.cost_price,
             sell_price: item.sell_price,
             stock_level: item.stock_level,
+            low_stock_threshold: item.low_stock_threshold ?? 5,
             location: item.location || ''
         });
         setEditingId(item.id);
@@ -147,6 +149,7 @@ const Inventory = () => {
                 cost_price: 0,
                 sell_price: 0,
                 stock_level: 0,
+                low_stock_threshold: 5,
                 location: ''
             });
         } catch (error) {
@@ -159,7 +162,20 @@ const Inventory = () => {
         const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
             item.category?.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
+
+        let matchesCategory = false;
+
+        // Handle normal categories or special mobile filters
+        if (categoryFilter === 'all') {
+            matchesCategory = true;
+        } else if (categoryFilter === 'low_stock') {
+            matchesCategory = item.stock_level <= (item.low_stock_threshold || 5) && item.stock_level > 0;
+        } else if (categoryFilter === 'out_of_stock') {
+            matchesCategory = item.stock_level <= 0;
+        } else {
+            matchesCategory = item.category === categoryFilter;
+        }
+
         return matchesSearch && matchesCategory;
     });
 
@@ -314,7 +330,7 @@ const Inventory = () => {
                                                     <div className="text-sm font-medium mb-1">{item.stock_level} units</div>
                                                     <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
                                                         <div
-                                                            className={`h-full rounded-full ${item.stock_level < 5 ? 'bg-red-500' : 'bg-green-500'}`}
+                                                            className={`h-full rounded-full ${item.stock_level <= (item.low_stock_threshold || 5) && item.stock_level > 0 ? 'bg-orange-500' : item.stock_level === 0 ? 'bg-red-500' : 'bg-green-500'}`}
                                                             style={{ width: `${Math.min(item.stock_level * 10, 100)}%` }}
                                                         />
                                                     </div>
@@ -427,7 +443,7 @@ const Inventory = () => {
                         <button
                             onClick={() => {
                                 setEditingId(null);
-                                setNewItem({ sku: '', name: '', category: '', cost_price: 0, sell_price: 0, stock_level: 0, location: '' });
+                                setNewItem({ sku: '', name: '', category: '', cost_price: 0, sell_price: 0, stock_level: 0, low_stock_threshold: 5, location: '' });
                                 setIsNewCategory(false);
                                 setNewCategoryName('');
                                 setIsModalOpen(true);
@@ -454,10 +470,24 @@ const Inventory = () => {
                 {/* Category Pills Scroll Area - Sticky below header */}
                 <div className="sticky top-[138px] z-10 bg-[#F8FAFB]/95 backdrop-blur-sm pt-4 pb-3 border-b border-slate-100/50">
                     <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5">
-                        <button className="px-5 py-2.5 rounded-[1rem] bg-slate-900 text-white text-[13px] font-bold whitespace-nowrap shadow-[0_4px_12px_rgba(0,0,0,0.1)] transition-transform active:scale-95">All Parts</button>
-                        <button className="px-5 py-2.5 rounded-[1rem] bg-white text-slate-600 border border-slate-200 hover:border-slate-300 text-[13px] font-bold whitespace-nowrap transition-all shadow-sm">VMS Components</button>
-                        <button className="px-5 py-2.5 rounded-[1rem] bg-white text-slate-600 border border-slate-200 hover:border-slate-300 text-[13px] font-bold whitespace-nowrap transition-all shadow-sm">Service Kits</button>
-                        <button className="px-5 py-2.5 rounded-[1rem] bg-white text-slate-600 border border-slate-200 hover:border-slate-300 text-[13px] font-bold whitespace-nowrap transition-all shadow-sm">Consumables</button>
+                        <button
+                            onClick={() => setCategoryFilter('all')}
+                            className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'all' || (!['all', 'low_stock', 'out_of_stock'].includes(categoryFilter) && categoryFilter) ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
+                        >
+                            All Parts
+                        </button>
+                        <button
+                            onClick={() => setCategoryFilter('low_stock')}
+                            className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'low_stock' ? 'bg-amber-500 text-white shadow-[0_4px_12px_rgba(245,158,11,0.2)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
+                        >
+                            Low Stock
+                        </button>
+                        <button
+                            onClick={() => setCategoryFilter('out_of_stock')}
+                            className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'out_of_stock' ? 'bg-red-500 text-white shadow-[0_4px_12px_rgba(239,68,68,0.2)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
+                        >
+                            Unavailable
+                        </button>
                     </div>
                 </div>
 
@@ -490,7 +520,7 @@ const Inventory = () => {
                                 </div>
 
                                 <div>
-                                    {item.stock_level > 5 ? (
+                                    {item.stock_level > (item.low_stock_threshold || 5) ? (
                                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[0.5rem] bg-emerald-50 text-emerald-700 text-[12px] font-bold tracking-wide">
                                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
                                             {item.stock_level} in stock
@@ -591,7 +621,12 @@ const Inventory = () => {
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Stock Level</label>
                             <input type="number" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
-                                value={newItem.stock_level} onChange={e => setNewItem({ ...newItem, stock_level: parseInt(e.target.value) })} />
+                                value={newItem.stock_level} onChange={e => setNewItem({ ...newItem, stock_level: parseInt(e.target.value) || 0 })} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Low Stock Alert Level</label>
+                            <input type="number" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
+                                value={newItem.low_stock_threshold} onChange={e => setNewItem({ ...newItem, low_stock_threshold: parseInt(e.target.value) || 0 })} />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-slate-700 mb-1">Location</label>

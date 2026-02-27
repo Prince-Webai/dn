@@ -6,27 +6,27 @@ import { dataService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
 import SearchableSelect from '../components/SearchableSelect';
 import DatePicker from '../components/DatePicker';
-import { useToast } from '../context/ToastContext';
-
 const Dashboard = () => {
     const [stats, setStats] = useState({
         outstandingBalance: 0,
         activeJobs: 0,
         overdueInvoices: 0,
         lowStockItems: 0,
-        completedToday: 0 // New stat for mobile design
+        completedToday: 0
     });
     const [recentJobs, setRecentJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
-    const { showToast } = useToast();
 
-    // Date Filtering State
     const [filterType, setFilterType] = useState<'all' | 'month' | 'year' | 'custom'>('all');
     const [customRange, setCustomRange] = useState({
         start: new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().split('T')[0],
         end: new Date().toISOString().split('T')[0]
     });
+
+    // Notifications State
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+    const [notifications, setNotifications] = useState<{ id: string, title: string, message: string, type: 'warning' | 'error' | 'info', date: string }[]>([]);
 
     useEffect(() => {
         fetchData();
@@ -87,7 +87,11 @@ const Dashboard = () => {
             });
             const outstanding = unpaidInvoices.reduce((acc, inv) => acc + (inv.total_amount - (inv.amount_paid || 0)), 0);
             const activeJobsCount = filteredJobs.filter(j => ['scheduled', 'in_progress'].includes(j.status)).length;
-            const lowStockCount = inventoryArray.filter(i => i.stock_level < 5).length;
+
+            // Detailed Inventory Checks
+            const outOfStockItems = inventoryArray.filter(i => i.stock_level <= 0);
+            const lowStockItemsArr = inventoryArray.filter(i => i.stock_level > 0 && i.stock_level <= (i.low_stock_threshold || 5));
+            const lowStockCount = outOfStockItems.length + lowStockItemsArr.length;
 
             const overdueCount = filteredInvoices.filter(inv => {
                 const s = inv.status as string;
@@ -99,12 +103,61 @@ const Dashboard = () => {
             // Calculate completed jobs today (mocked for visual via status)
             const completedCount = allJobs.filter(j => j.status === 'completed').length;
 
+            // Calculate Notifications
+            const newNotifs: typeof notifications = [];
+
+            if (outOfStockItems.length > 0) {
+                const names = outOfStockItems.map(i => i.name).join(', ');
+                newNotifs.push({
+                    id: 'out-of-stock',
+                    title: 'Out of Stock Alert',
+                    message: `The following items are out of stock: ${names}`,
+                    type: 'error',
+                    date: new Date().toISOString()
+                });
+            }
+
+            if (lowStockItemsArr.length > 0) {
+                const names = lowStockItemsArr.map(i => i.name).join(', ');
+                newNotifs.push({
+                    id: 'low-stock',
+                    title: 'Low Stock Alert',
+                    message: `Running low: ${names}`,
+                    type: 'warning',
+                    date: new Date().toISOString()
+                });
+            }
+
+            if (overdueCount > 0) {
+                newNotifs.push({
+                    id: 'overdue-inv',
+                    title: 'Overdue Invoices',
+                    message: `There are ${overdueCount} invoices past their due date.`,
+                    type: 'error',
+                    date: new Date().toISOString()
+                });
+            }
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const jobsToday = allJobs.filter(j => j.date_scheduled && j.date_scheduled.startsWith(todayStr) && j.status !== 'completed');
+            if (jobsToday.length > 0) {
+                newNotifs.push({
+                    id: 'today-jobs',
+                    title: 'Today\'s Schedule',
+                    message: `You have ${jobsToday.length} active jobs scheduled for today.`,
+                    type: 'info',
+                    date: new Date().toISOString()
+                });
+            }
+
+            setNotifications(newNotifs);
+
             setStats({
                 outstandingBalance: outstanding,
                 activeJobs: activeJobsCount,
                 overdueInvoices: overdueCount,
                 lowStockItems: lowStockCount,
-                completedToday: completedCount > 0 ? completedCount : 7 // Fallback to 7 to match design visually if empty
+                completedToday: completedCount
             });
 
             setRecentJobs(filteredJobs.slice(0, 5));
@@ -345,11 +398,11 @@ const Dashboard = () => {
                 {/* Fixed App Header */}
                 <div className="bg-[#0051A5] text-white pt-10 pb-20 px-6 relative w-full">
                     <div
-                        onClick={() => showToast('Notifications', 'You have no new notifications at this time.', 'info')}
+                        onClick={() => setIsNotificationsOpen(true)}
                         className="absolute top-10 right-6 opacity-80 backdrop-blur border border-white/20 rounded-full p-2 bg-white/10 z-10 w-9 h-9 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
                     >
                         <Bell size={18} />
-                        {stats.overdueInvoices > 0 && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>}
+                        {notifications.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-[#0051A5]"></span>}
                     </div>
 
                     <p className="text-[#a0c5ea] text-xs font-semibold mb-1 uppercase tracking-wider opacity-90">{formattedDate}</p>
@@ -403,8 +456,13 @@ const Dashboard = () => {
                     <div className="space-y-3 pb-8">
                         {loading ? (
                             <div className="text-center py-8 text-slate-400">Loading jobs...</div>
+                        ) : recentJobs.length === 0 ? (
+                            <div className="text-center py-8 text-slate-400 text-sm">
+                                <Calendar size={32} className="mx-auto text-slate-200 mb-3 opacity-50" />
+                                No recent activity found.
+                            </div>
                         ) : recentJobs.map((job) => (
-                            <Link key={job.id} to={`/jobs/${job.id}`} className="block bg-white border border-slate-100 rounded-[1.25rem] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] active:scale-[0.99] transition-transform">
+                            <Link key={job.id} to={`/jobs/${job.id}`} className="block bg-white border border-slate-100 rounded-[1.25rem] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] active:scale-[0.99] transition-transform">
                                 <div className="flex justify-between items-start mb-2">
                                     <h3 className="font-bold text-slate-900 text-base leading-tight pr-2">{job.customers?.name || 'Unknown Farm'}</h3>
                                     <span className={`inline-flex whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide
@@ -429,6 +487,48 @@ const Dashboard = () => {
                     </div>
                 </div>
 
+                {/* NOTIFICATIONS SLIDER OVERLAY */}
+                {isNotificationsOpen && (
+                    <div className="fixed inset-0 z-50 flex justify-end">
+                        <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setIsNotificationsOpen(false)} />
+                        <div className="relative w-[320px] max-w-full h-full bg-[#f8fbfa] shadow-2xl flex flex-col animate-slide-in-right">
+                            <div className="bg-white px-5 py-6 border-b border-slate-100 flex justify-between items-center shadow-sm">
+                                <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                                    <Bell size={20} className="text-delaval-blue" />
+                                    Notifications
+                                </h3>
+                                <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-400 hover:text-slate-600 p-2">
+                                    ✕
+                                </button>
+                            </div>
+                            <div className="p-4 flex-1 overflow-y-auto space-y-3 bg-[#f8fbfa]">
+                                {notifications.length === 0 ? (
+                                    <div className="text-center py-10 text-slate-400 text-sm">
+                                        <Bell size={32} className="mx-auto text-slate-200 mb-3 opacity-50" />
+                                        No new notifications
+                                    </div>
+                                ) : (
+                                    notifications.map(notif => (
+                                        <div key={notif.id} className="bg-white p-4 rounded-xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex gap-3 items-start">
+                                            <div className={`mt-0.5 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${notif.type === 'error' ? 'bg-red-50 text-red-600' :
+                                                notif.type === 'warning' ? 'bg-amber-50 text-amber-600' :
+                                                    'bg-blue-50 text-blue-600'
+                                                }`}>
+                                                {notif.type === 'error' && <AlertCircle size={16} />}
+                                                {notif.type === 'warning' && <Package size={16} />}
+                                                {notif.type === 'info' && <Calendar size={16} />}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-sm text-slate-800">{notif.title}</h4>
+                                                <p className="text-xs text-slate-500 mt-1 leading-relaxed">{notif.message}</p>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );

@@ -16,6 +16,7 @@ import {
   AlertCircle,
   Calendar,
   Filter,
+  PackageSearch
 } from "lucide-react";
 import SearchableSelect from "../components/SearchableSelect";
 
@@ -35,6 +36,14 @@ const COLUMNS = [
     color: "text-delaval-blue",
     bg: "bg-blue-50",
     border: "border-blue-200",
+  },
+  {
+    id: "awaiting_parts",
+    title: "Awaiting Parts",
+    icon: PackageSearch,
+    color: "text-amber-500",
+    bg: "bg-amber-50",
+    border: "border-amber-200",
   },
   {
     id: "completed",

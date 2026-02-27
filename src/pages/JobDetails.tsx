@@ -4,9 +4,7 @@ import { ArrowLeft, Plus, Trash2, FileText, Wrench, Clock, Package, Receipt, Che
 import SearchableSelect from '../components/SearchableSelect';
 import { supabase } from '../lib/supabase';
 import { Job, JobItem, InventoryItem } from '../types';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
-
+import { generateJobReport } from '../lib/pdfGenerator';
 const JobDetails = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -57,8 +55,8 @@ const JobDetails = () => {
     const handleAddItem = async () => {
         if (!id) return;
         try {
-            const itemTotal = newItem.quantity * newItem.unit_price;
-            const itemToInsert = { ...newItem, job_id: id, total: itemTotal };
+            const { total, ...itemWithoutTotal } = newItem as any;
+            const itemToInsert = { ...itemWithoutTotal, job_id: id };
 
             const { data, error } = await supabase
                 .from('job_items')
@@ -80,43 +78,14 @@ const JobDetails = () => {
         if (!error) setItems(items.filter(i => i.id !== itemId));
     };
 
-    const generatePDF = () => {
+    const generatePDF = async () => {
         if (!job) return;
-        const doc = new jsPDF();
-
-        // Header
-        doc.setFontSize(22);
-        doc.text('Condon Dairy Services', 14, 20);
-        doc.setFontSize(12);
-        doc.text('Job Service Report', 14, 30);
-
-        doc.text(`Job #: ${job.job_number}`, 14, 45);
-        doc.text(`Date: ${new Date().toLocaleDateString()}`, 14, 52);
-        doc.text(`Customer: ${job.customers?.name || 'N/A'}`, 14, 59);
-        doc.text(`Engineer: ${job.engineer_name || 'N/A'}`, 14, 66);
-
-        // Table
-        const tableData = items.map(item => [
-            item.description,
-            item.quantity.toString(),
-            item.type.toUpperCase()
-        ]);
-
-        autoTable(doc, {
-            startY: 75,
-            head: [['Description', 'Qty', 'Type']],
-            body: tableData,
-        });
-
-        // Footer / Signature
-        const finalY = (doc as any).lastAutoTable.finalY || 75;
-        doc.text('Engineer Signature:', 14, finalY + 30);
-        doc.line(14, finalY + 45, 100, finalY + 45);
-
-        doc.text('Customer Signature:', 120, finalY + 30);
-        doc.line(120, finalY + 45, 200, finalY + 45);
-
-        doc.save(`ServiceReport_Job_${job.job_number}.pdf`);
+        try {
+            await generateJobReport(job, job.customers as any, items);
+        } catch (error) {
+            console.error('Error generating PDF:', error);
+            alert('Failed to generate PDF. Please try again.');
+        }
     };
 
     const [mobileTab, setMobileTab] = useState<'details' | 'parts' | 'labor'>('details');

@@ -646,3 +646,89 @@ export const generateOneTimeInvoice = async (
         ? (doc.output('bloburl') as unknown as string)
         : (doc.save(`${safeName}-${invNum}.pdf`) as unknown as void);
 };
+
+// ============================================================
+// JOB REPORT GENERATOR
+// ============================================================
+export const generateJobReport = async (
+    job: Job,
+    customer: Customer,
+    items: JobItem[],
+    action: 'download' | 'preview' = 'download'
+) => {
+    const settings = await dataService.getSettings();
+    const doc = new jsPDF();
+    const documentNumber = job.job_number || 'JOB-000';
+    const safeName = customer?.name?.replace(/[^a-z0-9]/gi, '_') || 'Customer';
+    doc.setProperties({ title: `${safeName}-${documentNumber}` });
+
+    let y = await addHeader(doc, 'Job Report', String(documentNumber), job.status);
+    y = addAddressSection(doc, customer || { id: 'guest', name: 'N/A', created_at: '', account_balance: 0 }, y, 'Job Report', settings);
+
+    const infoData = [
+        { label: 'Date Scheduled', value: job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString('en-GB') : new Date().toLocaleDateString('en-GB') },
+        { label: 'Job No.', value: String(documentNumber) },
+        { label: 'Engineer', value: String(job.engineer_name || 'Unassigned') },
+        { label: 'VAT No.', value: settings?.vat_reg_number || 'IE 8252470Q' },
+        { label: 'Service', value: String(job.service_type || 'General') },
+        { label: 'Machine/Serial', value: 'DeLaval VMS V300' }, // Match UI summary
+    ];
+    y = addInfoGrid(doc, infoData, y);
+
+    // Notes section
+    if (job.notes) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.text('Issue Description:', LEFT, y);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        const splitNotes = doc.splitTextToSize(job.notes, doc.internal.pageSize.width - LEFT - RIGHT);
+        doc.text(splitNotes, LEFT, y + 5);
+        y += 5 + (splitNotes.length * 4) + 5;
+    }
+
+    autoTable(doc, {
+        startY: y,
+        head: [[
+            { content: 'Description', styles: { halign: 'left' } },
+            { content: 'Type', styles: { halign: 'center' } },
+            { content: 'Qty', styles: { halign: 'center' } },
+        ]],
+        body: items && items.length > 0 ? items.map(item => [
+            String(item.description),
+            String(item.type).toUpperCase(),
+            String(item.quantity),
+        ]) : [
+            ['No parts or labor added yet', '-', '-']
+        ],
+        theme: 'plain',
+        styles: { fontSize: 10, cellPadding: 2 },
+        headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
+        margin: { left: LEFT, right: RIGHT },
+        columnStyles: {
+            0: { cellPadding: { left: 0 } },
+            1: { halign: 'center' },
+            2: { halign: 'center' },
+        },
+    });
+
+    // @ts-expect-error - ts ignore legacy
+    const tableBottom = doc.lastAutoTable.finalY as number;
+
+    // Signatures
+    const finalY = Math.max(tableBottom + 20, 200);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('Engineer Signature:', LEFT, finalY);
+    doc.line(LEFT, finalY + 15, LEFT + 60, finalY + 15);
+
+    doc.text('Customer Signature:', 120, finalY);
+    doc.line(120, finalY + 15, 120 + 60, finalY + 15);
+
+    addBankDetails(doc, doc.internal.pageSize.height - 55, settings);
+    addFooter(doc);
+
+    return action === 'preview'
+        ? (doc.output('bloburl') as unknown as string)
+        : (doc.save(`${safeName}-${documentNumber}_Report.pdf`) as unknown as void);
+};

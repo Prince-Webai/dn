@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, Eye } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, Eye, Check, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, Statement } from '../types';
 import Modal from '../components/Modal';
@@ -23,7 +23,6 @@ const Invoices = () => {
     const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [paymentInvoice, setPaymentInvoice] = useState<Invoice | null>(null);
-    const [isPaymentOpen, setIsPaymentOpen] = useState(false);
     const [paymentAmount, setPaymentAmount] = useState<number | string>('');
 
     // Delete confirmation state
@@ -187,14 +186,12 @@ const Invoices = () => {
     };
 
     // --- Payment Handlers ---
-    const openPaymentModal = (invoice: Invoice) => {
+    const openPaymentPopup = (invoice: Invoice) => {
         setPaymentInvoice(invoice);
         setPaymentAmount((invoice.total_amount - (invoice.amount_paid || 0)).toFixed(2));
-        setIsPaymentOpen(true);
     };
 
-    const handlePaymentSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handlePaymentSubmit = async () => {
         if (!paymentInvoice) return;
 
         const parsedAmount = typeof paymentAmount === 'string' ? parseFloat(paymentAmount) : paymentAmount;
@@ -223,7 +220,7 @@ const Invoices = () => {
                 await dataService.recalculateCustomerBalance(paymentInvoice.customer_id);
             }
             showToast('Success', 'Payment recorded successfully', 'success');
-            setIsPaymentOpen(false);
+            setPaymentInvoice(null);
             fetchData();
         } else {
             showToast('Error', 'Failed to record payment', 'error');
@@ -486,13 +483,38 @@ const Invoices = () => {
                                             <td className="px-6 py-4">
                                                 <div className="flex gap-1.5 flex-wrap">
                                                     {inv.status !== 'paid' && (
-                                                        <button
-                                                            onClick={() => openPaymentModal(inv)}
-                                                            className="p-1.5 rounded-md text-green-600 bg-green-50 hover:bg-green-100 transition-colors"
-                                                            title="Record Payment"
-                                                        >
-                                                            <CreditCard size={16} />
-                                                        </button>
+                                                        <div className="relative z-10">
+                                                            <button
+                                                                onClick={() => paymentInvoice?.id === inv.id ? setPaymentInvoice(null) : openPaymentPopup(inv)}
+                                                                className={`p-1.5 rounded-md transition-colors ${paymentInvoice?.id === inv.id ? 'text-white bg-green-500' : 'text-green-600 bg-green-50 hover:bg-green-100'} outline-none`}
+                                                                title="Record Payment"
+                                                            >
+                                                                <CreditCard size={16} />
+                                                            </button>
+
+                                                            {paymentInvoice?.id === inv.id && (
+                                                                <div className="absolute right-0 top-[120%] bg-white rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.15)] border border-slate-100 p-1.5 z-[100] flex items-center gap-1.5 w-max animate-in fade-in zoom-in-95 duration-200">
+                                                                    <button type="button" onClick={() => setPaymentAmount((inv.total_amount - (inv.amount_paid || 0)).toFixed(2))} className="px-3 py-1.5 bg-violet-50 text-violet-600 font-bold rounded-lg text-xs hover:bg-violet-100 transition-colors tracking-wide h-[34px]">FULL</button>
+                                                                    <button type="button" onClick={() => setPaymentAmount(((inv.total_amount - (inv.amount_paid || 0)) * 0.5).toFixed(2))} className="px-3 py-1.5 bg-slate-50 text-slate-600 font-bold rounded-lg text-xs hover:bg-slate-100 transition-colors tracking-wide h-[34px]">50%</button>
+                                                                    <div className="relative flex items-center ml-1">
+                                                                        <span className="absolute left-3 text-slate-400 font-bold text-sm">€</span>
+                                                                        <input
+                                                                            type="number"
+                                                                            value={paymentAmount}
+                                                                            onChange={(e) => setPaymentAmount(e.target.value)}
+                                                                            className="w-[90px] pl-7 pr-1 py-1 border-[2px] border-violet-500 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-violet-100 h-[34px]"
+                                                                            step="0.01"
+                                                                        />
+                                                                    </div>
+                                                                    <button onClick={() => handlePaymentSubmit()} className="w-[34px] h-[34px] flex items-center justify-center bg-[#22C55E] text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm ml-1">
+                                                                        <Check size={18} strokeWidth={3} />
+                                                                    </button>
+                                                                    <button onClick={() => setPaymentInvoice(null)} className="w-[34px] h-[34px] flex items-center justify-center bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-100 transition-colors">
+                                                                        <X size={18} strokeWidth={2.5} />
+                                                                    </button>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     )}
                                                     <button
                                                         onClick={() => handlePreviewInvoice(inv)}
@@ -690,55 +712,7 @@ const Invoices = () => {
                 </div>
             </div>
 
-            {/* Payment Modal */}
-            <Modal isOpen={isPaymentOpen} onClose={() => setIsPaymentOpen(false)} title="Record Payment">
-                <form onSubmit={handlePaymentSubmit} className="space-y-4">
-                    <div className="bg-slate-50 p-4 rounded-lg">
-                        <div className="text-sm text-slate-500">Invoice Amount</div>
-                        <div className="text-xl font-bold text-slate-900">€{paymentInvoice?.total_amount.toFixed(2)}</div>
-                        <div className="text-sm text-slate-500 mt-2">Already Paid</div>
-                        <div className="text-lg font-bold text-green-600">€{(paymentInvoice?.amount_paid || 0).toFixed(2)}</div>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-slate-700 mb-1">Payment Amount (€)</label>
-                        <input
-                            type="number"
-                            step="0.01"
-                            required
-                            className="form-input w-full border border-slate-300 rounded-lg px-4 py-2"
-                            value={paymentAmount}
-                            onChange={(e) => setPaymentAmount(e.target.value)}
-                        />
-                        <div className="flex flex-wrap gap-2 mt-3">
-                            <button
-                                type="button"
-                                onClick={() => setPaymentAmount(paymentInvoice ? (paymentInvoice.total_amount * 0.25).toFixed(2) : '')}
-                                className="px-3 py-1.5 text-xs font-bold rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200"
-                            >
-                                25% (Deposit)
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPaymentAmount(paymentInvoice ? (paymentInvoice.total_amount * 0.50).toFixed(2) : '')}
-                                className="px-3 py-1.5 text-xs font-bold rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-colors border border-indigo-200"
-                            >
-                                50% (Half)
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setPaymentAmount(paymentInvoice ? (paymentInvoice.total_amount - (paymentInvoice.amount_paid || 0)).toFixed(2) : '')}
-                                className="px-3 py-1.5 text-xs font-bold rounded-md bg-green-50 text-green-700 hover:bg-green-100 transition-colors border border-green-200"
-                            >
-                                100% (Full)
-                            </button>
-                        </div>
-                    </div>
-                    <div className="flex justify-end gap-3 pt-4">
-                        <button type="button" onClick={() => setIsPaymentOpen(false)} className="btn btn-secondary">Cancel</button>
-                        <button type="submit" className="btn btn-primary bg-green-600 hover:bg-green-700 text-white">Record Payment</button>
-                    </div>
-                </form>
-            </Modal>
+
 
             {/* Edit Invoice Modal */}
             <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Invoice Details">

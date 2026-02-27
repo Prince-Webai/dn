@@ -16,12 +16,13 @@ const Settings = () => {
     useEffect(() => {
         if (user) {
             setUserName(user.user_metadata?.name || user.email?.split('@')[0] || 'Admin User');
+            if (user.user_metadata?.role !== 'Engineer') {
+                fetchSettings();
+            } else {
+                setIsLoading(false); // Engineers don't need to load company settings
+            }
         }
     }, [user]);
-
-    useEffect(() => {
-        fetchSettings();
-    }, []);
 
     const fetchSettings = async () => {
         try {
@@ -69,8 +70,11 @@ const Settings = () => {
                 if (authError) throw authError;
             }
 
-            const { error } = await dataService.updateSettings(settings);
-            if (error) throw error;
+            if (user?.user_metadata?.role !== 'Engineer' && settings) {
+                const { error } = await dataService.updateSettings(settings);
+                if (error) throw error;
+            }
+
             setMessage({ type: 'success', text: 'Settings saved successfully.' });
         } catch (error: any) {
             console.error('Error saving settings:', error);
@@ -139,177 +143,181 @@ const Settings = () => {
                     </div>
                 </div>
 
-                {/* Company Details */}
-                <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-6">
-                    <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                        <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                            <Building size={20} />
-                        </div>
-                        <h2 className="text-xl font-bold text-slate-800">Company Information</h2>
-                    </div>
-
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Company Name</label>
-                            <div className="relative">
-                                <Building size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input
-                                    type="text"
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                    value={settings?.company_name || ''}
-                                    onChange={e => setSettings(prev => prev ? { ...prev, company_name: e.target.value } : null)}
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Account Manager Name</label>
-                            <p className="text-xs text-slate-500 mb-2 ml-1">Shown as 'Account Manager' on invoices and PDFs.</p>
-                            <div className="relative">
-                                <Building size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input
-                                    type="text"
-                                    placeholder="e.g. John Smith"
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                    value={settings?.contact_name || ''}
-                                    onChange={e => setSettings(prev => prev ? { ...prev, contact_name: e.target.value } : { id: '00000000-0000-0000-0000-000000000000', company_name: '', company_address: '', company_phone: '', company_email: '', contact_name: e.target.value, bank_name: '', account_name: '', iban: '', bic: '', vat_reg_number: '', webhook_url: '', updated_at: new Date().toISOString() })}
-                                />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Address</label>
-                            <div className="relative">
-                                <MapPin size={18} className="absolute left-3 top-3 text-slate-400" />
-                                <textarea
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50 min-h-[100px]"
-                                    value={settings?.company_address || ''}
-                                    onChange={e => setSettings(prev => prev ? { ...prev, company_address: e.target.value } : null)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Phone</label>
-                                <div className="relative">
-                                    <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input
-                                        type="text"
-                                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                        value={settings?.company_phone || ''}
-                                        onChange={e => setSettings(prev => prev ? { ...prev, company_phone: e.target.value } : null)}
-                                    />
+                {user?.user_metadata?.role !== 'Engineer' && (
+                    <>
+                        {/* Company Details */}
+                        <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-6">
+                            <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                    <Building size={20} />
                                 </div>
+                                <h2 className="text-xl font-bold text-slate-800">Company Information</h2>
                             </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Email</label>
-                                <div className="relative">
-                                    <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input
-                                        type="email"
-                                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                        value={settings?.company_email || ''}
-                                        onChange={e => setSettings(prev => prev ? { ...prev, company_email: e.target.value } : null)}
-                                    />
-                                </div>
-                            </div>
-                        </div>
 
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">VAT Registration Number</label>
-                            <div className="relative">
-                                <Receipt size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input
-                                    type="text"
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                    value={settings?.vat_reg_number || ''}
-                                    onChange={e => setSettings(prev => prev ? { ...prev, vat_reg_number: e.target.value } : null)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-8">
-                    {/* Bank Details */}
-                    <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-6">
-                        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                            <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
-                                <CreditCard size={20} />
-                            </div>
-                            <h2 className="text-xl font-bold text-slate-800">Bank Information</h2>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Bank Name</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                        value={settings?.bank_name || ''}
-                                        onChange={e => setSettings(prev => prev ? { ...prev, bank_name: e.target.value } : null)}
-                                    />
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Company Name</label>
+                                    <div className="relative">
+                                        <Building size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            value={settings?.company_name || ''}
+                                            onChange={e => setSettings(prev => prev ? { ...prev, company_name: e.target.value } : null)}
+                                        />
+                                    </div>
                                 </div>
+
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Account Holder</label>
-                                    <input
-                                        type="text"
-                                        className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                        value={settings?.account_name || ''}
-                                        onChange={e => setSettings(prev => prev ? { ...prev, account_name: e.target.value } : null)}
-                                    />
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Account Manager Name</label>
+                                    <p className="text-xs text-slate-500 mb-2 ml-1">Shown as 'Account Manager' on invoices and PDFs.</p>
+                                    <div className="relative">
+                                        <Building size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. John Smith"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            value={settings?.contact_name || ''}
+                                            onChange={e => setSettings(prev => prev ? { ...prev, contact_name: e.target.value } : { id: '00000000-0000-0000-0000-000000000000', company_name: '', company_address: '', company_phone: '', company_email: '', contact_name: e.target.value, bank_name: '', account_name: '', iban: '', bic: '', vat_reg_number: '', webhook_url: '', updated_at: new Date().toISOString() })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Address</label>
+                                    <div className="relative">
+                                        <MapPin size={18} className="absolute left-3 top-3 text-slate-400" />
+                                        <textarea
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50 min-h-[100px]"
+                                            value={settings?.company_address || ''}
+                                            onChange={e => setSettings(prev => prev ? { ...prev, company_address: e.target.value } : null)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Phone</label>
+                                        <div className="relative">
+                                            <Phone size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="text"
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                                value={settings?.company_phone || ''}
+                                                onChange={e => setSettings(prev => prev ? { ...prev, company_phone: e.target.value } : null)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Email</label>
+                                        <div className="relative">
+                                            <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                            <input
+                                                type="email"
+                                                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                                value={settings?.company_email || ''}
+                                                onChange={e => setSettings(prev => prev ? { ...prev, company_email: e.target.value } : null)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">VAT Registration Number</label>
+                                    <div className="relative">
+                                        <Receipt size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="text"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            value={settings?.vat_reg_number || ''}
+                                            onChange={e => setSettings(prev => prev ? { ...prev, vat_reg_number: e.target.value } : null)}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-8">
+                            {/* Bank Details */}
+                            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-6">
+                                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                                    <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
+                                        <CreditCard size={20} />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-slate-800">Bank Information</h2>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Bank Name</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                                value={settings?.bank_name || ''}
+                                                onChange={e => setSettings(prev => prev ? { ...prev, bank_name: e.target.value } : null)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Account Holder</label>
+                                            <input
+                                                type="text"
+                                                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                                value={settings?.account_name || ''}
+                                                onChange={e => setSettings(prev => prev ? { ...prev, account_name: e.target.value } : null)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">IBAN</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            value={settings?.iban || ''}
+                                            onChange={e => setSettings(prev => prev ? { ...prev, iban: e.target.value } : null)}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">BIC/SWIFT</label>
+                                        <input
+                                            type="text"
+                                            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            value={settings?.bic || ''}
+                                            onChange={e => setSettings(prev => prev ? { ...prev, bic: e.target.value } : null)}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">IBAN</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                    value={settings?.iban || ''}
-                                    onChange={e => setSettings(prev => prev ? { ...prev, iban: e.target.value } : null)}
-                                />
-                            </div>
+                            {/* Automation/Webhooks */}
+                            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-6">
+                                <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                                    <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                                        <Globe size={20} />
+                                    </div>
+                                    <h2 className="text-xl font-bold text-slate-800">Automation</h2>
+                                </div>
 
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">BIC/SWIFT</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                    value={settings?.bic || ''}
-                                    onChange={e => setSettings(prev => prev ? { ...prev, bic: e.target.value } : null)}
-                                />
+                                <div>
+                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Webhook URL (Reminders)</label>
+                                    <p className="text-xs text-slate-500 mb-2 ml-1">Triggered when you send an invoice reminder.</p>
+                                    <div className="relative">
+                                        <Globe size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input
+                                            type="url"
+                                            placeholder="https://your-webhook-endpoint.com"
+                                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
+                                            value={settings?.webhook_url || ''}
+                                            onChange={e => setSettings(prev => prev ? { ...prev, webhook_url: e.target.value } : null)}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-
-                    {/* Automation/Webhooks */}
-                    <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 space-y-6">
-                        <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
-                            <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
-                                <Globe size={20} />
-                            </div>
-                            <h2 className="text-xl font-bold text-slate-800">Automation</h2>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-1.5 ml-1">Webhook URL (Reminders)</label>
-                            <p className="text-xs text-slate-500 mb-2 ml-1">Triggered when you send an invoice reminder.</p>
-                            <div className="relative">
-                                <Globe size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input
-                                    type="url"
-                                    placeholder="https://your-webhook-endpoint.com"
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all bg-slate-50/50"
-                                    value={settings?.webhook_url || ''}
-                                    onChange={e => setSettings(prev => prev ? { ...prev, webhook_url: e.target.value } : null)}
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </form>
         </div>
     );

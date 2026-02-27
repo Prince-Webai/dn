@@ -32,7 +32,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
-    // Prototype Sidebar Structure
     const navSections = [
         {
             title: 'Main',
@@ -55,18 +54,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             title: 'Inventory',
             items: [
                 { icon: Package, label: 'Parts Inventory', path: '/inventory' },
-                // { icon: Package, label: 'Parts Allocation', path: '/inventory' }, // Combined in React App
             ]
         },
         {
             title: 'Reports & Admin',
             items: [
-                { icon: PieChart, label: 'Analytics', path: '/reports' },
-                { icon: Users, label: 'Team & Engineers', path: '/team' },
+                ...(user?.user_metadata?.role !== 'Engineer' ? [
+                    { icon: PieChart, label: 'Analytics', path: '/reports' },
+                    { icon: Users, label: 'Team & Engineers', path: '/team' },
+                ] : []),
                 { icon: SettingsIcon, label: 'Settings', path: '/settings' },
             ]
         },
-
     ];
 
     // Mobile Bottom Nav Structure
