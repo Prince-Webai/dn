@@ -12,3 +12,8 @@ export const supabase = createClient(
     supabaseUrl || 'https://placeholder.supabase.co',
     supabaseAnonKey || 'placeholder'
 )
+
+const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+export const supabaseAdmin = supabaseServiceKey
+    ? createClient(supabaseUrl || '', supabaseServiceKey)
+    : null;
