@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, FileText, Wrench, Clock, Package } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, FileText, Wrench, Clock, Package, Receipt } from 'lucide-react';
 import SearchableSelect from '../components/SearchableSelect';
 import { supabase } from '../lib/supabase';
 import { Job, JobItem, InventoryItem } from '../types';
@@ -140,9 +140,14 @@ const JobDetails = () => {
                         <h1 className="text-2xl font-bold font-display text-slate-900">Job #{job.job_number}</h1>
                         <p className="text-slate-500">{job.customers?.name}</p>
                     </div>
-                    <div className="ml-auto">
-                        <button onClick={generatePDF} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
-                            <FileText size={18} /> Generate Report PDF
+                    <div className="ml-auto flex gap-3">
+                        {job.status === 'completed' && (
+                            <button onClick={() => navigate(`/invoices/builder?jobId=${job.id}`)} className="flex items-center gap-2 bg-delaval-blue text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-bold shadow-sm">
+                                <Receipt size={18} /> Convert to Invoice
+                            </button>
+                        )}
+                        <button onClick={generatePDF} className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 font-bold shadow-sm">
+                            <FileText size={18} /> Generate PDF
                         </button>
                     </div>
                 </div>
@@ -417,11 +422,17 @@ const JobDetails = () => {
                                 {/* Actions */}
                                 <div className="grid grid-cols-2 gap-3 mt-6">
                                     <button onClick={generatePDF} className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold text-sm">
-                                        <FileText size={18} /> Generate PDF
+                                        <FileText size={18} /> PDF Report
                                     </button>
-                                    <button className="flex items-center justify-center gap-2 bg-delaval-blue text-white py-3 rounded-xl font-bold text-sm">
-                                        Mark Done
-                                    </button>
+                                    {job.status === 'completed' ? (
+                                        <button onClick={() => navigate(`/invoices/builder?jobId=${job.id}`)} className="flex items-center justify-center gap-2 bg-delaval-blue text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-blue-900/10">
+                                            <Receipt size={18} /> Invoice
+                                        </button>
+                                    ) : (
+                                        <button className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-xl font-bold text-sm shadow-md shadow-green-900/10">
+                                            Mark Done
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}

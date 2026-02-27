@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Calendar, User, FileText, Trash2, Pencil, Wrench, Activity, Plus, ArrowRight } from 'lucide-react';
+import { Search, Calendar, User, FileText, Trash2, Pencil, Wrench, Activity, Plus, ArrowRight, Package } from 'lucide-react';
 import { Job, Customer } from '../types';
 import { Link } from 'react-router-dom';
 import Modal from '../components/Modal';
@@ -592,7 +592,6 @@ const Jobs = () => {
                             </div>
 
                             <div className="col-span-2">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Notes</label>
                                 <textarea
                                     className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
                                     rows={2}
@@ -600,6 +599,130 @@ const Jobs = () => {
                                     onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
                                 />
                             </div>
+                        </div>
+
+                        {/* DESKTOP Line Items Editor */}
+                        <div className="bg-white p-4 rounded-xl border border-slate-100">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="font-bold text-slate-900">Parts & Labor</h3>
+                                <div className="text-sm font-bold text-delaval-blue bg-blue-50 px-3 py-1 rounded-full">
+                                    Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 mb-4">
+                                {modalItems.map((item, idx) => (
+                                    <div key={idx} className="flex justify-between items-center p-3 border border-slate-200 rounded-lg">
+                                        <div>
+                                            <div className="font-medium text-slate-900">{item.description}</div>
+                                            <div className="text-sm text-slate-500">Qty: {item.quantity} × €{item.unit_price.toFixed(2)}</div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
+                                                className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                                {modalItems.length === 0 && (
+                                    <div className="text-center py-6 text-sm text-slate-500 border border-dashed border-slate-300 rounded-lg">
+                                        No items added yet. Search inventory below or add custom labor.
+                                    </div>
+                                )}
+                            </div>
+
+                            {isAddingCustom ? (
+                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                                    <div className="font-bold text-sm text-slate-700">Add Custom Item / Labor</div>
+                                    <input
+                                        type="text"
+                                        placeholder="Description (e.g. Labor - 2 hours)"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-delaval-blue"
+                                        value={newItem.description}
+                                        onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                    />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs text-slate-500 mb-1">Quantity</label>
+                                            <input
+                                                type="number"
+                                                min="0.5"
+                                                step="0.5"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-delaval-blue"
+                                                value={newItem.quantity}
+                                                onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-slate-500 mb-1">Unit Price (€)</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-delaval-blue"
+                                                value={newItem.unit_price}
+                                                onChange={e => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex justify-end gap-2 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsAddingCustom(false)}
+                                            className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (newItem.description) {
+                                                    setModalItems([...modalItems, { ...newItem, type: 'labor' }]);
+                                                    setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
+                                                    setIsAddingCustom(false);
+                                                }
+                                            }}
+                                            className="px-3 py-1.5 text-sm font-medium text-white bg-delaval-blue hover:bg-blue-700 rounded-md transition-colors"
+                                        >
+                                            Add Custom Line
+                                        </button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-[1fr_auto] gap-3">
+                                    <SearchableSelect
+                                        label=""
+                                        options={inventory.map(i => ({ value: i.id, label: `${i.name} (€${i.sell_price})` }))}
+                                        value=""
+                                        onChange={(id) => {
+                                            const invItem = inventory.find(i => i.id === id);
+                                            if (invItem) {
+                                                setModalItems([...modalItems, {
+                                                    description: invItem.name,
+                                                    quantity: 1,
+                                                    unit_price: invItem.sell_price,
+                                                    type: 'part',
+                                                    inventory_id: invItem.id
+                                                }]);
+                                            }
+                                        }}
+                                        placeholder="Search inventory parts..."
+                                        icon={<Package size={16} />}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddingCustom(true)}
+                                        className="h-[42px] px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-colors flex justify-center gap-2 items-center"
+                                    >
+                                        <Plus size={16} /> Labor/Custom
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
                         <div className="pt-4 flex justify-end gap-3">
