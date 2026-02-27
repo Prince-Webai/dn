@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   DragDropContext,
@@ -70,6 +70,43 @@ const Pipeline = () => {
   const [loading, setLoading] = useState(true);
   const [engineers, setEngineers] = useState<any[]>([]);
   const [selectedEngineer, setSelectedEngineer] = useState<string>('all');
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [showSlider, setShowSlider] = useState(false);
+
+  const checkScrollable = () => {
+    if (scrollContainerRef.current) {
+      const { scrollWidth, clientWidth } = scrollContainerRef.current;
+      setShowSlider(scrollWidth > clientWidth);
+    }
+  };
+
+  useEffect(() => {
+    checkScrollable();
+    window.addEventListener('resize', checkScrollable);
+    return () => window.removeEventListener('resize', checkScrollable);
+  }, [jobs]);
+
+  const handleScroll = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
+      const maxScroll = scrollWidth - clientWidth;
+      if (maxScroll > 0) {
+        setScrollProgress((scrollLeft / maxScroll) * 100);
+      }
+    }
+  };
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = Number(e.target.value);
+    setScrollProgress(val);
+    if (scrollContainerRef.current) {
+      const { scrollWidth, clientWidth } = scrollContainerRef.current;
+      const maxScroll = scrollWidth - clientWidth;
+      scrollContainerRef.current.scrollLeft = (val / 100) * maxScroll;
+    }
+  };
 
   const isAdmin = user?.user_metadata?.role !== "Engineer";
 
@@ -188,8 +225,26 @@ const Pipeline = () => {
         )}
       </div>
 
+      {showSlider && (
+        <div className="mb-4 flex items-center gap-3">
+          <span className="text-xs font-bold text-delaval-blue uppercase tracking-widest">Scroll Pipeline</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={scrollProgress}
+            onChange={handleSliderChange}
+            className="flex-1 w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-delaval-blue hover:accent-blue-700 transition-all"
+          />
+        </div>
+      )}
+
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex-1 flex gap-6 overflow-x-auto pb-6">
+        <div
+          className="flex-1 flex gap-6 overflow-x-auto pb-4 custom-scrollbar-hide"
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+        >
           {COLUMNS.map((column) => {
             const columnJobs = getJobsByStatus(column.id);
             const Icon = column.icon;

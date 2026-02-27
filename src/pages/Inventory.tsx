@@ -215,7 +215,7 @@ const Inventory = () => {
                 </div>
 
                 {/* Category Filter + Inventory/Allocation Toggle */}
-                <div className="flex flex-wrap items-center gap-3 mb-2">
+                <div className="flex flex-wrap items-end gap-3 mb-2">
                     <div className="bg-white rounded-xl border border-slate-200 p-1 inline-flex">
                         <button
                             onClick={() => setActiveTab('inventory')}
@@ -437,7 +437,7 @@ const Inventory = () => {
             {/* MOBILE VIEW */}
             <div className="block md:hidden pb-24 bg-[#F8FAFB] min-h-screen text-[#1a1a1a]">
                 {/* Modern Mobile Header */}
-                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pt-14 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pt-4 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
                     <div className="flex justify-between items-center mb-5">
                         <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Parts</h1>
                         <button
@@ -588,7 +588,7 @@ const Inventory = () => {
                             ) : (
                                 <div className="flex gap-2">
                                     <SearchableSelect
-                                        label="Category"
+                                        label=""
                                         options={[
                                             ...categories.map(cat => ({ value: cat, label: cat })),
                                             ...(newItem.category && !categories.includes(newItem.category) ? [{ value: newItem.category, label: newItem.category }] : []),

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer, InventoryItem } from '../types';
 import { useToast } from '../context/ToastContext';
-import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download, Receipt } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download, Euro } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import SearchableSelect from '../components/SearchableSelect';
 import { generateInvoice, generateQuote } from '../lib/pdfGenerator';
@@ -558,7 +558,7 @@ const DocumentBuilder = () => {
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
                                 <div className="form-group">
                                     <label className="block text-xs font-bold text-slate-500 mb-1">Due Date / Valid Until *</label>
                                     <DatePicker
@@ -566,7 +566,7 @@ const DocumentBuilder = () => {
                                         onChange={(v) => setDocData({ ...docData, validUntil: v })}
                                     />
                                 </div>
-                                <div className="form-group">
+                                <div className="form-group pb-0">
                                     <SearchableSelect
                                         label="VAT Rate"
                                         searchable={false}
@@ -578,7 +578,7 @@ const DocumentBuilder = () => {
                                         ]}
                                         value={vatRate.toString()}
                                         onChange={(val) => setVatRate(parseFloat(val))}
-                                        icon={<Receipt size={16} />}
+                                        icon={<Euro size={16} />}
                                     />
                                 </div>
                             </div>

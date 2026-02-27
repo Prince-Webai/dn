@@ -63,7 +63,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     { icon: PieChart, label: 'Analytics', path: '/reports' },
                     { icon: Users, label: 'Team & Engineers', path: '/team' },
                 ] : []),
-                { icon: SettingsIcon, label: 'Settings', path: '/settings' },
             ]
         },
     ];
@@ -95,11 +94,15 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
                     {/* User Info & Mobile Toggle */}
                     <div className="flex items-center gap-4">
-                        <div
-                            onClick={() => {
-                                navigate('/settings');
-                            }}
-                            className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-full border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                        <button
+                            onClick={() => navigate('/settings')}
+                            className="hidden md:flex p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-full transition-colors"
+                            title="Settings"
+                        >
+                            <SettingsIcon size={20} />
+                        </button>
+
+                        <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-slate-50 rounded-full border border-slate-200">
                             <div className="w-9 h-9 rounded-full bg-delaval-blue text-white flex items-center justify-center font-bold">
                                 <User size={20} />
                             </div>

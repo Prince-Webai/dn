@@ -8,6 +8,7 @@ import SearchableSelect from '../components/SearchableSelect';
 import DatePicker from '../components/DatePicker';
 const Dashboard = () => {
     const [stats, setStats] = useState({
+        totalRevenue: 0,
         outstandingBalance: 0,
         activeJobs: 0,
         overdueInvoices: 0,
@@ -86,6 +87,11 @@ const Dashboard = () => {
                 return s !== 'paid' && s !== 'void';
             });
             const outstanding = unpaidInvoices.reduce((acc, inv) => acc + (inv.total_amount - (inv.amount_paid || 0)), 0);
+
+            // Calculate Total Revenue based on filtered invoices (excluding voided)
+            const validInvoices = filteredInvoices.filter(inv => inv.status !== 'void');
+            const totalRevenue = validInvoices.reduce((acc, inv) => acc + (inv.total_amount || 0), 0);
+
             const activeJobsCount = filteredJobs.filter(j => ['scheduled', 'in_progress'].includes(j.status)).length;
 
             // Detailed Inventory Checks
@@ -153,6 +159,7 @@ const Dashboard = () => {
             setNotifications(newNotifs);
 
             setStats({
+                totalRevenue: totalRevenue,
                 outstandingBalance: outstanding,
                 activeJobs: activeJobsCount,
                 overdueInvoices: overdueCount,
@@ -179,6 +186,15 @@ const Dashboard = () => {
     };
 
     const statCards = [
+        {
+            label: 'Total Revenue',
+            value: formatCurrency(stats.totalRevenue),
+            icon: Euro,
+            color: 'bg-[#F0FDF4] text-[#16A34A]',
+            change: filterType === 'all' ? 'All Time' : filterType === 'year' ? 'This Year' : filterType === 'month' ? 'This Month' : 'Custom Period',
+            changeType: 'positive',
+            link: '/reports'
+        },
         {
             label: 'Outstanding Balance',
             value: formatCurrency(stats.outstandingBalance),
@@ -280,7 +296,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
                     {statCards.map((stat, index) => {
                         const Icon = stat.icon;
                         return (

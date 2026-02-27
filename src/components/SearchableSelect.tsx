@@ -69,7 +69,7 @@ const SearchableSelect = ({
     return (
         <div className={`${fullWidth ? 'w-full' : 'w-auto'} relative group`} ref={containerRef}>
             {label && (
-                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                     {label} {required && <span className="text-red-500">*</span>}
                 </label>
             )}

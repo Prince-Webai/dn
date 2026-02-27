@@ -271,7 +271,7 @@ const JobDetails = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-500">Scheduled Date</label>
-                                    <div className="text-slate-900">{job.date_scheduled}</div>
+                                    <div className="text-slate-900">{job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString() : 'Unscheduled'}</div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-slate-500">Notes</label>
@@ -398,7 +398,7 @@ const JobDetails = () => {
                                     <div className="space-y-2 text-sm">
                                         <div className="flex justify-between">
                                             <span className="text-slate-500">Date</span>
-                                            <span className="font-medium">{job.date_scheduled}</span>
+                                            <span className="font-medium">{job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString() : 'Unscheduled'}</span>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-slate-500">Engineer</span>

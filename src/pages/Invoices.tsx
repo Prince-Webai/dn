@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, Eye, Check, X } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, Eye, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, Statement } from '../types';
 import Modal from '../components/Modal';
@@ -37,6 +37,10 @@ const Invoices = () => {
 
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+
     const filteredInvoices = useMemo(() => {
         if (statusFilter === 'all') return invoices;
         if (statusFilter === 'overdue') {
@@ -50,6 +54,11 @@ const Invoices = () => {
         return invoices.filter(inv => inv.status === statusFilter);
     }, [invoices, statusFilter]);
 
+    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+    const paginatedInvoices = useMemo(() => {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredInvoices.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredInvoices, currentPage, itemsPerPage]);
 
     useEffect(() => {
         fetchData();
@@ -420,7 +429,10 @@ const Invoices = () => {
                                 ].map(tab => (
                                     <button
                                         key={tab.key}
-                                        onClick={() => setStatusFilter(tab.key)}
+                                        onClick={() => {
+                                            setStatusFilter(tab.key);
+                                            setCurrentPage(1);
+                                        }}
                                         className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap
                                                 ${statusFilter === tab.key
                                                 ? 'bg-delaval-blue text-white shadow-sm'
@@ -444,7 +456,7 @@ const Invoices = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {filteredInvoices.map(inv => (
+                                    {paginatedInvoices.map(inv => (
                                         <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
                                             <td className="px-6 py-4 font-bold text-slate-900">{inv.invoice_number}</td>
                                             <td className="px-6 py-4 font-medium text-slate-700">
@@ -570,6 +582,47 @@ const Invoices = () => {
                                     )}
                                 </tbody>
                             </table>
+                            {/* Pagination Controls */}
+                            {filteredInvoices.length > 0 && (
+                                <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white">
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-sm text-slate-500">Rows per page:</span>
+                                        <select
+                                            className="text-sm border-slate-200 rounded-lg outline-none font-medium text-slate-700 bg-slate-50 px-2 py-1.5 focus:ring-2 focus:ring-delaval-blue/20"
+                                            value={itemsPerPage}
+                                            onChange={(e) => {
+                                                setItemsPerPage(Number(e.target.value));
+                                                setCurrentPage(1);
+                                            }}
+                                        >
+                                            <option value={10}>10</option>
+                                            <option value={20}>20</option>
+                                            <option value={50}>50</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex items-center gap-6">
+                                        <span className="text-sm font-medium text-slate-500">
+                                            {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredInvoices.length)} of {filteredInvoices.length}
+                                        </span>
+                                        <div className="flex gap-1">
+                                            <button
+                                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                                disabled={currentPage === 1}
+                                                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                <ChevronLeft size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                                disabled={currentPage === totalPages || totalPages === 0}
+                                                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            >
+                                                <ChevronRight size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </>
                 )}

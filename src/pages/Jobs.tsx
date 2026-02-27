@@ -373,8 +373,8 @@ const Jobs = () => {
             {/* MOBILE VIEW */}
             <div className="block md:hidden pb-24 bg-[#F8FAFB] min-h-screen text-[#1a1a1a]">
 
-                {/* Modern Mobile Header with extra safe-area padding pt-14 */}
-                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pt-14 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
+                {/* Modern Mobile Header with extra safe-area padding pt-4 */}
+                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pt-4 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
                     <div className="flex justify-between items-center mb-5">
                         <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Jobs</h1>
                         <button
@@ -591,14 +591,6 @@ const Jobs = () => {
                                 />
                             </div>
 
-                            <div className="col-span-2">
-                                <textarea
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
-                                    rows={2}
-                                    value={newJob.notes}
-                                    onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
-                                />
-                            </div>
                         </div>
 
                         {/* DESKTOP Line Items Editor */}
@@ -723,6 +715,18 @@ const Jobs = () => {
                                     </button>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Job Description (formerly Notes), moved below Parts & Labor */}
+                        <div className="bg-white p-4 rounded-xl border border-slate-100">
+                            <label className="block text-sm font-bold text-slate-900 mb-2">Job Description</label>
+                            <textarea
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 outline-none text-slate-700 bg-slate-50 focus:bg-white transition-colors min-h-[100px]"
+                                placeholder="Enter detailed job description or internal notes here..."
+                                rows={3}
+                                value={newJob.notes}
+                                onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
+                            />
                         </div>
 
                         <div className="pt-4 flex justify-end gap-3">
@@ -990,18 +994,20 @@ const Jobs = () => {
                                 </div>
                             </div>
 
-                            {/* Notes Section */}
+                            {/* Job Description Section (formerly Notes) */}
                             <div className="space-y-4">
-                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Notes</label>
+                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Job Description</label>
                                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
                                     <textarea
                                         className="w-full text-slate-900 text-[15px] outline-none bg-transparent min-h-[80px]"
-                                        placeholder="Add any specific requirements or notes..."
+                                        placeholder="Enter detailed job description or internal notes here..."
                                         value={newJob.notes || ''}
                                         onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
                                     />
                                 </div>
                             </div>
+
+                            {/* Removed from here to place below parts and labor */}
                         </form>
                     </div>
 

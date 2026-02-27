@@ -278,7 +278,7 @@ export const generateInvoice = async (
         headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
         margin: { left: LEFT, right: RIGHT },
         columnStyles: {
-            0: { cellPadding: { left: 0 } },
+            0: { cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
             1: { halign: 'center' },
             2: { halign: 'right' },
             3: { halign: 'right' },
@@ -383,7 +383,7 @@ export const generateQuote = async (
         headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
         margin: { left: LEFT, right: RIGHT },
         columnStyles: {
-            0: { cellPadding: { left: 0 } },
+            0: { cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
             1: { halign: 'center' },
             2: { halign: 'right' },
             3: { halign: 'right' }
@@ -496,7 +496,7 @@ export const generateStatement = async (
         headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
         margin: { left: LEFT, right: RIGHT },
         columnStyles: {
-            0: { cellPadding: { left: 0 } },
+            0: { cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
             1: { halign: 'center' },
             2: { halign: 'right' },
             3: { halign: 'right' }
@@ -623,7 +623,7 @@ export const generateOneTimeInvoice = async (
         headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
         margin: { left: LEFT, right: RIGHT },
         columnStyles: {
-            0: { cellPadding: { left: 0 } },
+            0: { cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
             1: { halign: 'center' },
             2: { halign: 'right' },
             3: { halign: 'right' }
@@ -706,7 +706,7 @@ export const generateJobReport = async (
         headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
         margin: { left: LEFT, right: RIGHT },
         columnStyles: {
-            0: { cellPadding: { left: 0 } },
+            0: { cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
             1: { halign: 'center' },
             2: { halign: 'center' },
         },
