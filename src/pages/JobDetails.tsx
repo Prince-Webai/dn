@@ -274,8 +274,8 @@ const JobDetails = () => {
                                     <div className="text-slate-900">{job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString() : 'Unscheduled'}</div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-500">Notes</label>
-                                    <div className="text-slate-900 text-sm bg-slate-50 p-3 rounded">{job.notes || 'No notes'}</div>
+                                    <label className="block text-sm font-medium text-slate-500">Job Description</label>
+                                    <div className="text-slate-900 bg-slate-50 p-3 rounded-lg mt-1 text-sm">{job.notes || 'No description provided.'}</div>
                                 </div>
                             </div>
                         </div>
