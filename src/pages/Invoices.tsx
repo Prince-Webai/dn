@@ -833,8 +833,8 @@ const Invoices = () => {
 
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                             {editItems.map((item, idx) => (
-                                <div key={idx} className="flex gap-2 items-start bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                    <div className="flex-1">
+                                <div key={idx} className="flex gap-3 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                    <div className="flex-1 min-w-[150px]">
                                         <SearchableSelect
                                             label=""
                                             options={inventory.map(prod => ({
@@ -857,7 +857,7 @@ const Invoices = () => {
                                             placeholder="Select product or type description..."
                                         />
                                     </div>
-                                    <div className="w-16 pt-2">
+                                    <div className="w-16">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Qty</label>
                                         <input
                                             type="number"
@@ -871,7 +871,7 @@ const Invoices = () => {
                                             }}
                                         />
                                     </div>
-                                    <div className="w-20 pt-2">
+                                    <div className="w-20">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Price</label>
                                         <input
                                             type="number"
@@ -886,13 +886,15 @@ const Invoices = () => {
                                             }}
                                         />
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setEditItems(editItems.filter((_, i) => i !== idx))}
-                                        className="text-red-400 hover:text-red-500 p-1 pt-6 transition-colors"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="pt-4 px-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => setEditItems(editItems.filter((_, i) => i !== idx))}
+                                            className="text-red-400 hover:text-red-500 transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                             {editItems.length === 0 && (
