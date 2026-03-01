@@ -393,7 +393,7 @@ const DocumentBuilder = () => {
                         total: item.quantity * item.unitPrice
                     })),
                     action
-                ) as unknown as string;
+                ) as any;
             } else {
                 pdfData = await generateInvoice(
                     'PREVIEW',
@@ -404,18 +404,19 @@ const DocumentBuilder = () => {
                         description: item.description,
                         quantity: item.quantity,
                         unit_price: item.unitPrice,
-                        total: item.quantity * item.unitPrice,
-                        type: 'service'
+                        type: 'service',
+                        total: item.quantity * item.unitPrice
                     })),
                     vatRate,
                     totalAmount,
                     action, // Pass action here
                     'DRAFT'
-                ) as unknown as string;
+                ) as any;
             }
 
             if (pdfData && action === 'preview') {
-                window.open(pdfData, '_blank', 'noopener,noreferrer');
+                const newWindow = window.open((pdfData as any).url, '_blank');
+                if (newWindow) newWindow.document.title = (pdfData as any).filename;
             }
         } catch (error) {
             console.error('Preview Error', error);

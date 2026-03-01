@@ -338,9 +338,12 @@ const Customers = () => {
                 action,
                 invoice.status.toUpperCase(),
                 engineerName
-            ) as unknown as string;
+            ) as any;
 
-            if (pdfData && action === 'preview') window.open(pdfData, '_blank', 'noopener,noreferrer');
+            if (pdfData && action === 'preview') {
+                const newWindow = window.open(pdfData.url, '_blank');
+                if (newWindow) newWindow.document.title = pdfData.filename;
+            }
         } catch (error) {
             console.error(error);
             showToast('Error', 'Failed to generate invoice.', 'error');
@@ -351,9 +354,10 @@ const Customers = () => {
         try {
             const { data: quoteItems } = await supabase.from('quote_items').select('*').eq('quote_id', quote.id);
             const items = quoteItems || [];
-            const pdfData = await generateQuote(quote, selectedCustomer as any, items, action) as unknown as string;
+            const pdfData = await generateQuote(quote, selectedCustomer as any, items, action) as any;
             if (pdfData && action === 'preview') {
-                window.open(pdfData, '_blank', 'noopener,noreferrer');
+                const newWindow = window.open(pdfData.url, '_blank');
+                if (newWindow) newWindow.document.title = pdfData.filename;
             } else if (action === 'download') {
                 showToast('Success', 'Quote downloaded successfully', 'success');
             }
@@ -370,9 +374,10 @@ const Customers = () => {
                 const { data: jobItems } = await supabase.from('job_items').select('*').eq('job_id', statement.job_id);
                 if (jobItems) items = jobItems;
             }
-            const pdfData = await generateStatement(null, items, selectedCustomer as any, statement, action) as unknown as string;
+            const pdfData = await generateStatement(null, items, selectedCustomer as any, statement, action) as any;
             if (pdfData && action === 'preview') {
-                window.open(pdfData, '_blank', 'noopener,noreferrer');
+                const newWindow = window.open(pdfData.url, '_blank');
+                if (newWindow) newWindow.document.title = pdfData.filename;
             } else if (action === 'download') {
                 showToast('Success', 'Statement downloaded successfully', 'success');
             }

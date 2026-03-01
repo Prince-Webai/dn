@@ -117,9 +117,12 @@ const Invoices = () => {
             const finalJob = Array.isArray(statement.jobs) ? statement.jobs[0] : statement.jobs;
             const finalCustomer = Array.isArray(statement.customers) ? statement.customers[0] : statement.customers;
 
-            const pdfData = await generateStatement(finalJob as any, items, finalCustomer as any, statement, action) as unknown as string;
+            const pdfData = await generateStatement(finalJob as any, items, finalCustomer as any, statement, action) as any;
             if (pdfData && action === 'preview') {
-                window.open(pdfData, '_blank', 'noopener,noreferrer');
+                const newWindow = window.open(pdfData.url, '_blank');
+                if (newWindow) {
+                    newWindow.document.title = pdfData.filename;
+                }
             }
         } catch (error) {
             console.error(error);
@@ -166,10 +169,13 @@ const Invoices = () => {
                         description: i.description,
                         quantity: i.quantity,
                         unitPrice: i.unit_price
-                    })), action) as unknown as string;
+                    })), action) as any;
 
                     if (pdfData && action === 'preview') {
-                        window.open(pdfData, '_blank', 'noopener,noreferrer');
+                        const newWindow = window.open(pdfData.url, '_blank');
+                        if (newWindow) {
+                            newWindow.document.title = pdfData.filename;
+                        }
                     }
                 } else if (invoice.customers) {
                     const pdfData = await generateInvoice(
@@ -181,10 +187,13 @@ const Invoices = () => {
                         action,
                         invoice.status.toUpperCase(),
                         engineerName
-                    ) as unknown as string;
+                    ) as any;
 
                     if (pdfData && action === 'preview') {
-                        window.open(pdfData, '_blank', 'noopener,noreferrer');
+                        const newWindow = window.open(pdfData.url, '_blank');
+                        if (newWindow) {
+                            newWindow.document.title = pdfData.filename;
+                        }
                     }
                 }
             }

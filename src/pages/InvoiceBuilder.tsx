@@ -104,9 +104,10 @@ const InvoiceBuilder = () => {
     const handlePreviewInvoice = async () => {
         if (!job || !customer) return;
         const total = calculateTotal();
-        const pdfData = await generateInvoice('PREVIEW', customer, jobItems, vatRate, total, 'preview', 'DRAFT', job.engineer_name) as unknown as string;
+        const pdfData = await generateInvoice('PREVIEW', customer, jobItems, vatRate, total, 'preview', 'DRAFT', job.engineer_name) as any;
         if (pdfData) {
-            window.open(pdfData, '_blank', 'noopener,noreferrer');
+            const newWindow = window.open(pdfData.url, '_blank');
+            if (newWindow) newWindow.document.title = pdfData.filename;
         }
     };
 
@@ -118,9 +119,10 @@ const InvoiceBuilder = () => {
             total_amount: calculateTotal(),
             date_generated: new Date().toISOString()
         } as any;
-        const pdfData = await generateStatement(job, jobItems, customer, dummyStatement, 'preview') as unknown as string;
+        const pdfData = await generateStatement(job, jobItems, customer, dummyStatement, 'preview') as any;
         if (pdfData) {
-            window.open(pdfData, '_blank', 'noopener,noreferrer');
+            const newWindow = window.open(pdfData.url, '_blank');
+            if (newWindow) newWindow.document.title = pdfData.filename;
         }
     };
 
