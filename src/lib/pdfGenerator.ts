@@ -334,8 +334,9 @@ export const generateInvoice = async (
 
     if (action === 'preview') {
         const blob = doc.output('blob');
+        const filename = `${safeName}-${documentNumber}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
-        return { url: blobUrl, filename: `${safeName}-${documentNumber}.pdf` } as any;
+        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
     } else {
         doc.save(`${safeName}-${documentNumber}.pdf`);
         return null as any;
@@ -447,8 +448,9 @@ export const generateQuote = async (
 
     if (action === 'preview') {
         const blob = doc.output('blob');
+        const filename = `${safeName}-${quote.quote_number}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
-        return { url: blobUrl, filename: `${safeName}-${quote.quote_number}.pdf` } as any;
+        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
     } else {
         doc.save(`${safeName}-${quote.quote_number}.pdf`);
         return null as any;
@@ -570,8 +572,9 @@ export const generateStatement = async (
 
     if (action === 'preview') {
         const blob = doc.output('blob');
+        const filename = `${safeName}-${documentNumber}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
-        return { url: blobUrl, filename: `${safeName}-${documentNumber}.pdf` } as any;
+        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
     } else {
         doc.save(`${safeName}-${documentNumber}.pdf`);
         return null as any;
@@ -659,8 +662,9 @@ export const generateOneTimeInvoice = async (
     const safeName = customerName.replace(/[^a-z0-9]/gi, '_');
     if (action === 'preview') {
         const blob = doc.output('blob');
+        const filename = `${safeName}-${invNum}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
-        return { url: blobUrl, filename: `${safeName}-${invNum}.pdf` } as any;
+        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
     } else {
         doc.save(`${safeName}-${invNum}.pdf`);
         return null as any;
@@ -748,7 +752,13 @@ export const generateJobReport = async (
     addBankDetails(doc, doc.internal.pageSize.height - 55, settings);
     addFooter(doc);
 
-    return action === 'preview'
-        ? (doc.output('bloburl') as unknown as string)
-        : (doc.save(`${safeName}-${documentNumber}_Report.pdf`) as unknown as void);
+    if (action === 'preview') {
+        const blob = doc.output('blob');
+        const filename = `${safeName}-${documentNumber}_Report.pdf`;
+        const blobUrl = URL.createObjectURL(blob);
+        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
+    } else {
+        doc.save(`${safeName}-${documentNumber}_Report.pdf`);
+        return null as any;
+    }
 };

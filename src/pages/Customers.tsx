@@ -510,7 +510,7 @@ const Customers = () => {
                         <div className="section-card">
                             <div className="border-b border-slate-200 px-6">
                                 <div className="flex gap-8 overflow-x-auto">
-                                    {['service-history', 'parts-history', 'invoices', 'quotes', 'statements'].map((tab) => (
+                                    {['service-history', 'parts-history', 'invoices', 'quotes', 'statements', 'service-reports'].map((tab) => (
                                         <button
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
@@ -727,6 +727,20 @@ const Customers = () => {
                                                 ))}
                                             </tbody>
                                         </table>
+                                    </div>
+                                )}
+
+                                {activeTab === 'service-reports' && (
+                                    <div className="p-12 text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl m-2">
+                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mx-auto mb-4">
+                                            <FileText size={32} className="text-slate-400" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-800">Service Reports</h3>
+                                        <p className="text-slate-500 mt-1 max-w-sm mx-auto">Upload and manage service reports for this customer.</p>
+                                        <button className="mt-6 px-6 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2 mx-auto disabled:opacity-50" title="Coming Soon">
+                                            <Upload size={18} />
+                                            Upload Report (Coming Soon)
+                                        </button>
                                     </div>
                                 )}
                             </div>
