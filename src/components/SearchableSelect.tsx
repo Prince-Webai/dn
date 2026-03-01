@@ -17,6 +17,7 @@ interface SearchableSelectProps {
     icon?: React.ReactNode;
     fullWidth?: boolean;
     required?: boolean;
+    className?: string; // Add support for inner class overrides
 }
 
 const SearchableSelect = ({
@@ -29,7 +30,8 @@ const SearchableSelect = ({
     label,
     icon,
     fullWidth = true,
-    required = false
+    required = false,
+    className = '' // default empty
 }: SearchableSelectProps) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -77,6 +79,7 @@ const SearchableSelect = ({
                 onClick={() => setIsOpen(!isOpen)}
                 className={`flex items-center justify-between w-full px-4 py-2.5 rounded-xl border transition-all cursor-pointer bg-white shadow-sm
                     ${isOpen ? 'border-delaval-blue ring-4 ring-delaval-blue/5 shadow-md' : 'border-slate-200 hover:border-slate-300 hover:shadow'}
+                    ${className}
                 `}
             >
                 <div className="flex items-center gap-2.5 overflow-hidden">

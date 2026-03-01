@@ -834,15 +834,16 @@ const Invoices = () => {
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
                             {editItems.map((item, idx) => (
                                 <div key={idx} className="flex gap-3 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
-                                    <div className="flex-1 min-w-[150px]">
-                                        <SearchableSelect
-                                            label=""
-                                            options={inventory.map(prod => ({
-                                                value: prod.name,
-                                                label: `${prod.name} (€${prod.sell_price})`
-                                            }))}
+                                    <div className="flex-1 min-w-[200px]">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Description</label>
+                                        <input
+                                            type="text"
+                                            list="inventory-products"
+                                            placeholder="Select product or type description..."
+                                            className="w-full text-xs font-medium bg-transparent border-b border-slate-200 focus:border-delaval-blue outline-none py-1"
                                             value={item.description}
-                                            onChange={(val) => {
+                                            onChange={(e) => {
+                                                const val = e.target.value;
                                                 const newItems = [...editItems];
                                                 const selectedProduct = inventory.find(p => p.name === val);
 
@@ -854,8 +855,14 @@ const Invoices = () => {
                                                 }
                                                 setEditItems(newItems);
                                             }}
-                                            placeholder="Select product or type description..."
                                         />
+                                        <datalist id="inventory-products">
+                                            {inventory.map(prod => (
+                                                <option key={prod.name} value={prod.name}>
+                                                    {prod.name} (€{prod.sell_price})
+                                                </option>
+                                            ))}
+                                        </datalist>
                                     </div>
                                     <div className="w-16">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Qty</label>
