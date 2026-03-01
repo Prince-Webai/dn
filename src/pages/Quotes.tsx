@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Quote } from '../types';
 import { generateQuote } from '../lib/pdfGenerator';
+import { openPdfPreview } from '../lib/pdfViewer';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
 
@@ -44,7 +45,7 @@ const Quotes = () => {
         const items = quote.quote_items || [];
         const result = await generateQuote(quote, quote.customers, items, action);
         if (action === 'preview' && result) {
-            window.open(result as unknown as string, '_blank', 'noopener,noreferrer');
+            openPdfPreview((result as any).url, (result as any).filename);
         } else if (action === 'download') {
             showToast('Success', 'Quote downloaded successfully', 'success');
         }

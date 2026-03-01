@@ -5,9 +5,10 @@ import { Customer, InventoryItem } from '../types';
 import { useToast } from '../context/ToastContext';
 import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download, Euro } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
-import SearchableSelect from '../components/SearchableSelect';
 import { generateInvoice, generateQuote } from '../lib/pdfGenerator';
 import { dataService } from '../services/dataService';
+import { openPdfPreview } from '../lib/pdfViewer';
+import SearchableSelect from '../components/SearchableSelect';
 
 const DocumentBuilder = () => {
     const navigate = useNavigate();
@@ -415,8 +416,7 @@ const DocumentBuilder = () => {
             }
 
             if (pdfData && action === 'preview') {
-                const newWindow = window.open((pdfData as any).url, '_blank');
-                if (newWindow) newWindow.document.title = (pdfData as any).filename;
+                openPdfPreview((pdfData as any).url, (pdfData as any).filename);
             }
         } catch (error) {
             console.error('Preview Error', error);

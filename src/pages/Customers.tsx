@@ -10,6 +10,7 @@ import { dataService } from '../services/dataService';
 import { useToast } from '../context/ToastContext';
 import SearchableSelect from '../components/SearchableSelect';
 import { generateInvoice, generateQuote, generateStatement } from '../lib/pdfGenerator';
+import { openPdfPreview } from '../lib/pdfViewer';
 
 const Customers = () => {
     const { showToast } = useToast();
@@ -341,8 +342,7 @@ const Customers = () => {
             ) as any;
 
             if (pdfData && action === 'preview') {
-                const newWindow = window.open(pdfData.url, '_blank');
-                if (newWindow) newWindow.document.title = pdfData.filename;
+                openPdfPreview(pdfData.url, pdfData.filename);
             }
         } catch (error) {
             console.error(error);
@@ -356,8 +356,7 @@ const Customers = () => {
             const items = quoteItems || [];
             const pdfData = await generateQuote(quote, selectedCustomer as any, items, action) as any;
             if (pdfData && action === 'preview') {
-                const newWindow = window.open(pdfData.url, '_blank');
-                if (newWindow) newWindow.document.title = pdfData.filename;
+                openPdfPreview(pdfData.url, pdfData.filename);
             } else if (action === 'download') {
                 showToast('Success', 'Quote downloaded successfully', 'success');
             }
@@ -376,8 +375,7 @@ const Customers = () => {
             }
             const pdfData = await generateStatement(null, items, selectedCustomer as any, statement, action) as any;
             if (pdfData && action === 'preview') {
-                const newWindow = window.open(pdfData.url, '_blank');
-                if (newWindow) newWindow.document.title = pdfData.filename;
+                openPdfPreview(pdfData.url, pdfData.filename);
             } else if (action === 'download') {
                 showToast('Success', 'Statement downloaded successfully', 'success');
             }

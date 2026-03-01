@@ -5,10 +5,11 @@ import { supabase } from '../lib/supabase';
 import { Invoice, Job, Statement } from '../types';
 import Modal from '../components/Modal';
 import ConfirmModal from '../components/ConfirmModal';
-import { generateInvoice, generateStatement, generateOneTimeInvoice } from '../lib/pdfGenerator';
 import { useToast } from '../context/ToastContext';
 import { dataService } from '../services/dataService';
 import SearchableSelect from '../components/SearchableSelect';
+import { generateInvoice, generateStatement, generateOneTimeInvoice } from '../lib/pdfGenerator';
+import { openPdfPreview } from '../lib/pdfViewer';
 import { Percent } from 'lucide-react';
 
 const Invoices = () => {
@@ -124,10 +125,7 @@ const Invoices = () => {
 
             const pdfData = await generateStatement(finalJob as any, items, finalCustomer as any, statement, action) as any;
             if (pdfData && action === 'preview') {
-                const newWindow = window.open(pdfData.url, '_blank');
-                if (newWindow) {
-                    newWindow.document.title = pdfData.filename;
-                }
+                openPdfPreview(pdfData.url, pdfData.filename);
             }
         } catch (error) {
             console.error(error);
@@ -177,10 +175,7 @@ const Invoices = () => {
                     })), action) as any;
 
                     if (pdfData && action === 'preview') {
-                        const newWindow = window.open(pdfData.url, '_blank');
-                        if (newWindow) {
-                            newWindow.document.title = pdfData.filename;
-                        }
+                        openPdfPreview(pdfData.url, pdfData.filename);
                     }
                 } else if (invoice.customers) {
                     const pdfData = await generateInvoice(
@@ -195,10 +190,7 @@ const Invoices = () => {
                     ) as any;
 
                     if (pdfData && action === 'preview') {
-                        const newWindow = window.open(pdfData.url, '_blank');
-                        if (newWindow) {
-                            newWindow.document.title = pdfData.filename;
-                        }
+                        openPdfPreview(pdfData.url, pdfData.filename);
                     }
                 }
             }

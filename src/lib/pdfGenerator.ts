@@ -336,7 +336,7 @@ export const generateInvoice = async (
         const blob = doc.output('blob');
         const filename = `${safeName}-${documentNumber}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
-        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
+        return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${documentNumber}.pdf`);
         return null as any;
@@ -450,7 +450,7 @@ export const generateQuote = async (
         const blob = doc.output('blob');
         const filename = `${safeName}-${quote.quote_number}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
-        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
+        return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${quote.quote_number}.pdf`);
         return null as any;
@@ -664,7 +664,7 @@ export const generateOneTimeInvoice = async (
         const blob = doc.output('blob');
         const filename = `${safeName}-${invNum}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
-        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
+        return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${invNum}.pdf`);
         return null as any;
@@ -756,7 +756,7 @@ export const generateJobReport = async (
         const blob = doc.output('blob');
         const filename = `${safeName}-${documentNumber}_Report.pdf`;
         const blobUrl = URL.createObjectURL(blob);
-        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
+        return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${documentNumber}_Report.pdf`);
         return null as any;
