@@ -782,7 +782,7 @@ const Invoices = () => {
 
 
             {/* Edit Invoice Modal */}
-            <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Invoice Details">
+            <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} title="Edit Invoice Details" overflowVisible={true}>
                 <form onSubmit={handleEditSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -831,19 +831,18 @@ const Invoices = () => {
                             </button>
                         </div>
 
-                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                        <div className="space-y-3">
                             {editItems.map((item, idx) => (
                                 <div key={idx} className="flex gap-3 items-center bg-slate-50 p-2 rounded-lg border border-slate-200">
                                     <div className="flex-1 min-w-[200px]">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Description</label>
-                                        <input
-                                            type="text"
-                                            list="inventory-products"
-                                            placeholder="Select product or type description..."
-                                            className="w-full text-xs font-medium bg-transparent border-b border-slate-200 focus:border-delaval-blue outline-none py-1"
+                                        <SearchableSelect
+                                            options={inventory.map(prod => ({
+                                                value: prod.name,
+                                                label: `${prod.name} (€${prod.sell_price})`
+                                            }))}
                                             value={item.description}
-                                            onChange={(e) => {
-                                                const val = e.target.value;
+                                            onChange={(val) => {
                                                 const newItems = [...editItems];
                                                 const selectedProduct = inventory.find(p => p.name === val);
 
@@ -855,14 +854,10 @@ const Invoices = () => {
                                                 }
                                                 setEditItems(newItems);
                                             }}
+                                            placeholder="Select product or type description..."
+                                            className="w-full text-xs font-medium bg-transparent border-b border-slate-200 focus-within:border-delaval-blue outline-none py-1 pb-1.5"
+                                            allowCustom={true}
                                         />
-                                        <datalist id="inventory-products">
-                                            {inventory.map(prod => (
-                                                <option key={prod.name} value={prod.name}>
-                                                    {prod.name} (€{prod.sell_price})
-                                                </option>
-                                            ))}
-                                        </datalist>
                                     </div>
                                     <div className="w-16">
                                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Qty</label>

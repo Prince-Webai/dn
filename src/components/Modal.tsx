@@ -9,9 +9,10 @@ interface ModalProps {
     title: string;
     children: React.ReactNode;
     size?: 'default' | 'wide' | 'xl';
+    overflowVisible?: boolean;
 }
 
-const Modal = ({ isOpen, onClose, title, children, size = 'default' }: ModalProps) => {
+const Modal = ({ isOpen, onClose, title, children, size = 'default', overflowVisible = false }: ModalProps) => {
     const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -52,7 +53,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'default' }: ModalProp
                         <X size={20} />
                     </button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className={`flex-1 ${overflowVisible ? 'overflow-visible' : 'overflow-y-auto'} p-6`}>
                     {children}
                 </div>
             </div>

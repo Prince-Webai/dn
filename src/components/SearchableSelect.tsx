@@ -77,9 +77,10 @@ const SearchableSelect = ({
             )}
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center justify-between w-full px-4 py-2.5 rounded-xl border transition-all cursor-pointer bg-white shadow-sm
-                    ${isOpen ? 'border-delaval-blue ring-4 ring-delaval-blue/5 shadow-md' : 'border-slate-200 hover:border-slate-300 hover:shadow'}
-                    ${className}
+                className={`flex items-center justify-between w-full transition-all cursor-pointer bg-white 
+                    ${className || 'px-4 py-2.5 rounded-xl border shadow-sm'}
+                    ${!className && isOpen ? 'border-delaval-blue ring-4 ring-delaval-blue/5 shadow-md' : ''}
+                    ${!className && !isOpen ? 'border-slate-200 hover:border-slate-300 hover:shadow' : ''}
                 `}
             >
                 <div className="flex items-center gap-2.5 overflow-hidden">
