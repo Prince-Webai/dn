@@ -632,13 +632,13 @@ const DocumentBuilder = () => {
                                         <div className="col-span-6">
                                             <SearchableSelect
                                                 options={inventory.map(prod => ({
-                                                    value: prod.id,
+                                                    value: prod.name,
                                                     label: `${prod.sku ? `[${prod.sku}] ` : ''}${prod.name} (€${prod.sell_price.toFixed(2)})`
                                                 }))}
                                                 value={item.description} // Using description as value is intentional to support free-text, handled in onChange
                                                 onChange={(val) => {
-                                                    // Check if an inventory item was selected by ID
-                                                    const selectedProduct = inventory.find(p => p.id === val);
+                                                    // Check if an inventory item was selected by name
+                                                    const selectedProduct = inventory.find(p => p.name === val);
                                                     if (selectedProduct) {
                                                         // They picked a product from dropdown
                                                         updateLineItem(idx, 'description', selectedProduct.name);
