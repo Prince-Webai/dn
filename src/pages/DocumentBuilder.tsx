@@ -640,9 +640,9 @@ const DocumentBuilder = () => {
                                                     // Check if an inventory item was selected by name
                                                     const selectedProduct = inventory.find(p => p.name === val);
                                                     if (selectedProduct) {
-                                                        // They picked a product from dropdown
+                                                        // They picked a product from dropdown. 
+                                                        // Note: updateLineItem will auto-fill unitPrice when 'description' is updated with an exact match.
                                                         updateLineItem(idx, 'description', selectedProduct.name);
-                                                        updateLineItem(idx, 'unitPrice', selectedProduct.sell_price);
                                                     } else {
                                                         // They typed a custom description
                                                         updateLineItem(idx, 'description', val);
