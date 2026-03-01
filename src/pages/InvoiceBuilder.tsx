@@ -223,9 +223,8 @@ const InvoiceBuilder = () => {
                                     value={vatRate}
                                     onChange={e => setVatRate(Number(e.target.value))}
                                 >
-                                    <option value={13.5}>13.5% (Service)</option>
                                     <option value={23}>23% (Goods)</option>
-                                    <option value={0}>0% (Zero Rated)</option>
+                                    <option value={13.5}>13.5% (Service)</option>
                                 </select>
                             </div>
                             <div className="flex flex-col gap-3 pt-2">
@@ -270,23 +269,56 @@ const InvoiceBuilder = () => {
                                     <Eye size={16} /> Preview
                                 </button>
                                 <button
-                                    onClick={processStatement}
-                                    className="flex-1 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                                    onClick={processInvoice}
+                                    className="flex-1 py-3 bg-white border-2 border-delaval-blue text-delaval-blue rounded-xl text-sm font-bold hover:bg-blue-50 transition-all flex items-center justify-center gap-2"
                                 >
                                     <Download size={16} /> Download
                                 </button>
                             </div>
                             <button
-                                onClick={processStatement}
-                                className="w-full py-4 bg-slate-800 text-white rounded-xl text-md font-black hover:bg-slate-900 shadow-lg shadow-slate-900/10 transition-all active:scale-95"
+                                onClick={processInvoice}
+                                className="w-full py-4 bg-delaval-blue text-white rounded-xl text-md font-black hover:bg-delaval-dark-blue shadow-lg shadow-blue-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
                             >
-                                Save Statement
+                                <Printer size={18} /> Create & Mark as Sent
                             </button>
                         </div>
                     </div>
                 </div>
+
+                {/* Statement Generation */}
+                <div className="section-card p-6 border-2 border-slate-100 bg-white">
+                    <div className="w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center mb-4">
+                        <FileText size={24} />
+                    </div>
+                    <h3 className="font-black text-slate-900 text-xl font-display">Detailed Statement</h3>
+                    <p className="text-sm text-slate-500 mt-1 mb-6">Line-by-line breakdown of parts and labor for the farmer's records. Does not impact accounting.</p>
+
+                    <div className="flex flex-col gap-3">
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handlePreviewStatement}
+                                className="flex-1 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Eye size={16} /> Preview
+                            </button>
+                            <button
+                                onClick={processStatement}
+                                className="flex-1 py-3 bg-white border-2 border-slate-200 rounded-xl text-sm font-bold text-slate-700 hover:border-slate-300 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+                            >
+                                <Download size={16} /> Download
+                            </button>
+                        </div>
+                        <button
+                            onClick={processStatement}
+                            className="w-full py-4 bg-slate-800 text-white rounded-xl text-md font-black hover:bg-slate-900 shadow-lg shadow-slate-900/10 transition-all active:scale-95"
+                        >
+                            Save Statement
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
+        </div >
     );
 };
 

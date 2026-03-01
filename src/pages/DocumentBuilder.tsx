@@ -573,9 +573,7 @@ const DocumentBuilder = () => {
                                         searchable={false}
                                         options={[
                                             { value: '23', label: 'Standard (23%)' },
-                                            { value: '13.5', label: 'Reduced (13.5%)' },
-                                            { value: '4.8', label: 'Livestock (4.8%)' },
-                                            { value: '0', label: 'Zero Rated (0%)' },
+                                            { value: '13.5', label: 'Reduced (13.5%)' }
                                         ]}
                                         value={vatRate.toString()}
                                         onChange={(val) => setVatRate(parseFloat(val))}

@@ -17,6 +17,7 @@ const Invoices = () => {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [statements, setStatements] = useState<Statement[]>([]);
     const [completedJobs, setCompletedJobs] = useState<Job[]>([]);
+    const [inventory, setInventory] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Edit & Payment States
@@ -84,6 +85,10 @@ const Invoices = () => {
             const pendingJobs = jobData.filter(job => !invoicedJobIds.has(job.id) && !statementJobIds.has(job.id));
 
             setCompletedJobs(pendingJobs);
+
+            // Fetch Inventory for Edit Invoice Modal
+            const { data: invItems } = await supabase.from('inventory').select('*').order('name');
+            setInventory(invItems || []);
         } finally {
             setLoading(false);
         }
@@ -804,9 +809,8 @@ const Invoices = () => {
                             label="VAT Rate (%)"
                             searchable={false}
                             options={[
-                                { value: '13.5', label: '13.5%' },
                                 { value: '23', label: '23%' },
-                                { value: '0', label: '0%' }
+                                { value: '13.5', label: '13.5%' }
                             ]}
                             value={vatRate.toString()}
                             onChange={(val) => setVatRate(parseFloat(val))}
@@ -831,18 +835,30 @@ const Invoices = () => {
                             {editItems.map((item, idx) => (
                                 <div key={idx} className="flex gap-2 items-start bg-slate-50 p-3 rounded-lg border border-slate-200">
                                     <div className="flex-1">
-                                        <input
-                                            placeholder="Description"
-                                            className="w-full text-xs font-medium bg-transparent border-b border-slate-200 focus:border-delaval-blue outline-none py-1"
+                                        <SearchableSelect
+                                            label=""
+                                            options={inventory.map(prod => ({
+                                                value: prod.name,
+                                                label: `${prod.name} (€${prod.sell_price})`
+                                            }))}
                                             value={item.description}
-                                            onChange={(e) => {
+                                            onChange={(val) => {
                                                 const newItems = [...editItems];
-                                                newItems[idx].description = e.target.value;
+                                                const selectedProduct = inventory.find(p => p.name === val);
+
+                                                if (selectedProduct) {
+                                                    newItems[idx].description = selectedProduct.name;
+                                                    newItems[idx].unit_price = selectedProduct.sell_price;
+                                                } else {
+                                                    newItems[idx].description = val;
+                                                }
                                                 setEditItems(newItems);
                                             }}
+                                            placeholder="Select product or type description..."
                                         />
                                     </div>
-                                    <div className="w-16">
+                                    <div className="w-16 pt-2">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Qty</label>
                                         <input
                                             type="number"
                                             placeholder="Qty"
@@ -855,7 +871,8 @@ const Invoices = () => {
                                             }}
                                         />
                                     </div>
-                                    <div className="w-20">
+                                    <div className="w-20 pt-2">
+                                        <label className="text-[10px] font-bold text-slate-400 uppercase mb-1 block">Price</label>
                                         <input
                                             type="number"
                                             step="0.01"
@@ -864,7 +881,7 @@ const Invoices = () => {
                                             value={item.unit_price}
                                             onChange={(e) => {
                                                 const newItems = [...editItems];
-                                                newItems[idx].unit_price = parseFloat(e.target.value) || 0;
+                                                newItems[idx].unit_price = Number(e.target.value);
                                                 setEditItems(newItems);
                                             }}
                                         />
@@ -872,7 +889,7 @@ const Invoices = () => {
                                     <button
                                         type="button"
                                         onClick={() => setEditItems(editItems.filter((_, i) => i !== idx))}
-                                        className="text-red-400 hover:text-red-600 p-1"
+                                        className="text-red-400 hover:text-red-500 p-1 pt-6 transition-colors"
                                     >
                                         <Trash2 size={16} />
                                     </button>
