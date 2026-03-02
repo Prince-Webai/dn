@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
-    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
+    LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell
 } from 'recharts';
 import {
@@ -586,32 +586,60 @@ const Reports = () => {
                     </div>
                     <div className="h-[400px]">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={revenueData}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                            <LineChart data={revenueData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={true} stroke="#f1f5f9" />
                                 <XAxis
                                     dataKey="name"
-                                    axisLine={false}
+                                    axisLine={{ stroke: '#f1f5f9', strokeWidth: 1 }}
                                     tickLine={false}
-                                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 500 }}
+                                    tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }}
                                     dy={10}
                                     interval="preserveStartEnd"
-                                    minTickGap={70}
+                                    minTickGap={30}
                                 />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }} tickFormatter={(value) => `€${value}`} />
+                                <YAxis hide domain={['dataMin', 'dataMax + 100']} />
                                 <RechartsTooltip
-                                    formatter={(value: any) => [`€${Number(value).toLocaleString()}`, 'Revenue']}
-                                    cursor={{ fill: '#f8fafc' }}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', padding: '12px' }}
+                                    cursor={{ stroke: '#94a3b8', strokeWidth: 1 }}
+                                    content={({ active, payload, label }) => {
+                                        if (active && payload && payload.length) {
+                                            return (
+                                                <div className="bg-white/90 backdrop-blur-sm p-4 rounded-lg shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-slate-200/60 min-w-[140px]">
+                                                    <p className="text-[#1a1a1a] font-bold text-[13px] mb-2">Total sales</p>
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                        <div className="w-2.5 h-2.5 rounded-full bg-[#0051A5]"></div>
+                                                        <p className="text-slate-600 text-[12px] font-medium">{label}</p>
+                                                    </div>
+                                                    <p className="text-[#1a1a1a] font-semibold text-[13px] ml-4.5 bg-slate-100/50 inline-block px-1.5 py-0.5 rounded">
+                                                        €{Number(payload[0].value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </p>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    }}
                                 />
-                                <Bar dataKey="revenue" fill="url(#colorRevenue)" radius={[6, 6, 0, 0]} maxBarSize={60}>
-                                    <defs>
-                                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="#0051A5" stopOpacity={1} />
-                                            <stop offset="100%" stopColor="#003875" stopOpacity={1} />
-                                        </linearGradient>
-                                    </defs>
-                                </Bar>
-                            </BarChart>
+                                <Line
+                                    type="monotone"
+                                    dataKey="revenue"
+                                    stroke="#0051A5"
+                                    strokeWidth={2}
+                                    dot={false}
+                                    activeDot={{ r: 5, fill: '#0051A5', stroke: '#ffffff', strokeWidth: 2 }}
+                                />
+                                <Legend
+                                    verticalAlign="bottom"
+                                    height={40}
+                                    content={() => (
+                                        <div className="flex items-center justify-center gap-2 mt-4 text-[12px] font-medium text-slate-600">
+                                            <div className="w-2 h-2 rounded-full bg-[#0051A5]"></div>
+                                            {filterType === 'month' && 'This Month'}
+                                            {filterType === 'all' && 'All Time'}
+                                            {filterType === 'year' && 'This Year'}
+                                            {filterType === 'custom' && `${customRange.start} — ${customRange.end}`}
+                                        </div>
+                                    )}
+                                />
+                            </LineChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
