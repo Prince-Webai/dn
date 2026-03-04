@@ -13,6 +13,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@supabase/supabase-js": "^2.39.0",
     "change-case": "^5.4.4",
+    "framer-motion": "^12.35.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "jspdf-autotable": "^5.0.7",

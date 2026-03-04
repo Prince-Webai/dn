@@ -10,51 +10,66 @@ interface ReportDocumentProps {
 }
 
 export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, customer, onClose }) => {
+    const [scale, setScale] = React.useState(1);
+
+    React.useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 840) {
+                const newScale = (window.innerWidth - 32) / 800; // 800px is the target width approx
+                setScale(Math.max(0.4, newScale));
+            } else {
+                setScale(1);
+            }
+        };
+
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
     const handlePrint = () => window.print();
 
     return (
         <div
-            className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-md overflow-y-auto flex items-start justify-center"
+            className="fixed inset-0 z-[5000] bg-slate-950/80 backdrop-blur-2xl overflow-y-auto flex flex-col items-center animate-in fade-in zoom-in-95 duration-500"
             onClick={onClose}
         >
-            {/* Toolbar */}
-            <div className="print:hidden sticky top-0 z-10 bg-slate-800 text-white px-6 py-3 flex items-center justify-between shadow-lg">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-delaval-blue rounded-lg flex items-center justify-center font-bold text-sm">TC</div>
-                    <span className="font-bold text-sm">IMQCS Test Report — {customer?.name || 'Unknown Farm'}</span>
+            {/* Glossy Top Toolbar */}
+            <div className="print:hidden sticky top-0 z-[5010] w-full bg-slate-900/40 backdrop-blur-xl border-b border-white/10 text-white px-6 py-4 flex items-center justify-between shadow-2xl transition-all duration-300">
+                <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-delaval-blue rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-900/20">TC</div>
+                    <div>
+                        <h2 className="font-bold text-sm leading-tight">IMQCS Test Report</h2>
+                        <p className="text-xs text-white/50">{customer?.name || 'Unknown Farm'}</p>
+                    </div>
                 </div>
+
                 <div className="flex items-center gap-3">
                     <button
                         onClick={handlePrint}
-                        className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors"
+                        className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all transform active:scale-95 whitespace-nowrap"
                     >
                         🖨️ Print / Save PDF
                     </button>
                     <button
                         onClick={onClose}
-                        className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition-all transform active:scale-95 shadow-lg"
+                        className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold transition-all transform active:scale-95 shadow-lg shadow-red-900/40"
                     >
-                        ✕ Close / Go Back
+                        ✕ Close
                     </button>
                 </div>
             </div>
 
-            {/* A4 Document */}
-            <div className="py-8 px-4 print:py-0 print:px-0 w-full flex justify-center" onClick={e => e.stopPropagation()}>
+            {/* A4 Document Container */}
+            <div
+                className="py-12 px-4 print:py-0 print:px-0 w-full flex justify-center origin-top transition-transform duration-300 ease-out"
+                style={{ transform: `scale(${scale})` }}
+                onClick={e => e.stopPropagation()}
+            >
                 <div
-                    className="bg-white w-full max-w-[210mm] shadow-2xl print:shadow-none relative"
-                    style={{ fontFamily: 'Arial, sans-serif', fontSize: '9pt', color: '#000' }}
+                    className="bg-white w-full max-w-[210mm] print:shadow-none relative rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-200"
+                    style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif', fontSize: '9pt', color: '#000', minHeight: '297mm' }}
                 >
-                    {/* Floating exit hint for desktop */}
-                    <div className="absolute -right-16 top-0 print:hidden hidden xl:block">
-                        <button
-                            onClick={onClose}
-                            className="bg-white/10 hover:bg-white/20 text-white/50 hover:text-white p-3 rounded-full transition-all"
-                            title="Close Report"
-                        >
-                            <span className="text-2xl">✕</span>
-                        </button>
-                    </div>
                     {/* Document Header */}
                     <div style={{ borderBottom: '3px solid #003875', padding: '12px 20px 8px', background: '#f0f4ff' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>

@@ -109,36 +109,38 @@ export const MilkingMachineTestReport: React.FC<FormReportProps> = ({ job, custo
     return (
         <div className="bg-white rounded-xl shadow-xl border border-slate-200 w-full max-w-6xl mx-auto flex flex-col h-[90vh]">
             <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50 shrink-0 rounded-t-xl">
-                <div>
-                    <h2 className="text-2xl font-black font-display text-slate-900 tracking-tight flex items-center gap-3">
-                        <div className="w-10 h-10 bg-delaval-blue text-white rounded-lg flex items-center justify-center font-bold shadow-md shadow-blue-900/20">TC</div>
-                        Test Report on Milking Machine
+                <div className="min-w-0">
+                    <h2 className="text-xl md:text-2xl font-black font-display text-slate-900 tracking-tight flex items-center gap-2 md:gap-3">
+                        <div className="w-8 h-8 md:w-10 md:h-10 bg-delaval-blue text-white rounded-lg flex items-center justify-center font-bold shadow-md shadow-blue-900/20 shrink-0">TC</div>
+                        <span className="truncate">Test Report</span>
                     </h2>
-                    <p className="text-slate-500 font-medium text-sm mt-1">
-                        Licensed IMQCS Tester Report - {customer?.name || 'Unknown Farm'} - Job #{job.id.slice(0, 8)}
+                    <p className="text-slate-500 font-medium text-[10px] md:text-sm mt-0.5 truncate">
+                        {customer?.name || 'Unknown Farm'} — Job #{job.id.slice(0, 8)}
                     </p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button onClick={onCancel} className="px-5 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-200 transition-colors">{readOnly ? 'Close' : 'Cancel'}</button>
+                <div className="flex items-center gap-2 md:gap-3 shrink-0 ml-4">
+                    <button onClick={onCancel} className="px-3 md:px-5 py-2 md:py-2.5 rounded-lg md:rounded-xl font-bold text-xs md:text-sm text-slate-600 hover:bg-slate-200 transition-colors whitespace-nowrap">{readOnly ? 'Close' : 'Cancel'}</button>
                     {!readOnly && (
-                        <button onClick={() => onSubmit(form)} className="px-6 py-2.5 rounded-xl font-bold text-white bg-delaval-blue hover:bg-blue-700 shadow-lg shadow-blue-900/20 flex items-center gap-2 transition-transform hover:-translate-y-0.5 active:translate-y-0">
-                            Save Report
+                        <button onClick={() => onSubmit(form)} className="px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl font-bold text-xs md:text-sm text-white bg-delaval-blue hover:bg-blue-700 shadow-lg shadow-blue-900/20 flex items-center gap-2 transition-transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap">
+                            Save
                         </button>
                     )}
                 </div>
             </div>
 
-            <div className="flex border-b border-slate-200 shrink-0 px-6 bg-slate-50/50">
-                {(['info', 'installation', 'maintenance', 'tests', 'pulsation', 'faults'] as const).map(tab => (
-                    <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={`px-6 py-4 font-bold text-sm uppercase tracking-widest border-b-2 transition-colors ${activeTab === tab ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-400 hover:text-slate-600'
-                            }`}
-                    >
-                        {tab.replace('info', 'Header Info')}
-                    </button>
-                ))}
+            <div className="flex border-b border-slate-200 shrink-0 px-4 md:px-6 bg-slate-50/50 overflow-x-auto no-scrollbar touch-pan-x">
+                <div className="flex min-w-max">
+                    {(['info', 'installation', 'maintenance', 'tests', 'pulsation', 'faults'] as const).map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-4 md:px-6 py-3 md:py-4 font-bold text-[10px] md:text-sm uppercase tracking-widest border-b-2 transition-colors whitespace-nowrap ${activeTab === tab ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-400 hover:text-slate-600'
+                                }`}
+                        >
+                            {tab.replace('info', 'Header Info')}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-slate-50 relative">
@@ -241,27 +243,27 @@ export const MilkingMachineTestReport: React.FC<FormReportProps> = ({ job, custo
                                 <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
                                     <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wider">Pumps & Regulation</h4>
 
-                                    <div className="grid grid-cols-4 gap-3 items-end">
-                                        <div className="col-span-1 text-sm font-medium text-slate-600">Milk Pump:</div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Make</label><input type="text" value={form.installation.milkPump.make} onChange={(e) => updateForm('installation', 'milkPump', e.target.value, 'make')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
-                                        <div className="col-span-1 flex items-center h-full pb-2"><label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 font-bold"><input type="checkbox" checked={form.installation.milkPump.highSpeed} onChange={(e) => updateForm('installation', 'milkPump', e.target.checked, 'highSpeed')} className="w-4 h-4 text-delaval-blue border-slate-300 rounded focus:ring-delaval-blue" /> High Speed</label></div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Rate</label><input type="text" value={form.installation.milkPump.rate} onChange={(e) => updateForm('installation', 'milkPump', e.target.value, 'rate')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-end border-b border-slate-100 pb-4">
+                                        <div className="text-sm font-bold text-slate-700 sm:col-span-2 lg:col-span-1">Milk Pump:</div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Make</label><input type="text" value={form.installation.milkPump.make} onChange={(e) => updateForm('installation', 'milkPump', e.target.value, 'make')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                        <div className="flex items-center h-full pb-2"><label className="flex items-center gap-2 cursor-pointer text-sm text-slate-700 font-bold"><input type="checkbox" checked={form.installation.milkPump.highSpeed} onChange={(e) => updateForm('installation', 'milkPump', e.target.checked, 'highSpeed')} className="w-4 h-4 text-delaval-blue border-slate-300 rounded focus:ring-delaval-blue" /> High Speed</label></div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Rate</label><input type="text" value={form.installation.milkPump.rate} onChange={(e) => updateForm('installation', 'milkPump', e.target.value, 'rate')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
                                     </div>
 
-                                    <div className="grid grid-cols-5 gap-3 items-end">
-                                        <div className="col-span-1 text-sm font-medium text-slate-600">Vacuum Pump:</div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Make</label><input type="text" value={form.installation.vacuumPump.make} onChange={(e) => updateForm('installation', 'vacuumPump', e.target.value, 'make')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Type</label><input type="text" value={form.installation.vacuumPump.type} onChange={(e) => updateForm('installation', 'vacuumPump', e.target.value, 'type')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Capacity</label><input type="text" value={form.installation.vacuumPump.capacity} onChange={(e) => updateForm('installation', 'vacuumPump', e.target.value, 'capacity')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Location</label><input type="text" value={form.installation.vacuumPump.location} onChange={(e) => updateForm('installation', 'vacuumPump', e.target.value, 'location')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end border-b border-slate-100 pb-4">
+                                        <div className="text-sm font-bold text-slate-700 sm:col-span-2 lg:col-span-1">Vacuum Pump:</div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Make</label><input type="text" value={form.installation.vacuumPump.make} onChange={(e) => updateForm('installation', 'vacuumPump', e.target.value, 'make')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Type</label><input type="text" value={form.installation.vacuumPump.type} onChange={(e) => updateForm('installation', 'vacuumPump', e.target.value, 'type')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Capacity</label><input type="text" value={form.installation.vacuumPump.capacity} onChange={(e) => updateForm('installation', 'vacuumPump', e.target.value, 'capacity')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Location</label><input type="text" value={form.installation.vacuumPump.location} onChange={(e) => updateForm('installation', 'vacuumPump', e.target.value, 'location')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
                                     </div>
 
-                                    <div className="grid grid-cols-5 gap-3 items-end">
-                                        <div className="col-span-1 text-sm font-medium text-slate-600">Regulator:</div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Make</label><input type="text" value={form.installation.regulator.make} onChange={(e) => updateForm('installation', 'regulator', e.target.value, 'make')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Type</label><input type="text" value={form.installation.regulator.type} onChange={(e) => updateForm('installation', 'regulator', e.target.value, 'type')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Location</label><input type="text" value={form.installation.regulator.location} onChange={(e) => updateForm('installation', 'regulator', e.target.value, 'location')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
-                                        <div className="col-span-1"><label className="text-[10px] uppercase text-slate-400 font-bold">Farm Gauge</label><input type="text" value={form.installation.regulator.gauge} onChange={(e) => updateForm('installation', 'regulator', e.target.value, 'gauge')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
+                                        <div className="text-sm font-bold text-slate-700 sm:col-span-2 lg:col-span-1">Regulator:</div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Make</label><input type="text" value={form.installation.regulator.make} onChange={(e) => updateForm('installation', 'regulator', e.target.value, 'make')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Type</label><input type="text" value={form.installation.regulator.type} onChange={(e) => updateForm('installation', 'regulator', e.target.value, 'type')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Location</label><input type="text" value={form.installation.regulator.location} onChange={(e) => updateForm('installation', 'regulator', e.target.value, 'location')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
+                                        <div><label className="text-[10px] uppercase text-slate-400 font-bold">Farm Gauge</label><input type="text" value={form.installation.regulator.gauge} onChange={(e) => updateForm('installation', 'regulator', e.target.value, 'gauge')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 mt-1" /></div>
                                     </div>
                                 </div>
 
@@ -322,87 +324,80 @@ export const MilkingMachineTestReport: React.FC<FormReportProps> = ({ job, custo
                             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                                 <div className="space-y-4">
                                     {/* Test 1 */}
-                                    <div className="grid grid-cols-12 gap-4 items-center border-b border-slate-100 pb-4">
-                                        <div className="col-span-1 text-sm font-bold text-slate-400">1.</div>
-                                        <div className="col-span-5 text-sm font-medium text-slate-700">Operating Vacuum - AFM at test point near regulator</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t1_operatingVacuum} onChange={(e) => updateForm('airFlow', 't1_operatingVacuum', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(kPa)</span></div>
-                                        <div className="col-span-2 text-sm text-slate-500 text-right">Recommended Vacuum:</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t1_recommended} onChange={(e) => updateForm('airFlow', 't1_recommended', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(kPa)</span></div>
+                                    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-2 md:gap-4 items-start lg:items-center border-b border-slate-100 pb-4">
+                                        <div className="flex items-center gap-2 w-full lg:col-span-6">
+                                            <span className="text-sm font-bold text-slate-400">1.</span>
+                                            <span className="text-sm font-medium text-slate-700">Operating Vacuum - AFM at test point near regulator</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 w-full lg:col-span-2">
+                                            <input type="text" value={form.airFlow.t1_operatingVacuum} onChange={(e) => updateForm('airFlow', 't1_operatingVacuum', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
+                                            <span className="text-[10px] text-slate-400 font-bold">kPa</span>
+                                        </div>
+                                        <div className="flex items-center justify-between lg:justify-end gap-2 w-full lg:col-span-4">
+                                            <span className="text-xs text-slate-500">Rec:</span>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <input type="text" value={form.airFlow.t1_recommended} onChange={(e) => updateForm('airFlow', 't1_recommended', e.target.value)} className="w-24 bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
+                                                <span className="text-[10px] text-slate-400 font-bold">kPa</span>
+                                            </div>
+                                        </div>
                                     </div>
 
                                     {/* Test 2 */}
-                                    <div className="grid grid-cols-12 gap-4 items-center border-b border-slate-100 pb-4">
-                                        <div className="col-span-1 text-sm font-bold text-slate-400">2.</div>
-                                        <div className="col-span-3 text-sm font-medium text-slate-700">Pump Capacity - AFM direct to pump</div>
-                                        <div className="col-span-2 flex items-center gap-2"><label className="text-xs text-slate-400">Speed</label><input type="text" value={form.airFlow.t2_rpm} onChange={(e) => updateForm('airFlow', 't2_rpm', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400">rpm</span></div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t2_pumpCapacity} onChange={(e) => updateForm('airFlow', 't2_pumpCapacity', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(l/min)</span></div>
-                                        <div className="col-span-2 text-sm text-slate-500 text-right">Required Pump Capacity:</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t2_requiredCapacity} onChange={(e) => updateForm('airFlow', 't2_requiredCapacity', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(l/min)</span></div>
-                                    </div>
-
-                                    {/* Test 3 */}
-                                    <div className="grid grid-cols-12 gap-4 items-center border-b border-slate-100 pb-4">
-                                        <div className="col-span-1 text-sm font-bold text-slate-400">3.</div>
-                                        <div className="col-span-5 text-sm font-medium text-slate-700">AFM at test point near regulator - teat plugs inserted<br /><span className="text-xs text-slate-400 font-normal">Air pipeline added only, regulator plugged</span></div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t3_afmAtTestPoint} onChange={(e) => updateForm('airFlow', 't3_afmAtTestPoint', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(l/min)</span></div>
-                                        <div className="col-span-2 text-sm text-slate-500 text-right">Air Pipeline Leakage (2-3):</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t3_airPipelineLeakage} onChange={(e) => updateForm('airFlow', 't3_airPipelineLeakage', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /></div>
-                                    </div>
-
-                                    {/* Test 4 */}
-                                    <div className="grid grid-cols-12 gap-4 items-center border-b border-slate-100 pb-4">
-                                        <div className="col-span-1 text-sm font-bold text-slate-400">4.</div>
-                                        <div className="col-span-5 text-sm font-medium text-slate-700">Add Milking System close claw air admission</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t4_addMilkingSystem} onChange={(e) => updateForm('airFlow', 't4_addMilkingSystem', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(l/min)</span></div>
-                                        <div className="col-span-2 text-sm text-slate-500 text-right">Milking System Leakage (3-4):</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t4_systemLeakage} onChange={(e) => updateForm('airFlow', 't4_systemLeakage', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /></div>
-                                    </div>
-
-                                    {/* Test 5 */}
-                                    <div className="grid grid-cols-12 gap-4 items-center border-b border-slate-100 pb-4">
-                                        <div className="col-span-1 text-sm font-bold text-slate-400">5.</div>
-                                        <div className="col-span-5 text-sm font-medium text-slate-700">Open air admission at claws</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t5_openAirAdmission} onChange={(e) => updateForm('airFlow', 't5_openAirAdmission', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(l/min)</span></div>
-                                        <div className="col-span-2 text-sm text-slate-500 text-right">Claw Admission / Unit (4-5):</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t5_clawAdmission} onChange={(e) => updateForm('airFlow', 't5_clawAdmission', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /></div>
-                                    </div>
-
-                                    {/* Test 6 & 6a */}
-                                    <div className="grid grid-cols-12 gap-4 items-center border-b border-slate-100 pb-4">
-                                        <div className="col-span-1 text-sm font-bold text-slate-400">6.</div>
-                                        <div className="col-span-5 text-sm font-medium text-slate-700">Add pulsators - all units milking</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t6_addPulsators} onChange={(e) => updateForm('airFlow', 't6_addPulsators', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(l/min)</span></div>
-                                        <div className="col-span-2 text-sm text-slate-500 text-right">Pulsation Use (5-6):</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t6_pulsationUse} onChange={(e) => updateForm('airFlow', 't6_pulsationUse', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /></div>
-                                    </div>
-
-                                    <div className="grid grid-cols-12 gap-4 items-center border-b border-slate-100 pb-4">
-                                        <div className="col-span-1 text-sm font-bold text-slate-400">6a.</div>
-                                        <div className="col-span-5 text-sm font-medium text-slate-700 flex items-center gap-2">Add ancillary equipment
-                                            <input type="text" className="w-32 bg-slate-50 border-b border-slate-300 focus:outline-none focus:border-delaval-blue text-xs p-1" placeholder="(specify)" />
+                                    <div className="flex flex-col lg:grid lg:grid-cols-12 gap-2 md:gap-4 items-start lg:items-center border-b border-slate-100 pb-4">
+                                        <div className="flex items-center gap-2 w-full lg:col-span-4">
+                                            <span className="text-sm font-bold text-slate-400">2.</span>
+                                            <span className="text-sm font-medium text-slate-700">Pump Capacity - AFM direct to pump</span>
                                         </div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t6a_addAncillary} onChange={(e) => updateForm('airFlow', 't6a_addAncillary', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(l/min)</span></div>
-                                        <div className="col-span-2 text-sm text-slate-500 text-right">Ancillary Equip. Use (6-6a):</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t6a_ancillaryUse} onChange={(e) => updateForm('airFlow', 't6a_ancillaryUse', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /></div>
+                                        <div className="flex items-center gap-2 w-full lg:col-span-4">
+                                            <div className="flex items-center gap-1 w-full">
+                                                <input type="text" value={form.airFlow.t2_rpm} onChange={(e) => updateForm('airFlow', 't2_rpm', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
+                                                <span className="text-[10px] text-slate-400 min-w-max">rpm</span>
+                                            </div>
+                                            <div className="flex items-center gap-1 w-full">
+                                                <input type="text" value={form.airFlow.t2_pumpCapacity} onChange={(e) => updateForm('airFlow', 't2_pumpCapacity', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
+                                                <span className="text-[10px] text-slate-400 font-bold min-w-max">l/min</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center justify-between lg:justify-end gap-2 w-full lg:col-span-4">
+                                            <span className="text-xs text-slate-500">Req:</span>
+                                            <div className="flex items-center gap-2 shrink-0">
+                                                <input type="text" value={form.airFlow.t2_requiredCapacity} onChange={(e) => updateForm('airFlow', 't2_requiredCapacity', e.target.value)} className="w-24 bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
+                                                <span className="text-[10px] text-slate-400 font-bold">l/min</span>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    {/* Test 7 */}
-                                    <div className="grid grid-cols-12 gap-4 items-center border-b border-slate-100 pb-4">
-                                        <div className="col-span-1 text-sm font-bold text-slate-400">7.</div>
-                                        <div className="col-span-5 text-sm font-medium text-slate-700">Drop Vacuum 2 kPa - all units milking, regulator plugged</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t7_dropVacuum2kPa} onChange={(e) => updateForm('airFlow', 't7_dropVacuum2kPa', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(l/min)</span></div>
-                                        <div className="col-span-2 text-sm text-slate-500 text-right">Regulator Leakage (7-8):</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t7_regulatorLeakage} onChange={(e) => updateForm('airFlow', 't7_regulatorLeakage', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /></div>
-                                    </div>
-
-                                    {/* Test 8 */}
-                                    <div className="grid grid-cols-12 gap-4 items-center pb-2">
-                                        <div className="col-span-1 text-sm font-bold text-slate-400">8.</div>
-                                        <div className="col-span-5 text-sm font-medium text-slate-700">Add regulator, drop vacuum 2 kPa - all units milking</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t8_addRegulator} onChange={(e) => updateForm('airFlow', 't8_addRegulator', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /> <span className="text-xs text-slate-400 font-bold">(l/min)</span></div>
-                                        <div className="col-span-2 text-sm text-slate-500 text-right">Required Reserve:</div>
-                                        <div className="col-span-2 flex items-center gap-2"><input type="text" value={form.airFlow.t8_requiredReserve} onChange={(e) => updateForm('airFlow', 't8_requiredReserve', e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" /></div>
-                                    </div>
+                                    {/* Tests 3-8 */}
+                                    {[
+                                        { no: '3', label: 'AFM at test point near regulator — teat plugs inserted', sub: 'Air pipeline added only, regulator plugged', key: 't3_afmAtTestPoint', dLabel: 'Leakage (2-3)', dKey: 't3_airPipelineLeakage' },
+                                        { no: '4', label: 'Add Milking System close claw air admission', key: 't4_addMilkingSystem', dLabel: 'Leakage (3-4)', dKey: 't4_systemLeakage' },
+                                        { no: '5', label: 'Open air admission at claws', key: 't5_openAirAdmission', dLabel: 'Admission / Unit (4-5)', dKey: 't5_clawAdmission' },
+                                        { no: '6', label: 'Add pulsators - all units milking', key: 't6_addPulsators', dLabel: 'Pulsation Use (5-6)', dKey: 't6_pulsationUse' },
+                                        { no: '6a', label: 'Add ancillary equipment', hasSpecify: true, key: 't6a_addAncillary', dLabel: 'Equipment Use (6-6a)', dKey: 't6a_ancillaryUse' },
+                                        { no: '7', label: 'Drop Vacuum 2 kPa - units milking, regulator plugged', key: 't7_dropVacuum2kPa', dLabel: 'Regulator Leakage (7-8)', dKey: 't7_regulatorLeakage' },
+                                        { no: '8', label: 'Add regulator, drop vacuum 2 kPa - all units milking', key: 't8_addRegulator', dLabel: 'Required Reserve', dKey: 't8_requiredReserve' },
+                                    ].map((test) => (
+                                        <div key={test.no} className="flex flex-col lg:grid lg:grid-cols-12 gap-2 md:gap-4 items-start lg:items-center border-b border-slate-100 pb-4 last:border-0 last:pb-2">
+                                            <div className="flex items-start gap-2 w-full lg:col-span-6">
+                                                <span className="text-sm font-bold text-slate-400 mt-0.5">{test.no}.</span>
+                                                <div className="flex-1">
+                                                    <span className="text-sm font-medium text-slate-700 block">{test.label}</span>
+                                                    {test.sub && <span className="text-[10px] text-slate-400 font-normal leading-tight block mt-0.5">{test.sub}</span>}
+                                                    {test.hasSpecify && <input type="text" className="w-full max-w-[120px] bg-slate-50 border-b border-slate-300 focus:outline-none focus:border-delaval-blue text-[10px] py-1 mt-1" placeholder="(specify)" />}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 w-full lg:col-span-2">
+                                                <input type="text" value={(form.airFlow as any)[test.key]} onChange={(e) => updateForm('airFlow', test.key, e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
+                                                <span className="text-[10px] text-slate-400 font-bold">l/min</span>
+                                            </div>
+                                            <div className="flex items-center justify-between lg:justify-end gap-2 w-full lg:col-span-4">
+                                                <span className="text-xs text-slate-500">{test.dLabel}:</span>
+                                                <div className="flex items-center gap-2 shrink-0">
+                                                    <input type="text" value={(form.airFlow as any)[test.dKey]} onChange={(e) => updateForm('airFlow', test.dKey, e.target.value)} className="w-24 bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>
