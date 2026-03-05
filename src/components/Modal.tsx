@@ -41,7 +41,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'default', overflowVis
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div
                 ref={modalRef}
-                className={`bg-white rounded-xl shadow-xl w-full ${maxWidthClass} max-h-[96vh] sm:max-h-[92vh] flex flex-col overflow-hidden transform transition-all animate-in zoom-in-95 duration-200`}
+                className={`bg-white rounded-xl shadow-xl w-full ${maxWidthClass} max-h-[96vh] sm:max-h-[92vh] flex flex-col ${overflowVisible ? '' : 'overflow-hidden'} transform transition-all animate-in zoom-in-95 duration-200`}
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex-none px-6 py-4 border-b bg-white rounded-t-xl flex items-center justify-between">

@@ -195,47 +195,62 @@ export const MilkingMachineTestReport: React.FC<FormReportProps> = ({ job, custo
 
                             <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
                                 <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wider">Pipelines & Lifting</h4>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left border-collapse">
-                                        <thead>
-                                            <tr>
-                                                <th className="py-2 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Component</th>
-                                                <th className="py-2 px-2 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Bore</th>
-                                                <th className="py-2 px-2 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Materials</th>
-                                                <th className="py-2 px-2 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Height/Slope</th>
-                                                <th className="py-2 px-2 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Size</th>
-                                                <th className="py-2 pl-2 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Location</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            {[
-                                                { key: 'mainAirline', label: 'Main Airline', hasLocation: true },
-                                                { key: 'pulsatorAirlines', label: 'Pulsator Airlines', hasLocation: true },
-                                                { key: 'milkline', label: 'Milkline', hasLocation: true },
-                                                { key: 'washline', label: 'Washline / Vacuum Washline', hasLocation: true },
-                                                { key: 'milkLift', label: 'Milk Lift', hasLocation: false },
-                                            ].map(({ key, label, hasLocation }) => (
-                                                <tr key={key}>
-                                                    <td className="py-3 text-sm font-medium text-slate-700 w-48">{label}</td>
-                                                    <td className="py-3 px-2">
-                                                        <input type="text" value={(form.installation as any)[key].bore} onChange={(e) => updateForm('installation', key, e.target.value, 'bore')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
-                                                    </td>
-                                                    <td className="py-3 px-2">
-                                                        <input type="text" value={(form.installation as any)[key].materials} onChange={(e) => updateForm('installation', key, e.target.value, 'materials')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
-                                                    </td>
-                                                    <td className="py-3 px-2">
-                                                        <input type="text" value={(form.installation as any)[key].slope || (form.installation as any)[key].height || ''} onChange={(e) => updateForm('installation', key, e.target.value, key === 'milkLift' || key === 'milkline' ? 'height' : 'slope')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />
-                                                    </td>
-                                                    <td className="py-3 px-2">
-                                                        {key !== 'milkLift' && <input type="text" value={(form.installation as any)[key].size} onChange={(e) => updateForm('installation', key, e.target.value, 'size')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />}
-                                                    </td>
-                                                    <td className="py-3 pl-2">
-                                                        {hasLocation && <input type="text" value={(form.installation as any)[key].location} onChange={(e) => updateForm('installation', key, e.target.value, 'location')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-sm" />}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                <div className="space-y-4">
+                                    <div className="hidden md:grid md:grid-cols-12 gap-2 pb-2 border-b border-slate-200">
+                                        <div className="col-span-3 text-xs text-slate-500 font-bold uppercase tracking-wider">Component</div>
+                                        <div className="col-span-1 text-xs text-slate-500 font-bold uppercase tracking-wider relative group">Bore</div>
+                                        <div className="col-span-2 text-xs text-slate-500 font-bold uppercase tracking-wider relative group">Materials</div>
+                                        <div className="col-span-2 text-xs text-slate-500 font-bold uppercase tracking-wider relative group">Hgt/Slope</div>
+                                        <div className="col-span-2 text-xs text-slate-500 font-bold uppercase tracking-wider relative group">Size</div>
+                                        <div className="col-span-2 text-xs text-slate-500 font-bold uppercase tracking-wider relative group pl-2">Location</div>
+                                    </div>
+
+                                    <div className="divide-y divide-slate-100">
+                                        {[
+                                            { key: 'mainAirline', label: 'Main Airline', hasLocation: true },
+                                            { key: 'pulsatorAirlines', label: 'Pulsator Airlines', hasLocation: true },
+                                            { key: 'milkline', label: 'Milkline', hasLocation: true },
+                                            { key: 'washline', label: 'Washline / Vaccum Washline', hasLocation: true },
+                                            { key: 'milkLift', label: 'Milk Lift', hasLocation: false },
+                                        ].map(({ key, label, hasLocation }) => (
+                                            <div key={key} className="py-4 md:py-3 flex flex-col md:grid md:grid-cols-12 gap-3 md:gap-2 items-start md:items-center">
+                                                <div className="md:col-span-3 text-sm font-bold text-slate-700 w-full mb-1 md:mb-0 pb-1 border-b border-slate-100 md:border-0">{label}</div>
+
+                                                <div className="w-full md:col-span-1 flex items-center gap-2 md:block">
+                                                    <span className="md:hidden text-xs font-bold text-slate-400 w-24">Bore:</span>
+                                                    <input type="text" value={(form.installation as any)[key].bore} onChange={(e) => updateForm('installation', key, e.target.value, 'bore')} className="w-full bg-slate-50 border border-slate-200 rounded p-2 md:p-1.5 text-sm" />
+                                                </div>
+
+                                                <div className="w-full md:col-span-2 flex items-center gap-2 md:block">
+                                                    <span className="md:hidden text-xs font-bold text-slate-400 w-24">Matl:</span>
+                                                    <input type="text" value={(form.installation as any)[key].materials} onChange={(e) => updateForm('installation', key, e.target.value, 'materials')} className="w-full bg-slate-50 border border-slate-200 rounded p-2 md:p-1.5 text-sm" />
+                                                </div>
+
+                                                <div className="w-full md:col-span-2 flex items-center gap-2 md:block">
+                                                    <span className="md:hidden text-xs font-bold text-slate-400 w-24">Slope/Ht:</span>
+                                                    <input type="text" value={(form.installation as any)[key].slope || (form.installation as any)[key].height || ''} onChange={(e) => updateForm('installation', key, e.target.value, key === 'milkLift' || key === 'milkline' ? 'height' : 'slope')} className="w-full bg-slate-50 border border-slate-200 rounded p-2 md:p-1.5 text-sm" />
+                                                </div>
+
+                                                <div className="w-full md:col-span-2 flex items-center gap-2 md:block">
+                                                    {key !== 'milkLift' && (
+                                                        <>
+                                                            <span className="md:hidden text-xs font-bold text-slate-400 w-24">Size:</span>
+                                                            <input type="text" value={(form.installation as any)[key].size} onChange={(e) => updateForm('installation', key, e.target.value, 'size')} className="w-full bg-slate-50 border border-slate-200 rounded p-2 md:p-1.5 text-sm" />
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                <div className="w-full md:col-span-2 flex items-center gap-2 md:block md:pl-2">
+                                                    {hasLocation && (
+                                                        <>
+                                                            <span className="md:hidden text-xs font-bold text-slate-400 w-24">Loc:</span>
+                                                            <input type="text" value={(form.installation as any)[key].location} onChange={(e) => updateForm('installation', key, e.target.value, 'location')} className="w-full bg-slate-50 border border-slate-200 rounded p-2 md:p-1.5 text-sm" />
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
 
@@ -407,37 +422,69 @@ export const MilkingMachineTestReport: React.FC<FormReportProps> = ({ job, custo
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-8">
                             <h3 className="text-lg font-bold text-slate-800 border-b border-slate-200 pb-2">4. Pulsation</h3>
 
-                            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
-                                <table className="w-full text-left border-collapse min-w-[800px]">
-                                    <thead>
-                                        <tr>
-                                            <th className="py-2 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Type</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">No.</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Make</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Type</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b" title="Units/Relay or 4x0/2x2">Units/Relay</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Rate(c/min)</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Ratio "a+b"</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">"a" value</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">"d" value</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Max</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">Min</th>
-                                            <th className="py-2 px-1 text-xs text-slate-500 font-bold uppercase tracking-wider border-b">DIFF</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                                <div className="space-y-6">
+                                    {/* Desktop Header */}
+                                    <div className="hidden lg:grid lg:grid-cols-12 gap-2 pb-2 border-b border-slate-200">
+                                        <div className="col-span-2 text-xs text-slate-500 font-bold uppercase tracking-wider">Type</div>
+                                        <div className="col-span-1 text-xs text-slate-500 font-bold uppercase tracking-wider">No.</div>
+                                        <div className="col-span-1 text-xs text-slate-500 font-bold uppercase tracking-wider">Make</div>
+                                        <div className="col-span-1 text-xs text-slate-500 font-bold uppercase tracking-wider">Type</div>
+                                        <div className="col-span-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider leading-tight">Units/Relay<br />4x0/2x2</div>
+                                        <div className="col-span-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider leading-tight">Rate<br />(c/min)</div>
+                                        <div className="col-span-1 text-[10px] text-slate-500 font-bold uppercase tracking-wider leading-tight">Ratio<br />"a+b"</div>
+                                        <div className="col-span-1 text-xs text-slate-500 font-bold uppercase tracking-wider">"a"</div>
+                                        <div className="col-span-1 text-xs text-slate-500 font-bold uppercase tracking-wider">"d"</div>
+                                        <div className="col-span-1 text-xs text-slate-500 font-bold uppercase tracking-wider">Max/Min</div>
+                                        <div className="col-span-1 text-xs text-slate-500 font-bold uppercase tracking-wider">DIFF</div>
+                                    </div>
+
+                                    <div className="divide-y divide-slate-100">
                                         {(['individual', 'master', 'relays'] as const).map((key) => (
-                                            <tr key={key}>
-                                                <td className="py-3 text-sm font-bold text-slate-700 capitalize">{key}</td>
-                                                {['no', 'make', 'type', 'units', 'rate', 'ratio', 'a', 'd', 'max', 'min', 'diff'].map(field => (
-                                                    <td key={`${key}-${field}`} className="py-3 px-1">
-                                                        <input type="text" value={(form.pulsation as any)[key][field]} onChange={(e) => updateForm('pulsation', key, e.target.value, field)} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue focus:ring-1 focus:ring-delaval-blue transition-colors" />
-                                                    </td>
-                                                ))}
-                                            </tr>
+                                            <div key={key} className="py-4 lg:py-3 flex flex-col lg:grid lg:grid-cols-12 gap-3 lg:gap-2 items-start lg:items-center">
+                                                <div className="lg:col-span-2 text-sm font-bold text-slate-700 capitalize w-full mb-2 lg:mb-0 pb-1 border-b border-slate-100 lg:border-0">{key}</div>
+
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 lg:hidden w-full gap-2">
+                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase">No</label><input type="text" value={(form.pulsation as any)[key]['no']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'no')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" /></div>
+                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase">Make</label><input type="text" value={(form.pulsation as any)[key]['make']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'make')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" /></div>
+                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase">Type</label><input type="text" value={(form.pulsation as any)[key]['type']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'type')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" /></div>
+                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase truncate">Units/Relay</label><input type="text" value={(form.pulsation as any)[key]['units']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'units')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" /></div>
+                                                </div>
+                                                <div className="grid grid-cols-4 lg:hidden w-full gap-2">
+                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase">Rate</label><input type="text" value={(form.pulsation as any)[key]['rate']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'rate')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" /></div>
+                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase">Ratio a+b</label><input type="text" value={(form.pulsation as any)[key]['ratio']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'ratio')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" /></div>
+                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase">"a"</label><input type="text" value={(form.pulsation as any)[key]['a']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'a')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" /></div>
+                                                    <div><label className="text-[10px] text-slate-400 font-bold uppercase">"d"</label><input type="text" value={(form.pulsation as any)[key]['d']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'd')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" /></div>
+                                                </div>
+                                                <div className="flex lg:hidden w-full gap-2">
+                                                    <div className="flex-1">
+                                                        <label className="text-[10px] text-slate-400 font-bold uppercase">Max/Min</label>
+                                                        <div className="flex gap-1">
+                                                            <input type="text" placeholder="Max" value={(form.pulsation as any)[key]['max']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'max')} className="w-1/2 bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" />
+                                                            <input type="text" placeholder="Min" value={(form.pulsation as any)[key]['min']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'min')} className="w-1/2 bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="w-20"><label className="text-[10px] text-slate-400 font-bold uppercase">DIFF</label><input type="text" value={(form.pulsation as any)[key]['diff']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'diff')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs focus:border-delaval-blue outline-none" /></div>
+                                                </div>
+
+                                                {/* Desktop Inputs */}
+                                                <div className="hidden lg:block lg:col-span-1"><input type="text" value={(form.pulsation as any)[key]['no']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'no')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" /></div>
+                                                <div className="hidden lg:block lg:col-span-1"><input type="text" value={(form.pulsation as any)[key]['make']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'make')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" /></div>
+                                                <div className="hidden lg:block lg:col-span-1"><input type="text" value={(form.pulsation as any)[key]['type']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'type')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" /></div>
+                                                <div className="hidden lg:block lg:col-span-1"><input type="text" value={(form.pulsation as any)[key]['units']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'units')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" /></div>
+                                                <div className="hidden lg:block lg:col-span-1"><input type="text" value={(form.pulsation as any)[key]['rate']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'rate')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" /></div>
+                                                <div className="hidden lg:block lg:col-span-1"><input type="text" value={(form.pulsation as any)[key]['ratio']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'ratio')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" /></div>
+                                                <div className="hidden lg:block lg:col-span-1"><input type="text" value={(form.pulsation as any)[key]['a']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'a')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" /></div>
+                                                <div className="hidden lg:block lg:col-span-1"><input type="text" value={(form.pulsation as any)[key]['d']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'd')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" /></div>
+                                                <div className="hidden lg:flex lg:col-span-1 gap-1">
+                                                    <input type="text" placeholder="Max" value={(form.pulsation as any)[key]['max']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'max')} className="w-1/2 bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" />
+                                                    <input type="text" placeholder="Min" value={(form.pulsation as any)[key]['min']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'min')} className="w-1/2 bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" />
+                                                </div>
+                                                <div className="hidden lg:block lg:col-span-1"><input type="text" value={(form.pulsation as any)[key]['diff']} onChange={(e) => updateForm('pulsation', key, e.target.value, 'diff')} className="w-full bg-slate-50 border border-slate-200 rounded p-1.5 text-xs text-center focus:border-delaval-blue outline-none" /></div>
+                                            </div>
                                         ))}
-                                    </tbody>
-                                </table>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-6 mt-4 ml-2">
