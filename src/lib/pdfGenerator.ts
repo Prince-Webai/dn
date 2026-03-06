@@ -92,15 +92,15 @@ const addAddressSection = (
 
     autoTable(doc, {
         startY: y,
-        head: [[type === 'Quote' ? 'Quote For:' : 'Invoice To:', { content: 'Deliver To:', styles: { cellPadding: { left: 1 } } }, { content: String(settings?.company_name || 'Tony Condon Dairy Services'), styles: { halign: 'right' } }]],
+        head: [[type === 'Quote' ? 'Quote For:' : 'Invoice To:', { content: 'Deliver To:', styles: { cellPadding: { left: 1 } } }, { content: String(settings?.company_name || 'TN Solar Services'), styles: { halign: 'right' } }]],
         body: [[
             { content: String(customer.name || 'Cash Sale') + '\n' + String(customer.address || ''), styles: { fontStyle: 'normal' } },
             { content: String(customer.name || 'Cash Sale') + '\n' + String(customer.address || ''), styles: { fontStyle: 'normal' } },
             {
                 content: (settings?.company_address || 'Clonegogaile, Ballinamult, Co. Tipperary') +
                     '\nTel: ' + (settings?.company_phone || '(052) 915 6345') +
-                    '\nEmail: ' + (settings?.company_email || 'info@condondairy.ie') +
-                    '\nWeb: www.condondairy.ie',
+                    '\nEmail: ' + (settings?.company_email || 'info@tnsolar.in') +
+                    '\nWeb: www.tnsolar.in',
                 styles: { fontStyle: 'normal', halign: 'right' }
             }
         ]],
@@ -156,7 +156,7 @@ const addVATAnalysis = (doc: jsPDF, vatRate: number, net: number, vat: number, y
     autoTable(doc, {
         startY: y + 4,
         head: [['VAT Rate %', 'Net', 'VAT', 'Gross']],
-        body: [[`${vatRate.toFixed(2)}%`, `€${net.toFixed(2)}`, `€${vat.toFixed(2)}`, `€${(net + vat).toFixed(2)}`]],
+        body: [[`${vatRate.toFixed(2)}%`, `₹${net.toFixed(2)}`, `₹${vat.toFixed(2)}`, `₹${(net + vat).toFixed(2)}`]],
         theme: 'grid',
         styles: { fontSize: 8, cellPadding: 2 },
         headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: 'bold' },
@@ -176,7 +176,7 @@ const addBankDetails = (doc: jsPDF, y: number, settings: Settings | null) => {
 
     doc.setFontSize(8);
     const rows = [
-        ['Account Name:', settings?.account_name || 'Condon Dairy Agri Ltd'],
+        ['Account Name:', settings?.account_name || 'TN Solar Agri Ltd'],
         ['Bank:', settings?.bank_name || 'AIB'],
         ['BIC/SWIFT:', settings?.bic || 'AIBK IE 2D'],
         ['IBAN:', settings?.iban || 'IE84 AIBK 9340 7031 9910 99'],
@@ -269,8 +269,8 @@ export const generateInvoice = async (
             return [
                 String(item.description),
                 String(item.quantity),
-                `€${up.toFixed(2)}`,
-                `€${total.toFixed(2)}`,
+                `₹${up.toFixed(2)}`,
+                `₹${total.toFixed(2)}`,
             ];
         }),
         theme: 'plain',
@@ -299,11 +299,11 @@ export const generateInvoice = async (
     y = tableBottom + 15;
     doc.setFontSize(9);
     const totals: [string, string][] = [
-        ['Total Net', `€${netAmount.toFixed(2)}`],
-        ['Total Discount', '€0.00'],
-        ['Total VAT', `€${vatAmount.toFixed(2)}`],
-        ['Total Gross', `€${totalAmount.toFixed(2)}`],
-        ['Less Deposit', '€0.00'],
+        ['Total Net', `₹${netAmount.toFixed(2)}`],
+        ['Total Discount', '₹0.00'],
+        ['Total VAT', `₹${vatAmount.toFixed(2)}`],
+        ['Total Gross', `₹${totalAmount.toFixed(2)}`],
+        ['Less Deposit', '₹0.00'],
     ];
     totals.forEach(([label, val]) => {
         doc.setFont('helvetica', 'normal');
@@ -322,7 +322,7 @@ export const generateInvoice = async (
     doc.setFontSize(13);
     doc.setTextColor(0, 0, 0);
     doc.text('Total Payable', totalsX, totalPayableY);
-    doc.text(`€${totalAmount.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
+    doc.text(`₹${totalAmount.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
 
     // VAT Analysis on left at same y
     addVATAnalysis(doc, vatRate, netAmount, vatAmount, totalPayableY);
@@ -381,8 +381,8 @@ export const generateQuote = async (
         body: items.map(i => [
             String(i.description),
             String(i.quantity),
-            `€${i.unit_price.toFixed(2)}`,
-            `€${(i.quantity * i.unit_price).toFixed(2)}`,
+            `₹${i.unit_price.toFixed(2)}`,
+            `₹${(i.quantity * i.unit_price).toFixed(2)}`,
         ]),
         theme: 'plain',
         styles: { fontSize: 10, cellPadding: 2 },
@@ -413,11 +413,11 @@ export const generateQuote = async (
     const vatAmount = quote.vat_amount || (quote.total_amount - quote.subtotal);
 
     const totals: [string, string][] = [
-        ['Total Net', `€${quote.subtotal.toFixed(2)}`],
-        ['Total Discount', '€0.00'],
-        ['Total VAT', `€${vatAmount.toFixed(2)}`],
-        ['Total Gross', `€${quote.total_amount.toFixed(2)}`],
-        ['Less Deposit', '€0.00'],
+        ['Total Net', `₹${quote.subtotal.toFixed(2)}`],
+        ['Total Discount', '₹0.00'],
+        ['Total VAT', `₹${vatAmount.toFixed(2)}`],
+        ['Total Gross', `₹${quote.total_amount.toFixed(2)}`],
+        ['Less Deposit', '₹0.00'],
     ];
 
     totals.forEach(([label, val]) => {
@@ -437,7 +437,7 @@ export const generateQuote = async (
     doc.setFontSize(13);
     doc.setTextColor(0, 0, 0);
     doc.text('Quote Total', totalsX, totalPayableY);
-    doc.text(`€${quote.total_amount.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
+    doc.text(`₹${quote.total_amount.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
 
     // VAT Analysis on left at same y
     const vatRate = quote.vat_rate || 13.5;
@@ -498,10 +498,10 @@ export const generateStatement = async (
         body: items && items.length > 0 ? items.map(item => [
             String(item?.description || 'N/A'),
             String(item?.quantity || 1),
-            `€${(item?.unit_price || 0).toFixed(2)}`,
-            `€${(item?.total || item?.quantity * item?.unit_price || 0).toFixed(2)}`,
+            `₹${(item?.unit_price || 0).toFixed(2)}`,
+            `₹${(item?.total || item?.quantity * item?.unit_price || 0).toFixed(2)}`,
         ]) : [
-            ['Monthly Services & Account Balance', '1', `€${(statement.total_amount || 0).toFixed(2)}`, `€${(statement.total_amount || 0).toFixed(2)}`]
+            ['Monthly Services & Account Balance', '1', `₹${(statement.total_amount || 0).toFixed(2)}`, `₹${(statement.total_amount || 0).toFixed(2)}`]
         ],
         theme: 'plain',
         styles: { fontSize: 10, cellPadding: 2 },
@@ -538,11 +538,11 @@ export const generateStatement = async (
     doc.setFontSize(9);
 
     const totals: [string, string][] = [
-        ['Total Net', `€${netAmount.toFixed(2)}`],
-        ['Total Discount', '€0.00'],
-        ['Total VAT', `€${vatAmount.toFixed(2)}`],
-        ['Total Gross', `€${subtotal.toFixed(2)}`],
-        ['Less Deposit', '€0.00'],
+        ['Total Net', `₹${netAmount.toFixed(2)}`],
+        ['Total Discount', '₹0.00'],
+        ['Total VAT', `₹${vatAmount.toFixed(2)}`],
+        ['Total Gross', `₹${subtotal.toFixed(2)}`],
+        ['Less Deposit', '₹0.00'],
     ];
 
     totals.forEach(([label, val]) => {
@@ -562,7 +562,7 @@ export const generateStatement = async (
     doc.setFontSize(13);
     doc.setTextColor(0, 0, 0);
     doc.text('Statement Total', totalsX, totalPayableY);
-    doc.text(`€${subtotal.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
+    doc.text(`₹${subtotal.toFixed(2)}`, pageWidth - RIGHT, totalPayableY, { align: 'right' });
 
     // VAT Analysis on left at same y
     addVATAnalysis(doc, vatRate, netAmount, vatAmount, totalPayableY);
@@ -604,6 +604,7 @@ export const generateOneTimeInvoice = async (
         created_at: new Date().toISOString(),
         account_balance: 0,
         payment_terms: 'On Receipt',
+        status: 'active'
     };
 
     let y = await addHeader(doc, 'Tax Invoice', invNum, 'UNPAID');
@@ -633,8 +634,8 @@ export const generateOneTimeInvoice = async (
         body: items.map(item => [
             String(item.description),
             String(item.quantity),
-            `€${Number(item.unitPrice).toFixed(2)}`,
-            `€${(item.quantity * item.unitPrice).toFixed(2)}`,
+            `₹${Number(item.unitPrice).toFixed(2)}`,
+            `₹${(item.quantity * item.unitPrice).toFixed(2)}`,
         ]),
         theme: 'plain',
         styles: { fontSize: 10, cellPadding: 2 },
@@ -654,7 +655,7 @@ export const generateOneTimeInvoice = async (
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     doc.text('Total Payable:', pageWidth - RIGHT - 60, y);
-    doc.text(`€${totalAmount.toFixed(2)}`, pageWidth - RIGHT, y, { align: 'right' });
+    doc.text(`₹${totalAmount.toFixed(2)}`, pageWidth - RIGHT, y, { align: 'right' });
 
     addBankDetails(doc, doc.internal.pageSize.height - 55, settings);
     addFooter(doc);
@@ -695,7 +696,7 @@ export const generateJobReport = async (
         { label: 'Engineer', value: String(job.engineer_name || 'Unassigned') },
         { label: 'VAT No.', value: settings?.vat_reg_number || 'IE 8252470Q' },
         { label: 'Service', value: String(job.service_type || 'General') },
-        { label: 'Machine/Serial', value: 'DeLaval VMS V300' }, // Match UI summary
+        { label: 'System Type', value: 'Solar PV Array' }, // Updated from DeLaval VMS
     ];
     y = addInfoGrid(doc, infoData, y);
 

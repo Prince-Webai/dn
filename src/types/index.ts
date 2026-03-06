@@ -9,6 +9,8 @@ export interface Customer {
     phone?: string;
     account_balance: number;
     payment_terms: string;
+    notes?: string;
+    status: 'active' | 'inactive' | 'lead';
 }
 
 export interface InventoryItem {
@@ -158,6 +160,20 @@ export interface ServiceReport {
     // Joins
     jobs?: Job;
     customers?: Customer;
+}
+
+export interface Lead {
+    id: string;
+    created_at: string;
+    name: string;
+    email?: string;
+    phone?: string;
+    source?: string;
+    status: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted';
+    notes?: string;
+    is_converted?: boolean;
+    converted_at?: string;
+    assigned_to?: string;
 }
 
 export * from './report';

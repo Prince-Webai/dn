@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Job, Invoice, Customer, InventoryItem, Settings } from '../types';
+import { Job, Invoice, Customer, InventoryItem, Settings, Lead } from '../types';
 
 // Helper to check if Supabase is configured
 const isSupabaseConfigured = () => {
@@ -307,6 +307,59 @@ export const dataService = {
         } catch (error) {
             console.error('Error recalculating bounds:', error);
             return 0;
+        }
+    },
+
+    async getLeads(): Promise<Lead[]> {
+        if (!isSupabaseConfigured()) return [];
+        try {
+            const { data, error } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+            if (error) throw error;
+            return data || [];
+        } catch (error) {
+            console.error('Error fetching leads:', error);
+            return [];
+        }
+    },
+
+    async addLead(lead: Partial<Lead>): Promise<{ data: Lead | null, error: any }> {
+        if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
+        return await supabase.from('leads').insert([lead]).select().single();
+    },
+
+    async updateLead(id: string, updates: Partial<Lead>): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+        return await supabase.from('leads').update(updates).eq('id', id);
+    },
+
+    async deleteLead(id: string): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+        return await supabase.from('leads').delete().eq('id', id);
+    },
+
+    async convertLeadToCustomer(lead: Lead): Promise<{ data: Customer | null, error: any }> {
+        if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
+
+        try {
+            // 1. Create Customer
+            const newCustomer: Partial<Customer> = {
+                name: lead.name,
+                email: lead.email,
+                phone: lead.phone,
+                notes: `Converted from lead source: ${lead.source}. Original notes: ${lead.notes || ''}`,
+                status: 'active'
+            };
+
+            const { data: customer, error: customerError } = await supabase.from('customers').insert([newCustomer]).select().single();
+            if (customerError) throw customerError;
+
+            // 2. Mark Lead as Converted
+            await supabase.from('leads').update({ status: 'converted', is_converted: true, converted_at: new Date().toISOString() }).eq('id', lead.id);
+
+            return { data: customer, error: null };
+        } catch (error) {
+            console.error('Error converting lead to customer:', error);
+            return { data: null, error };
         }
     }
 

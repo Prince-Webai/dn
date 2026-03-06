@@ -121,10 +121,10 @@ const Customers = () => {
             }
 
             const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-            const nameIdx = headers.findIndex(h => h.includes('name') || h.includes('company') || h.includes('farm'));
+            const nameIdx = headers.findIndex(h => h.includes('name') || h.includes('company') || h.includes('site') || h.includes('installation'));
             const emailIdx = headers.findIndex(h => h.includes('email'));
             const phoneIdx = headers.findIndex(h => h.includes('phone') || h.includes('tel'));
-            const addressIdx = headers.findIndex(h => h.includes('address') || h.includes('location'));
+            const addressIdx = headers.findIndex(h => h.includes('address') || h.includes('location') || h.includes('site'));
             const contactIdx = headers.findIndex(h => h.includes('contact'));
 
             if (nameIdx === -1) {
@@ -392,7 +392,7 @@ const Customers = () => {
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 overflow-hidden">
                         <button
                             onClick={() => setSelectedCustomer(null)}
-                            className="flex items-center gap-2 text-slate-500 hover:text-delaval-blue transition-colors font-medium"
+                            className="flex items-center gap-2 text-slate-500 hover:text-blue-600 transition-colors font-medium"
                         >
                             <ArrowLeft size={20} />
                             Back to Customers
@@ -440,8 +440,8 @@ const Customers = () => {
                                 <div className="text-right flex flex-col items-end gap-2">
                                     <div>
                                         <div className="text-sm text-slate-500 mb-1">Account Balance</div>
-                                        <div className={`text-4xl font-extrabold mb-4 ${selectedCustomer.account_balance > 0 ? 'text-delaval-blue' : 'text-green-600'}`}>
-                                            €{selectedCustomer.account_balance.toLocaleString()}
+                                        <div className={`text-4xl font-extrabold mb-4 ${selectedCustomer.account_balance > 0 ? 'text-blue-600' : 'text-green-600'}`}>
+                                            ₹{selectedCustomer.account_balance.toLocaleString()}
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
@@ -508,12 +508,12 @@ const Customers = () => {
                         <div className="section-card">
                             <div className="border-b border-slate-200 px-6">
                                 <div className="flex gap-8 overflow-x-auto">
-                                    {['service-history', 'parts-history', 'invoices', 'quotes', 'statements', 'service-reports'].map((tab) => (
+                                    {['service-history', 'parts-history', 'invoices', 'quotes', 'statements'].map((tab) => (
                                         <button
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
                                             className={`py-4 text-sm font-bold border-b-2 transition-colors whitespace-nowrap capitalize
-                                            ${activeTab === tab ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                                            ${activeTab === tab ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                                         >
                                             {tab.replace('-', ' ')}
                                         </button>
@@ -563,7 +563,7 @@ const Customers = () => {
                                                                 </span>
                                                             </td>
                                                             <td className="px-6 py-4 text-right">
-                                                                <Link to={`/jobs/${job.id}`} className="inline-block p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="View Job Details">
+                                                                <Link to={`/jobs/${job.id}`} className="inline-block p-1 text-slate-400 hover:text-blue-600 transition-colors" title="View Job Details">
                                                                     <Eye size={18} />
                                                                 </Link>
                                                             </td>
@@ -637,10 +637,10 @@ const Customers = () => {
                                                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${inv.status === 'paid' ? 'bg-green-100 text-green-800' : inv.status === 'overdue' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600'}`}>{inv.status}</span>
                                                         </td>
                                                         <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                                            <button onClick={() => handlePreviewInvoice(inv, 'preview')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Preview PDF">
+                                                            <button onClick={() => handlePreviewInvoice(inv, 'preview')} className="p-1 text-slate-400 hover:text-blue-600 transition-colors" title="Preview PDF">
                                                                 <Eye size={18} />
                                                             </button>
-                                                            <button onClick={() => handlePreviewInvoice(inv, 'download')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Download PDF">
+                                                            <button onClick={() => handlePreviewInvoice(inv, 'download')} className="p-1 text-slate-400 hover:text-blue-600 transition-colors" title="Download PDF">
                                                                 <Download size={18} />
                                                             </button>
                                                         </td>
@@ -678,10 +678,10 @@ const Customers = () => {
                                                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${quote.status === 'accepted' ? 'bg-green-100 text-green-800' : quote.status === 'rejected' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600'}`}>{quote.status}</span>
                                                         </td>
                                                         <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                                            <button onClick={() => handlePreviewQuote(quote, 'preview')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Preview PDF">
+                                                            <button onClick={() => handlePreviewQuote(quote, 'preview')} className="p-1 text-slate-400 hover:text-blue-600 transition-colors" title="Preview PDF">
                                                                 <Eye size={18} />
                                                             </button>
-                                                            <button onClick={() => handlePreviewQuote(quote, 'download')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Download PDF">
+                                                            <button onClick={() => handlePreviewQuote(quote, 'download')} className="p-1 text-slate-400 hover:text-blue-600 transition-colors" title="Download PDF">
                                                                 <Download size={18} />
                                                             </button>
                                                         </td>
@@ -714,10 +714,10 @@ const Customers = () => {
                                                         <td className="px-6 py-4 font-bold text-slate-900">{stmt.statement_number}</td>
                                                         <td className="px-6 py-4 font-bold text-slate-900">€{stmt.total_amount.toLocaleString()}</td>
                                                         <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                                            <button onClick={() => handlePreviewStatement(stmt, 'preview')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Preview PDF">
+                                                            <button onClick={() => handlePreviewStatement(stmt, 'preview')} className="p-1 text-slate-400 hover:text-blue-600 transition-colors" title="Preview PDF">
                                                                 <Eye size={18} />
                                                             </button>
-                                                            <button onClick={() => handlePreviewStatement(stmt, 'download')} className="p-1 text-slate-400 hover:text-delaval-blue transition-colors" title="Download PDF">
+                                                            <button onClick={() => handlePreviewStatement(stmt, 'download')} className="p-1 text-slate-400 hover:text-blue-600 transition-colors" title="Download PDF">
                                                                 <Download size={18} />
                                                             </button>
                                                         </td>
@@ -728,19 +728,7 @@ const Customers = () => {
                                     </div>
                                 )}
 
-                                {activeTab === 'service-reports' && (
-                                    <div className="p-12 text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl m-2">
-                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mx-auto mb-4">
-                                            <FileText size={32} className="text-slate-400" />
-                                        </div>
-                                        <h3 className="text-lg font-bold text-slate-800">Service Reports</h3>
-                                        <p className="text-slate-500 mt-1 max-w-sm mx-auto">Upload and manage service reports for this customer.</p>
-                                        <button className="mt-6 px-6 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2 mx-auto disabled:opacity-50" title="Coming Soon">
-                                            <Upload size={18} />
-                                            Upload Report (Coming Soon)
-                                        </button>
-                                    </div>
-                                )}
+                                {/* Removed dairy-specific service reports tab */}
                             </div>
                         </div>
                     </div>
@@ -749,7 +737,7 @@ const Customers = () => {
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                             <div>
                                 <h1 className="text-2xl font-bold font-display text-slate-900">Customer Accounts</h1>
-                                <p className="text-slate-500">Manage farm accounts and contact details</p>
+                                <p className="text-slate-500">Manage customer sites and contact details</p>
                             </div>
                             <div className="flex gap-2">
                                 {selectedIds.size > 0 && (
@@ -782,7 +770,7 @@ const Customers = () => {
                                         setNewCustomer({ name: '', address: '', contact_person: '', email: '', phone: '', payment_terms: 'Net 30' });
                                         setIsModalOpen(true);
                                     }}
-                                    className="flex items-center gap-2 bg-delaval-blue hover:bg-delaval-dark-blue text-white px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
                                 >
                                     <Plus size={20} />
                                     Add Customer
@@ -796,8 +784,8 @@ const Customers = () => {
                                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                                     <input
                                         type="text"
-                                        placeholder="Search customers by name, location, or account number..."
-                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all"
+                                        placeholder="Search sites by name, location, or account number..."
+                                        className="w-full pl-10 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                     />
@@ -1105,7 +1093,7 @@ const Customers = () => {
                 <form onSubmit={handleSaveCustomer} className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Company / Farm Name</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Company / Customer Name</label>
                             <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
                         </div>
                         <div className="col-span-2">

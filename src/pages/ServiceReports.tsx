@@ -147,7 +147,7 @@ const ServiceReports: React.FC = () => {
                                                         {(report as any).jobs?.customers?.name || (report as any).customers?.name || '—'}
                                                     </div>
                                                     <div className="text-[10px] text-slate-400 font-bold uppercase tracking-tight flex items-center gap-1 mt-0.5">
-                                                        <User size={10} /> {report.tester || 'Tony Condon'}
+                                                        <User size={10} /> {report.tester || 'TN Solar Manager'}
                                                     </div>
                                                 </div>
                                             </td>

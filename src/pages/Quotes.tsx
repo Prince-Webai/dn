@@ -189,7 +189,7 @@ const Quotes = () => {
                                         <td className="px-6 py-4 text-sm text-slate-600">{quote.description}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600">{new Date(quote.created_at).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600">{quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : 'N/A'}</td>
-                                        <td className="px-6 py-4 font-bold text-slate-900">€{quote.total_amount.toLocaleString()}</td>
+                                        <td className="px-6 py-4 font-bold text-slate-900">₹{quote.total_amount.toLocaleString()}</td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium uppercase ${getStatusStyle(quote.status)}`}>
                                                 {quote.status}

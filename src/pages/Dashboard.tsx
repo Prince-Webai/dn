@@ -1,4 +1,4 @@
-import { Bell, Plug as Plus, Users, FileText, Calendar, ArrowUpRight, Filter, Euro, Wrench, AlertCircle, Package } from 'lucide-react';
+import { Bell, Plug as Plus, Users, FileText, Calendar, ArrowUpRight, Filter, CircleDollarSign as RupeeIcon, Wrench, AlertCircle, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Job } from '../types';
@@ -177,19 +177,19 @@ const Dashboard = () => {
 
     const formatCurrency = (value: number) => {
         if (value >= 1000000) {
-            return `€${(value / 1000000).toFixed(1)}M`;
+            return `₹${(value / 1000000).toFixed(1)}M`;
         }
         if (value >= 1000) {
-            return `€${(value / 1000).toFixed(1)}K`;
+            return `₹${(value / 1000).toFixed(1)}K`;
         }
-        return `€${value.toLocaleString()}`;
+        return `₹${value.toLocaleString()}`;
     };
 
     const statCards = [
         {
             label: 'Total Revenue',
             value: formatCurrency(stats.totalRevenue),
-            icon: Euro,
+            icon: RupeeIcon,
             color: 'bg-[#F0FDF4] text-[#16A34A]',
             change: filterType === 'all' ? 'All Time' : filterType === 'year' ? 'This Year' : filterType === 'month' ? 'This Month' : 'Custom Period',
             changeType: 'positive',
@@ -198,7 +198,7 @@ const Dashboard = () => {
         {
             label: 'Outstanding Balance',
             value: formatCurrency(stats.outstandingBalance),
-            icon: Euro,
+            icon: RupeeIcon,
             color: 'bg-[#E6F0FF] text-[#0051A5]',
             change: `${stats.overdueInvoices} overdue`,
             changeType: stats.overdueInvoices > 0 ? 'negative' : 'positive',
@@ -234,11 +234,11 @@ const Dashboard = () => {
     ];
 
     const quickActions = [
-        { icon: Plus, title: 'New Job', desc: 'Log a call-out', path: '/jobs', color: 'bg-blue-50 text-blue-600', mColor: 'bg-[#E6F0FF] text-[#0051A5]' },
-        { icon: Wrench, title: 'Parts', desc: 'Search DeLaval', path: '/inventory', color: 'bg-green-50 text-green-600', mColor: 'bg-[#FFF3E6] text-[#FF6B00]' },
-        { icon: Users, title: 'Customers', desc: 'Farms & contacts', path: '/customers', color: 'bg-delaval-light-blue text-delaval-blue', mColor: 'bg-[#E6F9F3] text-[#00A862]' },
+        { icon: Plus, title: 'New Job', desc: 'Log installation', path: '/jobs', color: 'bg-blue-50 text-blue-600', mColor: 'bg-[#E6F0FF] text-[#0051A5]' },
+        { icon: Wrench, title: 'Inventory', desc: 'Solar parts', path: '/inventory', color: 'bg-green-50 text-green-600', mColor: 'bg-[#FFF3E6] text-[#FF6B00]' },
+        { icon: Users, title: 'Customers', desc: 'Sites & contacts', path: '/customers', color: 'bg-blue-50 text-blue-600', mColor: 'bg-[#E6F9F3] text-[#00A862]' },
         { icon: FileText, title: 'All Jobs', desc: 'Full list', path: '/jobs', color: 'bg-orange-50 text-orange-600', mColor: 'bg-[#FFE6E6] text-[#DC3545]' },
-        { icon: Calendar, title: 'Monthly Invoice', desc: 'Bill customer account', path: '/invoices', color: 'bg-indigo-50 text-indigo-600', mColor: 'bg-indigo-50 text-indigo-600' },
+        { icon: Calendar, title: 'Monthly Invoice', desc: 'Bill site account', path: '/invoices', color: 'bg-indigo-50 text-indigo-600', mColor: 'bg-indigo-50 text-indigo-600' },
     ];
 
     // Format date for mobile header
@@ -326,10 +326,10 @@ const Dashboard = () => {
                     {quickActions.map((action, index) => {
                         const Icon = action.icon;
                         return (
-                            <Link key={index} to={action.path} className="group relative bg-white rounded-xl p-6 shadow-sm border-2 border-transparent hover:border-delaval-blue transition-all hover:-translate-y-1 hover:shadow-lg overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-br from-delaval-light-blue to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                            <Link key={index} to={action.path} className="group relative bg-white rounded-xl p-6 shadow-sm border-2 border-transparent hover:border-blue-600 transition-all hover:-translate-y-1 hover:shadow-lg overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                                 <div className="relative z-10">
-                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 text-delaval-blue bg-[#E6F0FF]`}>
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 text-blue-600 bg-blue-50`}>
                                         <Icon size={20} />
                                     </div>
                                     <div className="font-bold text-slate-900 mb-1">{action.title}</div>
@@ -345,10 +345,10 @@ const Dashboard = () => {
                     <div className="flex justify-between items-center p-6 border-b border-slate-100">
                         <h2 className="text-xl font-bold font-display text-slate-900">Recent Jobs</h2>
                         <div className="flex gap-3">
-                            <Link to="/jobs" className="px-4 py-2 border border-slate-200 rounded-lg text-slate-700 font-semibold text-sm hover:bg-slate-50 hover:text-delaval-blue transition-colors">
+                            <Link to="/jobs" className="px-4 py-2 border border-slate-200 rounded-lg text-slate-700 font-semibold text-sm hover:bg-slate-50 hover:text-blue-600 transition-colors">
                                 View All
                             </Link>
-                            <Link to="/jobs" className="px-4 py-2 bg-gradient-to-br from-delaval-blue to-delaval-dark-blue text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                            <Link to="/jobs" className="px-4 py-2 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
                                 + New Job
                             </Link>
                         </div>
@@ -373,7 +373,7 @@ const Dashboard = () => {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="font-bold text-slate-900">#{job.job_number}</div>
-                                                <Link to={`/jobs/${job.id}`} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-delaval-blue transition-colors">
+                                                <Link to={`/jobs/${job.id}`} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-blue-600 transition-colors">
                                                     <ArrowUpRight size={16} />
                                                 </Link>
                                             </div>
@@ -425,7 +425,7 @@ const Dashboard = () => {
                     <h1 className="text-2xl font-bold mb-1 tracking-tight">
                         Good morning, {(user?.user_metadata?.name || user?.email?.split('@')[0])?.split(' ')[0] || 'Seán'} 👋
                     </h1>
-                    <p className="text-[#a0c5ea] text-sm font-medium">Condon Dairy Services</p>
+                    <p className="text-[#a0c5ea] text-sm font-medium">TN Solar Services</p>
                 </div>
 
                 {/* Overlapping Stats Bar */}
@@ -480,7 +480,7 @@ const Dashboard = () => {
                         ) : recentJobs.map((job) => (
                             <Link key={job.id} to={`/jobs/${job.id}`} className="block bg-white border border-slate-100 rounded-[1.25rem] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] active:scale-[0.99] transition-transform">
                                 <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-slate-900 text-base leading-tight pr-2">{job.customers?.name || 'Unknown Farm'}</h3>
+                                    <h3 className="font-bold text-slate-900 text-base leading-tight pr-2">{job.customers?.name || 'Unknown Site'}</h3>
                                     <span className={`inline-flex whitespace-nowrap px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide
                                         ${job.status === 'completed' ? 'bg-[#E6F9F3] text-[#00A862]' :
                                             job.status === 'in_progress' ? 'bg-[#FFF3E6] text-[#FF6B00]' :
@@ -489,9 +489,9 @@ const Dashboard = () => {
                                     </span>
                                 </div>
                                 <p className="text-[#334155] text-sm mb-3">
-                                    {job.service_type === 'Emergency Repair' ? 'Milking machine — VMS V300' :
-                                        job.service_type === 'Routine Maintenance' ? 'Annual service' :
-                                            'Cluster replacement'}
+                                    {job.service_type === 'Emergency Repair' ? 'Solar PV System — Inverter issue' :
+                                        job.service_type === 'Routine Maintenance' ? 'Annual panel cleaning' :
+                                            'Controller check'}
                                 </p>
                                 <div className="flex items-center text-[#64748B] text-xs font-medium">
                                     <span>{job.date_scheduled ? new Date(job.date_scheduled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '11:30'}</span>
@@ -510,7 +510,7 @@ const Dashboard = () => {
                         <div className="relative w-[320px] max-w-full h-full bg-[#f8fbfa] shadow-2xl flex flex-col animate-slide-in-right">
                             <div className="bg-white px-5 py-6 border-b border-slate-100 flex justify-between items-center shadow-sm">
                                 <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
-                                    <Bell size={20} className="text-delaval-blue" />
+                                    <Bell size={20} className="text-blue-600" />
                                     Notifications
                                 </h3>
                                 <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-400 hover:text-slate-600 p-2">

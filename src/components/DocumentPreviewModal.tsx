@@ -87,9 +87,9 @@ const DocumentPreviewModal: React.FC<DocumentPreviewModalProps> = ({
         }
 
         // Fallback to mailto if webhook fails or is not configured
-        const subject = encodeURIComponent(`Your ${documentType} from Condon Dairy: ${documentNumber}`);
+        const subject = encodeURIComponent(`Your ${documentType} from TN Solar: ${documentNumber}`);
         const body = encodeURIComponent(
-            `Hi ${customerName},\n\nPlease find attached your ${documentType} (${documentNumber}) for the amount of ${amount}.\n\nIf you have any questions, feel free to reply to this email.\n\nBest regards,\nCondon Dairy Team`
+            `Hi ${customerName},\n\nPlease find attached your ${documentType} (${documentNumber}) for the amount of ${amount}.\n\nIf you have any questions, feel free to reply to this email.\n\nBest regards,\nTN Solar Team`
         );
         window.location.href = `mailto:${customerEmail}?subject=${subject}&body=${body}`;
 

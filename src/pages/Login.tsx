@@ -104,7 +104,7 @@ const Login = () => {
             <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden relative z-10 animate-in fade-in zoom-in duration-300">
                 <div className="p-8 pb-6 text-center">
                     <div className="w-16 h-16 bg-[#0051A5] text-white rounded-xl flex items-center justify-center font-extrabold text-2xl shadow-lg mx-auto mb-4">
-                        CD
+                        TN
                     </div>
                     <h1 className="text-2xl font-bold font-display text-slate-900">
                         {view === 'login' && 'Welcome Back'}
@@ -112,7 +112,7 @@ const Login = () => {
                         {view === 'verify_otp' && 'Enter Verification Code'}
                     </h1>
                     <p className="text-slate-500 mt-2">
-                        {view === 'login' && 'Sign in to Condon Dairy Management'}
+                        {view === 'login' && 'Sign in to TN Solar Management'}
                         {view === 'forgot_password' && 'Enter your email to receive an OTP code'}
                         {view === 'verify_otp' && 'Check your email for the 6-digit OTP code'}
                     </p>
@@ -225,6 +225,7 @@ const Login = () => {
                     <button
                         type="button"
                         onClick={() => {
+                            localStorage.setItem('dev_bypass', 'true');
                             showToast('Bypassing login for dev testing', 'success');
                             navigate('/inventory');
                         }}

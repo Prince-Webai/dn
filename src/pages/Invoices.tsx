@@ -367,7 +367,7 @@ const Invoices = () => {
         }
 
         const subject = `Invoice Reminder: #${invoice.invoice_number}`;
-        const body = `Dear ${invoice.customers.name},\n\nThis is a reminder for Invoice #${invoice.invoice_number} due for €${(invoice.total_amount - (invoice.amount_paid || 0)).toFixed(2)}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'Condon Dairy'}`;
+        const body = `Dear ${invoice.customers.name},\n\nThis is a reminder for Invoice #${invoice.invoice_number} due for ₹${(invoice.total_amount - (invoice.amount_paid || 0)).toFixed(2)}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'TN Solar'}`;
 
         window.location.href = `mailto:${invoice.customers.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     };
@@ -471,7 +471,7 @@ const Invoices = () => {
                                             <td className="px-6 py-4 text-sm text-slate-600">{inv.date_issued}</td>
                                             <td className="px-6 py-4 font-bold text-slate-900">
                                                 <div>
-                                                    <span>€{inv.total_amount.toFixed(2)}</span>
+                                                    <span>₹{inv.total_amount.toFixed(2)}</span>
                                                     {/* Payment progress */}
                                                     <div className="mt-1">
                                                         <div className="w-full bg-slate-200 rounded-full h-1.5">
@@ -481,9 +481,9 @@ const Invoices = () => {
                                                             />
                                                         </div>
                                                         <div className="flex justify-between mt-0.5">
-                                                            <span className="text-[10px] text-green-600 font-medium">€{(inv.amount_paid || 0).toFixed(2)} paid</span>
+                                                            <span className="text-[10px] text-green-600 font-medium">₹{(inv.amount_paid || 0).toFixed(2)} paid</span>
                                                             {(inv.amount_paid || 0) < inv.total_amount && (
-                                                                <span className="text-[10px] text-red-500 font-medium">€{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} due</span>
+                                                                <span className="text-[10px] text-red-500 font-medium">₹{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} due</span>
                                                             )}
                                                         </div>
                                                     </div>
@@ -515,7 +515,7 @@ const Invoices = () => {
                                                                     <button type="button" onClick={() => setPaymentAmount((inv.total_amount - (inv.amount_paid || 0)).toFixed(2))} className="px-3 py-1.5 bg-violet-50 text-violet-600 font-bold rounded-lg text-xs hover:bg-violet-100 transition-colors tracking-wide h-[34px]">FULL</button>
                                                                     <button type="button" onClick={() => setPaymentAmount(((inv.total_amount - (inv.amount_paid || 0)) * 0.5).toFixed(2))} className="px-3 py-1.5 bg-slate-50 text-slate-600 font-bold rounded-lg text-xs hover:bg-slate-100 transition-colors tracking-wide h-[34px]">50%</button>
                                                                     <div className="relative flex items-center ml-1">
-                                                                        <span className="absolute left-3 text-slate-400 font-bold text-sm">€</span>
+                                                                        <span className="absolute left-3 text-slate-400 font-bold text-sm">₹</span>
                                                                         <input
                                                                             type="number"
                                                                             value={paymentAmount}
@@ -664,7 +664,7 @@ const Invoices = () => {
                                             <td className="px-6 py-4 text-sm text-slate-600">
                                                 {stmt.jobs ? `Job #${stmt.jobs.job_number}` : 'N/A'}
                                             </td>
-                                            <td className="px-6 py-4 font-bold text-slate-900">€{stmt.total_amount.toFixed(2)}</td>
+                                            <td className="px-6 py-4 font-bold text-slate-900">₹{stmt.total_amount.toFixed(2)}</td>
                                             <td className="px-6 py-4">
                                                 <div className="flex gap-2">
                                                     <button

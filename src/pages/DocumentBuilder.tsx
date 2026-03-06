@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer, InventoryItem } from '../types';
 import { useToast } from '../context/ToastContext';
-import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download, Euro } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download, CircleDollarSign as RupeeIcon } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import { generateInvoice, generateQuote } from '../lib/pdfGenerator';
 import { dataService } from '../services/dataService';
@@ -541,11 +541,11 @@ const DocumentBuilder = () => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-2">
                                         <div className="form-group">
                                             <label className="block text-xs font-bold text-slate-500 mb-1">Customer Name *</label>
-                                            <input type="text" required={customerMode === 'new'} placeholder="Farm or person name" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+                                            <input type="text" required={customerMode === 'new'} placeholder="Customer or person name" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
                                         </div>
                                         <div className="form-group">
                                             <label className="block text-xs font-bold text-slate-500 mb-1">Email</label>
-                                            <input type="email" placeholder="example@farm.com" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
+                                            <input type="email" placeholder="example@mail.com" className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-delaval-blue/20 outline-none" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
                                         </div>
                                         <div className="form-group">
                                             <label className="block text-xs font-bold text-slate-500 mb-1">Phone</label>
@@ -577,7 +577,7 @@ const DocumentBuilder = () => {
                                         ]}
                                         value={vatRate.toString()}
                                         onChange={(val) => setVatRate(parseFloat(val))}
-                                        icon={<Euro size={16} />}
+                                        icon={<RupeeIcon size={16} />}
                                     />
                                 </div>
                             </div>
@@ -632,7 +632,7 @@ const DocumentBuilder = () => {
                                             <SearchableSelect
                                                 options={inventory.map(prod => ({
                                                     value: prod.name,
-                                                    label: `${prod.sku ? `[${prod.sku}] ` : ''}${prod.name} (€${prod.sell_price.toFixed(2)})`
+                                                    label: `${prod.sku ? `[${prod.sku}] ` : ''}${prod.name} (₹${prod.sell_price.toFixed(2)})`
                                                 }))}
                                                 value={item.description} // Using description as value is intentional to support free-text, handled in onChange
                                                 onChange={(val) => {
@@ -661,7 +661,7 @@ const DocumentBuilder = () => {
                                             required
                                         />
                                         <div className="col-span-3 relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -694,15 +694,15 @@ const DocumentBuilder = () => {
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-slate-300 text-sm">
                                     <span>Subtotal</span>
-                                    <span className="font-mono">€{docSubtotal.toFixed(2)}</span>
+                                    <span className="font-mono">₹{docSubtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-slate-300 text-sm">
                                     <span>VAT (13.5%)</span>
-                                    <span className="font-mono">€{docVat.toFixed(2)}</span>
+                                    <span className="font-mono">₹{docVat.toFixed(2)}</span>
                                 </div>
                                 <div className="pt-3 border-t border-slate-700 flex justify-between items-end">
                                     <span className="text-sm font-bold text-white">Total Amount</span>
-                                    <span className="text-2xl font-bold font-mono text-blue-400">€{docTotal.toFixed(2)}</span>
+                                    <span className="text-2xl font-bold font-mono text-blue-400">₹{docTotal.toFixed(2)}</span>
                                 </div>
                             </div>
 

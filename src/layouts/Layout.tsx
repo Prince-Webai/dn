@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, Kanban, Settings as SettingsIcon, ClipboardList } from 'lucide-react';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, CircleDollarSign as RupeeIcon, PieChart, Kanban, Settings as SettingsIcon, FileCheck } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
@@ -39,6 +39,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
                 { icon: Wrench, label: 'Jobs & Services', path: '/jobs' },
                 { icon: Kanban, label: 'Pipeline', path: '/pipeline' },
+                { icon: Users, label: 'Leads (New)', path: '/leads' },
                 { icon: Users, label: 'Customers', path: '/customers' },
             ]
         },
@@ -47,7 +48,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             items: [
                 { icon: FileText, label: 'Invoices', path: '/invoices' },
                 { icon: FileCheck, label: 'Quotes', path: '/quotes' },
-                { icon: Euro, label: 'Payments', path: '/payments' },
+                { icon: RupeeIcon, label: 'Payments', path: '/payments' },
             ]
         },
         {
@@ -59,7 +60,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         {
             title: 'Reports & Admin',
             items: [
-                { icon: ClipboardList, label: 'Service Reports', path: '/service-reports' },
                 ...(user?.user_metadata?.role !== 'Engineer' ? [
                     { icon: PieChart, label: 'Analytics', path: '/reports' },
                     { icon: Users, label: 'Team & Engineers', path: '/team' },
@@ -72,8 +72,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     const mobileNavItems = [
         { icon: LayoutDashboard, label: 'Home', path: '/' },
         { icon: FileText, label: 'Jobs', path: '/jobs' },
+        { icon: Users, label: 'Leads', path: '/leads' },
         { icon: Users, label: 'Customers', path: '/customers' },
-        { icon: ClipboardList, label: 'Reports', path: '/service-reports' },
     ];
 
     const closeSidebar = () => setIsSidebarOpen(false);
@@ -88,7 +88,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <div className="flex items-center">
                         <img
                             src={logoImg}
-                            alt="Tony Condon Dairy Services"
+                            alt="TN Solar Services"
                             className="h-[65px] w-auto mix-blend-multiply transition-transform duration-300 hover:scale-105"
                         />
                     </div>
@@ -147,6 +147,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                                 <nav className="space-y-1">
                                     {section.items.map((item) => {
                                         const Icon = item.icon;
+
                                         const isActive = location.pathname === item.path;
 
                                         return (

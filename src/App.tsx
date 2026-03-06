@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Layout from './layouts/Layout'
 import Dashboard from './pages/Dashboard'
@@ -15,28 +14,31 @@ import Reports from './pages/Reports'
 import Team from './pages/Team'
 import Settings from './pages/Settings'
 import JobDetails from './pages/JobDetails'
-import ServiceReports from './pages/ServiceReports'
+import Leads from './pages/Leads'
 
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
+import { Toaster } from 'react-hot-toast'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     const { session, loading } = useAuth();
     const location = useLocation();
 
+    const isDevBypass = localStorage.getItem('dev_bypass') === 'true';
+
     if (loading) {
         return (
             <div className="h-screen w-full flex items-center justify-center bg-[#F8FAFB]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-delaval-blue/30 border-t-delaval-blue rounded-full animate-spin"></div>
-                    <div className="text-slate-500 font-medium animate-pulse">Loading Condon Dairy...</div>
+                    <div className="text-slate-500 font-medium animate-pulse">Loading TN Solar...</div>
                 </div>
             </div>
         );
     }
 
-    if (!session) {
+    if (!session && !isDevBypass) {
         return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
@@ -47,6 +49,7 @@ function App() {
     return (
         <AuthProvider>
             <BrowserRouter>
+                <Toaster position="top-right" />
                 <Routes>
                     <Route path="/login" element={<Login />} />
 
@@ -150,10 +153,10 @@ function App() {
                             </Layout>
                         </ProtectedRoute>
                     } />
-                    <Route path="/service-reports" element={
+                    <Route path="/leads" element={
                         <ProtectedRoute>
                             <Layout>
-                                <ServiceReports />
+                                <Leads />
                             </Layout>
                         </ProtectedRoute>
                     } />

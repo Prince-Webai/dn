@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, FileText, AlertCircle, Euro, Clock, CheckCircle2, ArrowRight, Layers, Target } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, AlertCircle, CircleDollarSign as RupeeIcon, Clock, CheckCircle2, ArrowRight, Layers, Target } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { dataService } from '../services/dataService';
 import { Invoice } from '../types';
 
 const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IE', {
+    return new Intl.NumberFormat('en-IN', {
         style: 'currency',
-        currency: 'EUR',
+        currency: 'INR',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     }).format(amount);
@@ -63,7 +63,7 @@ const Payments = () => {
         return map;
     }, [invoices]);
 
-    // Build full 42-day calendar grid (6 weeks) like Tony Condon Dairy Services style
+    // Build full 42-day calendar grid (6 weeks) like TN Solar Services style
     const calendarDays = useMemo(() => {
         const days: { day: number; month: number; year: number; currentMonth: boolean }[] = [];
         // Previous month fill
@@ -194,7 +194,7 @@ const Payments = () => {
                                                     </div>
                                                 )}
                                                 <div className="mt-2 text-[9px] font-bold text-delaval-blue">
-                                                    €{invs.reduce((sum, i) => i.total_amount - (i.amount_paid || 0) + sum, 0).toLocaleString()}
+                                                    ₹{invs.reduce((sum, i) => i.total_amount - (i.amount_paid || 0) + sum, 0).toLocaleString()}
                                                 </div>
                                             </div>
                                         )}
@@ -221,7 +221,7 @@ const Payments = () => {
                     </div>
                 </div>
 
-                {/* Dark Sidebar - Tony Condon Branding Style */}
+                {/* Dark Sidebar - TN Solar Manager Branding Style */}
                 <div className="xl:col-span-1">
                     <div className="bg-black rounded-[2.5rem] p-8 shadow-2xl h-full flex flex-col border border-white/5 relative overflow-hidden">
                         {/* Decorative glow */}
@@ -273,9 +273,9 @@ const Payments = () => {
                                                         {inv.customers?.name || inv.guest_name || 'Guest Customer'}
                                                     </span>
                                                     <div className="flex items-center gap-2 mt-1">
-                                                        <Euro size={12} className="text-delaval-blue" />
+                                                        <RupeeIcon size={12} className="text-delaval-blue" />
                                                         <span className="text-xs font-bold text-slate-400">
-                                                            €{(inv.total_amount - (inv.amount_paid || 0)).toLocaleString()} Due
+                                                            ₹{(inv.total_amount - (inv.amount_paid || 0)).toLocaleString()} Due
                                                         </span>
                                                     </div>
                                                 </div>
@@ -287,7 +287,7 @@ const Payments = () => {
 
                                             <div className="flex items-center justify-between pt-4 border-t border-white/5">
                                                 <div className="flex items-center gap-2">
-                                                    <Euro size={12} className="text-delaval-blue" />
+                                                    <RupeeIcon size={12} className="text-delaval-blue" />
                                                     <span className="text-sm font-black text-white">{formatCurrency(remaining)}</span>
                                                 </div>
                                                 <Link to={`/invoices`} className="p-2 bg-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-delaval-blue transition-all">

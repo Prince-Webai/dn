@@ -275,7 +275,7 @@ const Inventory = () => {
                         <div className="stat-card">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <div className="text-3xl font-bold text-slate-900 mb-1">€{totalValue.toFixed(2)}</div>
+                                    <div className="text-3xl font-bold text-slate-900 mb-1">₹{totalValue.toFixed(2)}</div>
                                     <div className="text-sm font-medium text-slate-500">Parts Value</div>
                                 </div>
                                 <div className="w-12 h-12 bg-[#E6F9F3] text-[#00A862] rounded-xl flex items-center justify-center">
@@ -324,8 +324,8 @@ const Inventory = () => {
                                                 <td className="px-6 py-4 font-bold text-slate-900">{item.sku}</td>
                                                 <td className="px-6 py-4 font-medium text-slate-700">{item.name}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-600">{item.category}</td>
-                                                <td className="px-6 py-4 text-sm text-slate-500">€{item.cost_price.toFixed(2)}</td>
-                                                <td className="px-6 py-4 font-bold text-slate-900">€{item.sell_price.toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-sm text-slate-500">₹{item.cost_price.toFixed(2)}</td>
+                                                <td className="px-6 py-4 font-bold text-slate-900">₹{item.sell_price.toFixed(2)}</td>
                                                 <td className="px-6 py-4">
                                                     <div className="text-sm font-medium mb-1">{item.stock_level} units</div>
                                                     <div className="h-1.5 w-24 bg-slate-100 rounded-full overflow-hidden">
@@ -409,7 +409,7 @@ const Inventory = () => {
                                                     {alloc.jobs?.job_number ? `#JOB-${alloc.jobs.job_number}` : 'N/A'}
                                                 </td>
                                                 <td className="px-6 py-4 text-sm text-slate-600">{alloc.quantity} units</td>
-                                                <td className="px-6 py-4 text-sm font-bold text-slate-900">€{(alloc.total || 0).toFixed(2)}</td>
+                                                <td className="px-6 py-4 text-sm font-bold text-slate-900">₹{(alloc.total || 0).toFixed(2)}</td>
                                                 <td className="px-6 py-4 text-sm text-slate-600">
                                                     {alloc.jobs?.date_completed
                                                         ? new Date(alloc.jobs.date_completed).toLocaleDateString()
@@ -525,7 +525,7 @@ const Inventory = () => {
                                         <div className="text-[13px] font-medium text-slate-400 font-mono bg-slate-50 inline-flex px-2 py-0.5 rounded-md mt-1">{item.sku}</div>
                                     </div>
                                     <div className="text-right shrink-0 mt-0.5">
-                                        <div className="text-[18px] font-black text-slate-900">€{item.sell_price.toFixed(2)}</div>
+                                        <div className="text-[18px] font-black text-slate-900">₹{item.sell_price.toFixed(2)}</div>
                                     </div>
                                 </div>
 
@@ -619,12 +619,12 @@ const Inventory = () => {
                             )}
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Cost Price (€)</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Cost Price (₹)</label>
                             <input type="number" step="0.01" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
                                 value={newItem.cost_price} onChange={e => setNewItem({ ...newItem, cost_price: parseFloat(e.target.value) })} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Sell Price (€)</label>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Sell Price (₹)</label>
                             <input type="number" step="0.01" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
                                 value={newItem.sell_price} onChange={e => setNewItem({ ...newItem, sell_price: parseFloat(e.target.value) })} />
                         </div>

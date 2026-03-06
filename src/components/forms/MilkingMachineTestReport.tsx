@@ -161,7 +161,7 @@ export const MilkingMachineTestReport: React.FC<FormReportProps> = ({ job, custo
                                     </div>
                                     <div>
                                         <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tester Name</label>
-                                        <input type="text" value={form.tester} onChange={(e) => setForm({ ...form, tester: e.target.value })} className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 font-medium focus:border-delaval-blue focus:ring-1 focus:ring-delaval-blue transition-colors" placeholder="e.g. Tony Condon" />
+                                        <input type="text" value={form.tester} onChange={(e) => setForm({ ...form, tester: e.target.value })} className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 font-medium focus:border-delaval-blue focus:ring-1 focus:ring-delaval-blue transition-colors" placeholder="e.g. TN Solar Manager" />
                                     </div>
                                 </div>
                                 <div className="space-y-4">

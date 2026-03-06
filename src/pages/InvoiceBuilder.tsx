@@ -258,7 +258,7 @@ const InvoiceBuilder = () => {
                             <FileText size={24} />
                         </div>
                         <h3 className="font-black text-slate-900 text-xl font-display">Detailed Statement</h3>
-                        <p className="text-sm text-slate-500 mt-1 mb-6">Line-by-line breakdown of parts and labor for the farmer's records. Does not impact accounting.</p>
+                        <p className="text-sm text-slate-500 mt-1 mb-6">Line-by-line breakdown of parts and labor for the customer's records. Does not impact accounting.</p>
 
                         <div className="flex flex-col gap-3">
                             <div className="flex gap-3">

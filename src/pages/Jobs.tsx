@@ -239,7 +239,7 @@ const Jobs = () => {
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-2xl font-bold font-display text-slate-900">Jobs & Services</h1>
-                        <p className="text-slate-500">Track service calls and maintenance schedules</p>
+                        <p className="text-slate-500">Track solar installations and maintenance schedules</p>
                     </div>
                 </div>
 
@@ -274,7 +274,7 @@ const Jobs = () => {
                                     onClick={() => setActiveTab(tab)}
                                     className={`py-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap capitalize
                                     ${activeTab === tab
-                                            ? 'border-delaval-blue text-delaval-blue'
+                                            ? 'border-blue-600 text-blue-600'
                                             : 'border-transparent text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
@@ -289,8 +289,8 @@ const Jobs = () => {
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 type="text"
-                                placeholder="Search jobs by customer, engineer, or job ID..."
-                                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-delaval-blue/20 focus:border-delaval-blue transition-all"
+                                placeholder="Search jobs by site, engineer, or job ID..."
+                                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -337,14 +337,14 @@ const Jobs = () => {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <div className="flex gap-2">
-                                                    <Link to={`/jobs/${job.id}`} className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors inline-block" title="View Details">
+                                                    <Link to={`/jobs/${job.id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-block" title="View Details">
                                                         <FileText size={18} />
                                                     </Link>
 
 
                                                     <button
                                                         onClick={() => handleEditClick(job)}
-                                                        className="p-2 text-slate-400 hover:text-delaval-blue hover:bg-blue-50 rounded-lg transition-colors"
+                                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                                         title="Edit Job"
                                                     >
                                                         <Pencil size={18} />
@@ -391,7 +391,7 @@ const Jobs = () => {
                                 setModalItems([]);
                                 setIsModalOpen(true);
                             }}
-                            className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                            className="w-10 h-10 bg-blue-600 hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
                         >
                             <Plus size={20} />
                         </button>
@@ -402,7 +402,7 @@ const Jobs = () => {
                         <Search size={18} className="text-slate-400 mr-3 shrink-0" />
                         <input
                             type="text"
-                            placeholder="Search jobs, farms, engineers..."
+                            placeholder="Search jobs, sites, engineers..."
                             className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -441,17 +441,17 @@ const Jobs = () => {
                                     <div className="flex items-center gap-1.5">
                                         {job.status === 'completed' && <><div className="w-1.5 h-1.5 rounded-full bg-[#00A862]"></div><span className="text-[10px] font-bold uppercase tracking-wider text-[#00A862]">COMPLETED</span></>}
                                         {job.status === 'in_progress' && <><div className="w-1.5 h-1.5 rounded-full bg-[#FF6B00]"></div><span className="text-[10px] font-bold uppercase tracking-wider text-[#FF6B00]">IN PROGRESS</span></>}
-                                        {job.status === 'scheduled' && <><div className="w-1.5 h-1.5 rounded-full bg-[#0051A5]"></div><span className="text-[10px] font-bold uppercase tracking-wider text-[#0051A5]">SCHEDULED</span></>}
+                                        {job.status === 'scheduled' && <><div className="w-1.5 h-1.5 rounded-full bg-blue-600"></div><span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">SCHEDULED</span></>}
                                         {job.status === 'cancelled' && <><div className="w-1.5 h-1.5 rounded-full bg-slate-400"></div><span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">CANCELLED</span></>}
                                     </div>
                                 </div>
                                 <div className="mb-4">
-                                    <h3 className="font-bold text-slate-900 text-[17px] leading-tight mb-1">{job.customers?.name || 'Unknown Farm'}</h3>
+                                    <h3 className="font-bold text-slate-900 text-[17px] leading-tight mb-1">{job.customers?.name || 'Unknown Site'}</h3>
                                     <p className="text-[13px] text-slate-500">{job.customers?.address || 'No address provided'}</p>
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 mb-4">
-                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#F0F5FA] text-[#0051A5] text-[11px] font-bold tracking-wide">
-                                        VMS V300 {/* Mock Data matching design */}
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-orange-50 text-orange-600 text-[11px] font-bold tracking-wide">
+                                        Solar PW {/* Updated from dairy mock data */}
                                     </span>
                                     <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold tracking-wide">
                                         {job.service_type}
@@ -490,20 +490,20 @@ const Jobs = () => {
                                 <button
                                     type="button"
                                     onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
-                                    className="text-sm font-bold text-delaval-blue hover:text-blue-800 transition-colors"
+                                    className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
                                 >
-                                    {isAddingNewCustomer ? 'Select Existing Customer' : '+ Add New Customer'}
+                                    {isAddingNewCustomer ? 'Select Existing Site' : '+ Add New Site'}
                                 </button>
                             </div>
 
                             {isAddingNewCustomer ? (
                                 <div className="grid grid-cols-1 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Customer Name / Farm *</label>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Installation Site Name / Customer *</label>
                                         <input
                                             type="text"
                                             required
-                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
                                             value={newCustomerData.name}
                                             onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
                                         />
@@ -512,7 +512,7 @@ const Jobs = () => {
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
                                         <input
                                             type="tel"
-                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
                                             value={newCustomerData.phone || ''}
                                             onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
                                         />
@@ -521,7 +521,7 @@ const Jobs = () => {
                                         <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
                                         <textarea
                                             rows={2}
-                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-delaval-blue/20 outline-none"
+                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
                                             value={newCustomerData.address || ''}
                                             onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
                                         />
@@ -529,7 +529,7 @@ const Jobs = () => {
                                 </div>
                             ) : (
                                 <SearchableSelect
-                                    label="Select Existing Customer *"
+                                    label="Select Existing Site *"
                                     options={customers.map(c => ({ value: c.id, label: c.name }))}
                                     value={newJob.customer_id || ''}
                                     onChange={val => setNewJob({ ...newJob, customer_id: val })}
@@ -545,9 +545,12 @@ const Jobs = () => {
                                 <SearchableSelect
                                     label="Service Type"
                                     options={[
-                                        { value: 'Machine Service', label: 'Machine Service' },
-                                        { value: 'Breakdown', label: 'Breakdown' },
-                                        { value: 'Emergency Call Out', label: 'Emergency Call Out' }
+                                        { value: 'Solar Installation', label: 'Solar Installation' },
+                                        { value: 'Panel Cleaning', label: 'Panel Cleaning' },
+                                        { value: 'Inverter Maintenance', label: 'Inverter Maintenance' },
+                                        { value: 'System Audit', label: 'System Audit' },
+                                        { value: 'Battery Service', label: 'Battery Service' },
+                                        { value: 'Emergency Repair', label: 'Emergency Repair' }
                                     ]}
                                     allowCustom={true}
                                     value={newJob.service_type || ''}
@@ -597,7 +600,7 @@ const Jobs = () => {
                         <div className="bg-white p-4 rounded-xl border border-slate-100">
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="font-bold text-slate-900">Parts & Labor</h3>
-                                <div className="text-sm font-bold text-delaval-blue bg-blue-50 px-3 py-1 rounded-full">
+                                <div className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
                                     Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
                                 </div>
                             </div>
@@ -633,8 +636,8 @@ const Jobs = () => {
                                     <div className="font-bold text-sm text-slate-700">Add Custom Item / Labor</div>
                                     <input
                                         type="text"
-                                        placeholder="Description (e.g. Labor - 2 hours)"
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-delaval-blue"
+                                        placeholder="Description (e.g. Installation Labor)"
+                                        className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-blue-600"
                                         value={newItem.description}
                                         onChange={e => setNewItem({ ...newItem, description: e.target.value })}
                                     />
@@ -645,7 +648,7 @@ const Jobs = () => {
                                                 type="number"
                                                 min="0.5"
                                                 step="0.5"
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-delaval-blue"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-blue-600"
                                                 value={newItem.quantity}
                                                 onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
                                             />
@@ -656,7 +659,7 @@ const Jobs = () => {
                                                 type="number"
                                                 min="0"
                                                 step="0.01"
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-delaval-blue"
+                                                className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-blue-600"
                                                 value={newItem.unit_price}
                                                 onChange={e => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
                                             />
@@ -679,7 +682,7 @@ const Jobs = () => {
                                                     setIsAddingCustom(false);
                                                 }
                                             }}
-                                            className="px-3 py-1.5 text-sm font-medium text-white bg-delaval-blue hover:bg-blue-700 rounded-md transition-colors"
+                                            className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
                                         >
                                             Add Custom Line
                                         </button>
@@ -721,7 +724,7 @@ const Jobs = () => {
                         <div className="bg-white p-4 rounded-xl border border-slate-100">
                             <label className="block text-sm font-bold text-slate-900 mb-2">Job Description</label>
                             <textarea
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-delaval-blue/20 outline-none text-slate-700 bg-slate-50 focus:bg-white transition-colors min-h-[100px]"
+                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-600/20 outline-none text-slate-700 bg-slate-50 focus:bg-white transition-colors min-h-[100px]"
                                 placeholder="Enter detailed job description or internal notes here..."
                                 rows={3}
                                 value={newJob.notes}
@@ -731,7 +734,7 @@ const Jobs = () => {
 
                         <div className="pt-4 flex justify-end gap-3">
                             <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
-                            <button type="submit" className="px-6 py-2 bg-delaval-blue hover:bg-delaval-dark-blue text-white rounded-lg font-bold shadow-lg shadow-blue-900/10">
+                            <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-900/10">
                                 {editingId ? 'Save Changes' : 'Create Job'}
                             </button>
                         </div>
@@ -843,7 +846,7 @@ const Jobs = () => {
                                             <div>
                                                 <input
                                                     type="text"
-                                                    placeholder="Farm Name *"
+                                                    placeholder="Customer / Site Name *"
                                                     required
                                                     className="w-full text-slate-900 font-bold text-[15px] outline-none border-b border-slate-100 pb-2"
                                                     value={newCustomerData.name}

@@ -39,8 +39,8 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-delaval-blue rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-900/20">TC</div>
                     <div>
-                        <h2 className="font-bold text-sm leading-tight">IMQCS Test Report</h2>
-                        <p className="text-xs text-white/50">{customer?.name || 'Unknown Farm'}</p>
+                        <h2 className="font-bold text-sm leading-tight">Solar System Report</h2>
+                        <p className="text-xs text-white/50">{customer?.name || 'Unknown Site'}</p>
                     </div>
                 </div>
 
@@ -75,15 +75,15 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
                                 <div style={{ fontSize: '16pt', fontWeight: 900, color: '#003875', letterSpacing: '-0.5px' }}>
-                                    TEST REPORT ON MILKING MACHINE
+                                    SOLAR PV SYSTEM COMMISSIONING REPORT
                                 </div>
                                 <div style={{ fontSize: '8pt', color: '#555', marginTop: 2 }}>
-                                    Irish Milking Quality Control Scheme (IMQCS) — Licensed Tester Report
+                                    Electrical & Performance Stability Test — Certified Installation Report
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontWeight: 700, fontSize: '10pt', color: '#003875' }}>Condon Dairy Services</div>
-                                <div style={{ fontSize: '8pt', color: '#555' }}>Tony Condon</div>
+                                <div style={{ fontWeight: 700, fontSize: '10pt', color: '#003875' }}>TN Solar Services</div>
+                                <div style={{ fontSize: '8pt', color: '#555' }}>TN Solar Manager</div>
                                 {job && <div style={{ fontSize: '8pt', color: '#888', marginTop: 4 }}>Job #{job.job_number}</div>}
                             </div>
                         </div>
@@ -93,14 +93,14 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
                         {/* === SECTION A: HEADER === */}
                         <SectionTitle>A. Header Information</SectionTitle>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
-                            <Field label="Customer / Farm Name" value={customer?.name} />
-                            <Field label="Date of Test" value={report.date ? new Date(report.date).toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' }) : ''} />
+                            <Field label="Customer / Site Name" value={customer?.name} />
+                            <Field label="Date of Test" value={report.date ? new Date(report.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : ''} />
                             <Field label="Address" value={customer?.address} />
-                            <Field label="Machine Make" value={report.machineMake} />
-                            <Field label="Tester Name" value={report.tester} />
+                            <Field label="System Make" value={report.machineMake} />
+                            <Field label="Engineer Name" value={report.tester} />
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                                <Field label="Plant Type" value={report.plantType} />
-                                <Field label="No. Units" value={report.noUnits} />
+                                <Field label="Inverter Type" value={report.plantType} />
+                                <Field label="No. Panels" value={report.noUnits} />
                             </div>
                         </div>
 
@@ -338,9 +338,9 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
 
                         {/* Footer */}
                         <div style={{ borderTop: '1px solid #ccc', marginTop: 10, paddingTop: 6, fontSize: '7pt', color: '#888', textAlign: 'center' }}>
-                            Condon Dairy Services — Tony Condon — Licensed IMQCS Tester
+                            TN Solar Services — Powering the Future — Certified Installer
                             {job ? ` — Job #${job.job_number}` : ''}
-                            {' — '}Generated {new Date().toLocaleDateString('en-IE')}
+                            {' — '}Generated {new Date().toLocaleDateString('en-IN')}
                         </div>
                     </div>
                 </div>

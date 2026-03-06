@@ -4,7 +4,7 @@ import {
     PieChart, Pie, Cell
 } from 'recharts';
 import {
-    BarChart2, TrendingUp, Users, Euro, Package, Calendar,
+    BarChart2, TrendingUp, Users, CircleDollarSign as RupeeIcon, Package, Calendar,
     Clock, Send, Activity, User, Phone, Mail, CheckCircle2, FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -46,7 +46,7 @@ const Reports = () => {
         end: new Date().toISOString().split('T')[0]
     });
 
-    // Tony Condon UX States
+    // TN Solar Manager UX States
     const [sendingReminder, setSendingReminder] = useState<string | null>(null);
     const [selectedInvoiceForDetail, setSelectedInvoiceForDetail] = useState<Invoice | null>(null);
 
@@ -290,9 +290,9 @@ const Reports = () => {
 
         let message = '';
         if (days > 0) {
-            message = `Dear ${customerName},\n\nThis is a friendly reminder that invoice ${inv.invoice_number} for €${remaining.toLocaleString()} is currently ${days} days overdue.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'Condon Dairy Services'}`;
+            message = `Dear ${customerName},\n\nThis is a friendly reminder that invoice ${inv.invoice_number} for ₹${remaining.toLocaleString()} is currently ${days} days overdue.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'TN Solar Services'}`;
         } else {
-            message = `Dear ${customerName},\n\nThis is a quick reminder that invoice ${inv.invoice_number} for €${remaining.toLocaleString()} is due soon.\n\nThank you for your prompt payment,\n${settings?.company_name || 'Condon Dairy Services'}`;
+            message = `Dear ${customerName},\n\nThis is a quick reminder that invoice ${inv.invoice_number} for ₹${remaining.toLocaleString()} is due soon.\n\nThank you for your prompt payment,\n${settings?.company_name || 'TN Solar Services'}`;
         }
 
         await new Promise(r => setTimeout(r, 800)); // Simulate sending
@@ -410,7 +410,7 @@ const Reports = () => {
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center justify-between">
                     <div>
                         <p className="text-slate-500 text-sm font-medium">Total Inventory Value</p>
-                        <h3 className="text-2xl font-bold text-slate-900 mt-1">€{inventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                        <h3 className="text-2xl font-bold text-slate-900 mt-1">₹{inventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                     </div>
                     <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
                         <Package size={24} />
@@ -420,7 +420,7 @@ const Reports = () => {
                     <div>
                         <p className="text-slate-500 text-sm font-medium">Top Customer</p>
                         <h3 className="text-xl font-bold text-slate-900 mt-1">{topCustomers[0]?.name || 'N/A'}</h3>
-                        <p className="text-xs text-green-600 font-medium">€{topCustomers[0]?.value?.toLocaleString() || 0}</p>
+                        <p className="text-xs text-green-600 font-medium">₹{topCustomers[0]?.value?.toLocaleString() || 0}</p>
                     </div>
                     <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center">
                         <Users size={24} />
@@ -430,7 +430,7 @@ const Reports = () => {
                     <div>
                         <p className="text-slate-500 text-sm font-medium">Revenue ({filterType === 'all' ? 'All Time' : filterType === 'year' ? 'This Year' : 'Selected Period'})</p>
                         <h3 className="text-2xl font-bold text-slate-900 mt-1">
-                            €{allInvoices.reduce((acc, curr) => acc + (curr.total_amount || 0), 0).toLocaleString()}
+                            ₹{allInvoices.reduce((acc, curr) => acc + (curr.total_amount || 0), 0).toLocaleString()}
                         </h3>
                     </div>
                     <div className="w-12 h-12 bg-delaval-light-blue text-delaval-blue rounded-lg flex items-center justify-center">
@@ -496,7 +496,7 @@ const Reports = () => {
                                         <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 border-t sm:border-t-0 border-slate-100 pt-3 sm:pt-0">
                                             <div className="text-left sm:text-right">
                                                 <div className="font-black text-slate-900 text-base mb-0.5 whitespace-nowrap">
-                                                    €{remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                    ₹{remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                 </div>
                                                 <div className={`text-[9px] font-black uppercase tracking-widest ${isOverdue ? 'text-red-500' : 'text-blue-500'}`}>
                                                     {isOverdue ? `${days} Days Overdue` : 'Due Soon'}
@@ -610,7 +610,7 @@ const Reports = () => {
                                                         <p className="text-slate-600 text-[12px] font-medium">{label}</p>
                                                     </div>
                                                     <p className="text-[#1a1a1a] font-semibold text-[13px] ml-4.5 bg-slate-100/50 inline-block px-1.5 py-0.5 rounded">
-                                                        €{Number(payload[0].value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        ₹{Number(payload[0].value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </p>
                                                 </div>
                                             );
@@ -649,7 +649,7 @@ const Reports = () => {
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
                 <div className="p-6 border-b border-slate-100">
                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <Euro size={20} className="text-slate-400" />
+                        <RupeeIcon size={20} className="text-slate-400" />
                         Top Customers by Spend
                     </h3>
                 </div>
@@ -670,7 +670,7 @@ const Reports = () => {
                                 return (
                                     <tr key={index} className="hover:bg-slate-50/50">
                                         <td className="px-6 py-4 font-medium text-slate-900">{customer.name}</td>
-                                        <td className="px-6 py-4 text-slate-600 text-right">€{customer.value.toLocaleString()}</td>
+                                        <td className="px-6 py-4 text-slate-600 text-right">₹{customer.value.toLocaleString()}</td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <span className="text-xs text-slate-500">{percentage.toFixed(1)}%</span>
@@ -713,21 +713,21 @@ const Reports = () => {
                             <div className="grid grid-cols-3 gap-4">
                                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Total Bill</div>
-                                    <div className="font-bold text-slate-900">€{inv.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                                    <div className="font-bold text-slate-900">₹{inv.total_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                                 </div>
                                 <div className="p-4 rounded-xl bg-slate-50 border border-slate-100">
                                     <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Paid So Far</div>
-                                    <div className="font-bold text-emerald-600">€{(inv.amount_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                                    <div className="font-bold text-emerald-600">₹{(inv.amount_paid || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                                 </div>
                                 <div className="p-4 rounded-xl bg-delaval-blue/5 border border-delaval-blue/10">
                                     <div className="text-[10px] font-black uppercase tracking-widest text-delaval-blue mb-1">Balance Due</div>
-                                    <div className="text-xl font-black text-delaval-blue">€{remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                                    <div className="text-xl font-black text-delaval-blue">₹{remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                                 </div>
                             </div>
 
                             <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 space-y-4">
                                 <div>
-                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Customer / Farm</div>
+                                    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Customer / Site</div>
                                     <div className="text-lg font-bold text-slate-900">{safeRender(inv.customers?.name || inv.guest_name || 'Unknown')}</div>
                                 </div>
 
