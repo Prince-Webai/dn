@@ -1012,32 +1012,35 @@ const Customers = () => {
                     </div>
                 ) : (
                     <>
-                        {/* Modern Mobile Header with safe area bleed */}
-                        <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed">
-                            <div className="flex justify-between items-center mb-5">
-                                <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Customers</h1>
-                                <button
-                                    onClick={() => {
-                                        setEditingId(null);
-                                        setNewCustomer({ name: '', address: '', contact_person: '', email: '', phone: '', payment_terms: 'Net 30' });
-                                        setIsModalOpen(true);
-                                    }}
-                                    className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
-                                >
-                                    <Plus size={20} />
-                                </button>
-                            </div>
+                        {/* Consolidated Mobile Sticky Header */}
+                        <div className="sticky top-0 z-30 bg-[#F8FAFB]/95 backdrop-blur-md border-b border-slate-100/50">
+                            {/* Modern Mobile Header with safe area bleed */}
+                            <div className="bg-white/90 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-12">
+                                <div className="flex justify-between items-center mb-5">
+                                    <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Customers</h1>
+                                    <button
+                                        onClick={() => {
+                                            setEditingId(null);
+                                            setNewCustomer({ name: '', address: '', contact_person: '', email: '', phone: '', payment_terms: 'Net 30' });
+                                            setIsModalOpen(true);
+                                        }}
+                                        className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                                    >
+                                        <Plus size={20} />
+                                    </button>
+                                </div>
 
-                            {/* Integrated Search Bar */}
-                            <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
-                                <Search size={18} className="text-slate-400 mr-3 shrink-0" />
-                                <input
-                                    type="text"
-                                    placeholder="Search customers..."
-                                    className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                                {/* Integrated Search Bar */}
+                                <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
+                                    <Search size={18} className="text-slate-400 mr-3 shrink-0" />
+                                    <input
+                                        type="text"
+                                        placeholder="Search customers..."
+                                        className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </div>
 

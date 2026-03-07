@@ -373,59 +373,62 @@ const Jobs = () => {
             {/* MOBILE VIEW */}
             <div className="block md:hidden pb-24 bg-[#F8FAFB] min-h-screen text-[#1a1a1a]">
 
-                {/* Modern Mobile Header with safe area bleed */}
-                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-20 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed">
-                    <div className="flex justify-between items-center mb-5">
-                        <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Jobs</h1>
-                        <button
-                            onClick={() => {
-                                setEditingId(null);
-                                setNewJob({
-                                    customer_id: '',
-                                    engineer_name: '',
-                                    service_type: '',
-                                    status: 'scheduled',
-                                    date_scheduled: new Date().toISOString().split('T')[0],
-                                    notes: ''
-                                });
-                                setModalItems([]);
-                                setIsModalOpen(true);
-                            }}
-                            className="w-10 h-10 bg-blue-600 hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
-                        >
-                            <Plus size={20} />
-                        </button>
-                    </div>
-
-                    {/* Integrated Search Bar */}
-                    <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
-                        <Search size={18} className="text-slate-400 mr-3 shrink-0" />
-                        <input
-                            type="text"
-                            placeholder="Search jobs, sites, engineers..."
-                            className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                {/* Status Tabs Slider - Sticky below header */}
-                <div className="sticky top-[146px] z-10 bg-[#F8FAFB]/95 backdrop-blur-sm pt-4 pb-3 border-b border-slate-100/50">
-                    <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5">
-                        {['all', 'scheduled', 'in_progress', 'completed'].map((tab) => (
+                {/* Consolidated Mobile Sticky Header */}
+                <div className="sticky top-0 z-30 bg-[#F8FAFB]/95 backdrop-blur-md border-b border-slate-100/50">
+                    {/* Modern Mobile Header with safe area bleed */}
+                    <div className="bg-white/90 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-12">
+                        <div className="flex justify-between items-center mb-5">
+                            <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Jobs</h1>
                             <button
-                                key={tab}
-                                onClick={() => setActiveTab(tab)}
-                                className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap transition-all shadow-sm
-                                    ${activeTab === tab
-                                        ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95'
-                                        : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
-                                    }`}
+                                onClick={() => {
+                                    setEditingId(null);
+                                    setNewJob({
+                                        customer_id: '',
+                                        engineer_name: '',
+                                        service_type: '',
+                                        status: 'scheduled',
+                                        date_scheduled: new Date().toISOString().split('T')[0],
+                                        notes: ''
+                                    });
+                                    setModalItems([]);
+                                    setIsModalOpen(true);
+                                }}
+                                className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
                             >
-                                {tab === 'all' ? 'All' : tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} <span className="opacity-60 ml-1">({getTabCount(tab)})</span>
+                                <Plus size={20} />
                             </button>
-                        ))}
+                        </div>
+
+                        {/* Integrated Search Bar */}
+                        <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
+                            <Search size={18} className="text-slate-400 mr-3 shrink-0" />
+                            <input
+                                type="text"
+                                placeholder="Search jobs, farms, engineers..."
+                                className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Status Tabs Slider */}
+                    <div className="pt-4 pb-3">
+                        <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5">
+                            {['all', 'scheduled', 'in_progress', 'completed'].map((tab) => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap transition-all shadow-sm
+                                        ${activeTab === tab
+                                            ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95'
+                                            : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                                        }`}
+                                >
+                                    {tab === 'all' ? 'All' : tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} <span className="opacity-60 ml-1">({getTabCount(tab)})</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
@@ -743,290 +746,292 @@ const Jobs = () => {
             </div>
 
             {/* FULL SCREEN MOBILE MODAL */}
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-[#F8FAFB] z-[100] md:hidden flex flex-col overflow-hidden">
-                    {/* Header */}
-                    <div className="flex items-center justify-between px-5 pt-12 pb-4 bg-white border-b border-slate-100 shrink-0">
-                        <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center text-slate-400 bg-slate-50 rounded-full hover:text-slate-600 transition-colors">
-                            <div className="w-4 h-4 relative">
-                                <span className="absolute left-0 top-1/2 w-4 h-0.5 bg-current -translate-y-1/2 rotate-45 rounded-full"></span>
-                                <span className="absolute left-0 top-1/2 w-4 h-0.5 bg-current -translate-y-1/2 -rotate-45 rounded-full"></span>
-                            </div>
-                        </button>
-                        <h2 className="text-lg font-bold text-slate-900 tracking-tight">{editingId ? "Edit Job" : "New Job"}</h2>
-                        <div className="w-10"></div> {/* Spacer */}
-                    </div>
-
-                    {/* Form Content */}
-                    <div className="flex-1 overflow-y-auto px-5 py-6">
-                        <form id="mobile-job-form" onSubmit={handleAddJob} className="space-y-6 pb-24">
-
-                            {/* Schedule Section */}
-                            <div className="space-y-4">
-                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Schedule</label>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                                        <div className="flex items-center gap-2 mb-2 text-[#0051A5]">
-                                            <Calendar size={16} />
-                                            <span className="font-bold text-sm">Date</span>
-                                        </div>
-                                        <input
-                                            type="date"
-                                            className="w-full text-slate-900 font-medium text-sm outline-none bg-transparent"
-                                            value={newJob.date_scheduled || ''}
-                                            onChange={(e) => setNewJob({ ...newJob, date_scheduled: e.target.value })}
-                                            required
-                                        />
-                                    </div>
-                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                                        <div className="flex items-center gap-2 mb-2 text-[#FF6B00]">
-                                            <Activity size={16} />
-                                            <span className="font-bold text-sm">Status</span>
-                                        </div>
-                                        <select
-                                            className="w-full text-slate-900 font-medium text-sm outline-none bg-transparent appearance-none"
-                                            value={newJob.status || 'scheduled'}
-                                            onChange={e => setNewJob({ ...newJob, status: e.target.value as Job['status'] })}
-                                        >
-                                            <option value="scheduled">Scheduled</option>
-                                            <option value="in_progress">In Progress</option>
-                                            <option value="completed">Completed</option>
-                                            <option value="cancelled">Cancelled</option>
-                                        </select>
-                                    </div>
+            {
+                isModalOpen && (
+                    <div className="fixed inset-0 bg-[#F8FAFB] z-[100] md:hidden flex flex-col overflow-hidden">
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 pt-12 pb-4 bg-white border-b border-slate-100 shrink-0">
+                            <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center text-slate-400 bg-slate-50 rounded-full hover:text-slate-600 transition-colors">
+                                <div className="w-4 h-4 relative">
+                                    <span className="absolute left-0 top-1/2 w-4 h-0.5 bg-current -translate-y-1/2 rotate-45 rounded-full"></span>
+                                    <span className="absolute left-0 top-1/2 w-4 h-0.5 bg-current -translate-y-1/2 -rotate-45 rounded-full"></span>
                                 </div>
-                            </div>
+                            </button>
+                            <h2 className="text-lg font-bold text-slate-900 tracking-tight">{editingId ? "Edit Job" : "New Job"}</h2>
+                            <div className="w-10"></div> {/* Spacer */}
+                        </div>
 
-                            {/* Details Section */}
-                            <div className="space-y-4">
-                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Details</label>
-                                <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] divide-y divide-slate-50">
-                                    <div className="p-4">
-                                        <div className="text-xs font-bold text-slate-500 mb-1">Service Type</div>
-                                        <select
-                                            className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
-                                            value={newJob.service_type || ''}
-                                            onChange={e => setNewJob({ ...newJob, service_type: e.target.value })}
-                                        >
-                                            <option value="">Select Service Type...</option>
-                                            <option value="Machine Service">Machine Service</option>
-                                            <option value="Breakdown">Breakdown</option>
-                                            <option value="Emergency Call Out">Emergency Call Out</option>
-                                        </select>
-                                    </div>
-                                    <div className="p-4">
-                                        <div className="text-xs font-bold text-slate-500 mb-1">Assigned Engineer</div>
-                                        <select
-                                            className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
-                                            value={newJob.engineer_name || ''}
-                                            onChange={e => setNewJob({ ...newJob, engineer_name: e.target.value })}
-                                        >
-                                            <option value="">Select Engineer...</option>
-                                            {engineers.map(eng => <option key={eng.id} value={eng.name}>{eng.name}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
+                        {/* Form Content */}
+                        <div className="flex-1 overflow-y-auto px-5 py-6">
+                            <form id="mobile-job-form" onSubmit={handleAddJob} className="space-y-6 pb-24">
 
-                            {/* Customer Section */}
-                            <div className="space-y-4">
-                                <div className="flex items-center justify-between pl-1">
-                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Customer</label>
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
-                                        className="text-[11px] font-bold text-[#0051A5] uppercase tracking-wider"
-                                    >
-                                        {isAddingNewCustomer ? 'Select Existing' : 'Add New'}
-                                    </button>
-                                </div>
-                                <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-4">
-                                    {isAddingNewCustomer ? (
-                                        <div className="space-y-4">
-                                            <div>
-                                                <input
-                                                    type="text"
-                                                    placeholder="Customer / Site Name *"
-                                                    required
-                                                    className="w-full text-slate-900 font-bold text-[15px] outline-none border-b border-slate-100 pb-2"
-                                                    value={newCustomerData.name}
-                                                    onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
-                                                />
+                                {/* Schedule Section */}
+                                <div className="space-y-4">
+                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Schedule</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                            <div className="flex items-center gap-2 mb-2 text-[#0051A5]">
+                                                <Calendar size={16} />
+                                                <span className="font-bold text-sm">Date</span>
                                             </div>
-                                            <div>
-                                                <input
-                                                    type="tel"
-                                                    placeholder="Phone Number"
-                                                    className="w-full text-slate-900 text-[15px] outline-none border-b border-slate-100 pb-2"
-                                                    value={newCustomerData.phone || ''}
-                                                    onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
-                                                />
-                                            </div>
-                                            <div>
-                                                <textarea
-                                                    placeholder="Full Address"
-                                                    rows={2}
-                                                    className="w-full text-slate-900 text-[15px] outline-none"
-                                                    value={newCustomerData.address || ''}
-                                                    onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
-                                                />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <select
-                                            className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
-                                            value={newJob.customer_id || ''}
-                                            onChange={e => setNewJob({ ...newJob, customer_id: e.target.value })}
-                                            required
-                                        >
-                                            <option value="">Select a customer...</option>
-                                            {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                        </select>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Line Items Editor */}
-                            <div className="space-y-4">
-                                <div className="flex justify-between items-center pl-1">
-                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Parts & Labor</label>
-                                    <div className="text-[11px] font-bold text-[#0051A5] bg-[#E6F0FF] px-2 py-0.5 rounded-full">
-                                        Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    {modalItems.map((item, idx) => (
-                                        <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center gap-3">
-                                            <div className="flex-1 min-w-0">
-                                                <div className="font-bold text-slate-900 text-sm truncate">{item.description}</div>
-                                                <div className="text-xs text-slate-500 font-medium">Qty: {item.quantity} × €{item.unit_price.toFixed(2)}</div>
-                                            </div>
-                                            <div className="text-sm font-black text-slate-900 pr-2">€{(item.quantity * item.unit_price).toFixed(2)}</div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
-                                                className="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 shrink-0"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                                    {isAddingCustom ? (
-                                        <div className="space-y-3">
                                             <input
-                                                type="text"
-                                                placeholder="Item description..."
-                                                className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
-                                                value={newItem.description}
-                                                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                                type="date"
+                                                className="w-full text-slate-900 font-medium text-sm outline-none bg-transparent"
+                                                value={newJob.date_scheduled || ''}
+                                                onChange={(e) => setNewJob({ ...newJob, date_scheduled: e.target.value })}
+                                                required
                                             />
-                                            <div className="flex gap-4">
-                                                <div className="flex-1">
-                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Qty</div>
-                                                    <input
-                                                        type="number"
-                                                        className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
-                                                        value={newItem.quantity}
-                                                        onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
-                                                    />
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Price (€)</div>
-                                                    <input
-                                                        type="number"
-                                                        className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
-                                                        value={newItem.unit_price}
-                                                        onChange={e => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="flex justify-end gap-2 pt-2">
-                                                <button type="button" onClick={() => setIsAddingCustom(false)} className="px-4 py-2 text-xs font-bold text-slate-500 bg-slate-50 rounded-lg">Cancel</button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        if (newItem.description) {
-                                                            setModalItems([...modalItems, { ...newItem, type: 'labor' }]);
-                                                            setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
-                                                            setIsAddingCustom(false);
-                                                        }
-                                                    }}
-                                                    className="px-4 py-2 text-xs font-bold text-white bg-[#0051A5] rounded-lg"
-                                                >
-                                                    Add Item
-                                                </button>
-                                            </div>
                                         </div>
-                                    ) : (
-                                        <div className="space-y-3">
+                                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                            <div className="flex items-center gap-2 mb-2 text-[#FF6B00]">
+                                                <Activity size={16} />
+                                                <span className="font-bold text-sm">Status</span>
+                                            </div>
+                                            <select
+                                                className="w-full text-slate-900 font-medium text-sm outline-none bg-transparent appearance-none"
+                                                value={newJob.status || 'scheduled'}
+                                                onChange={e => setNewJob({ ...newJob, status: e.target.value as Job['status'] })}
+                                            >
+                                                <option value="scheduled">Scheduled</option>
+                                                <option value="in_progress">In Progress</option>
+                                                <option value="completed">Completed</option>
+                                                <option value="cancelled">Cancelled</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Details Section */}
+                                <div className="space-y-4">
+                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Details</label>
+                                    <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] divide-y divide-slate-50">
+                                        <div className="p-4">
+                                            <div className="text-xs font-bold text-slate-500 mb-1">Service Type</div>
                                             <select
                                                 className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
-                                                value=""
-                                                onChange={(e) => {
-                                                    const id = e.target.value;
-                                                    const invItem = inventory.find(i => i.id === id);
-                                                    if (invItem) {
-                                                        setModalItems([...modalItems, {
-                                                            description: invItem.name,
-                                                            quantity: 1,
-                                                            unit_price: invItem.sell_price,
-                                                            type: 'part',
-                                                            inventory_id: invItem.id
-                                                        }]);
-                                                    }
-                                                }}
+                                                value={newJob.service_type || ''}
+                                                onChange={e => setNewJob({ ...newJob, service_type: e.target.value })}
                                             >
-                                                <option value="">Select an inventory item...</option>
-                                                {inventory.map(i => <option key={i.id} value={i.id}>{i.name} (€{i.sell_price})</option>)}
+                                                <option value="">Select Service Type...</option>
+                                                <option value="Machine Service">Machine Service</option>
+                                                <option value="Breakdown">Breakdown</option>
+                                                <option value="Emergency Call Out">Emergency Call Out</option>
                                             </select>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => setIsAddingCustom(true)}
-                                                className="w-full py-3 bg-[#F0F5FA] text-[#0051A5] rounded-xl text-sm font-bold active:scale-[0.98] transition-transform flex justify-center gap-2 items-center"
-                                            >
-                                                <FileText size={16} />
-                                                Add Custom / Labor
-                                            </button>
                                         </div>
-                                    )}
+                                        <div className="p-4">
+                                            <div className="text-xs font-bold text-slate-500 mb-1">Assigned Engineer</div>
+                                            <select
+                                                className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
+                                                value={newJob.engineer_name || ''}
+                                                onChange={e => setNewJob({ ...newJob, engineer_name: e.target.value })}
+                                            >
+                                                <option value="">Select Engineer...</option>
+                                                {engineers.map(eng => <option key={eng.id} value={eng.name}>{eng.name}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Job Description Section (formerly Notes) */}
-                            <div className="space-y-4">
-                                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Job Description</label>
-                                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                                    <textarea
-                                        className="w-full text-slate-900 text-[15px] outline-none bg-transparent min-h-[80px]"
-                                        placeholder="Enter detailed job description or internal notes here..."
-                                        value={newJob.notes || ''}
-                                        onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
-                                    />
+                                {/* Customer Section */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between pl-1">
+                                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Customer</label>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
+                                            className="text-[11px] font-bold text-[#0051A5] uppercase tracking-wider"
+                                        >
+                                            {isAddingNewCustomer ? 'Select Existing' : 'Add New'}
+                                        </button>
+                                    </div>
+                                    <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-4">
+                                        {isAddingNewCustomer ? (
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Customer / Site Name *"
+                                                        required
+                                                        className="w-full text-slate-900 font-bold text-[15px] outline-none border-b border-slate-100 pb-2"
+                                                        value={newCustomerData.name}
+                                                        onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <input
+                                                        type="tel"
+                                                        placeholder="Phone Number"
+                                                        className="w-full text-slate-900 text-[15px] outline-none border-b border-slate-100 pb-2"
+                                                        value={newCustomerData.phone || ''}
+                                                        onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <textarea
+                                                        placeholder="Full Address"
+                                                        rows={2}
+                                                        className="w-full text-slate-900 text-[15px] outline-none"
+                                                        value={newCustomerData.address || ''}
+                                                        onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <select
+                                                className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
+                                                value={newJob.customer_id || ''}
+                                                onChange={e => setNewJob({ ...newJob, customer_id: e.target.value })}
+                                                required
+                                            >
+                                                <option value="">Select a customer...</option>
+                                                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                            </select>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Removed from here to place below parts and labor */}
-                        </form>
-                    </div>
+                                {/* Line Items Editor */}
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center pl-1">
+                                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Parts & Labor</label>
+                                        <div className="text-[11px] font-bold text-[#0051A5] bg-[#E6F0FF] px-2 py-0.5 rounded-full">
+                                            Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
+                                        </div>
+                                    </div>
 
-                    {/* Fixed Bottom Action Bar */}
-                    <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-slate-100 shrink-0 pb-8 rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
-                        <button
-                            type="submit"
-                            form="mobile-job-form"
-                            className="w-full py-4 bg-[#0051A5] text-white rounded-[1.25rem] font-bold text-[15px] shadow-[0_8px_20px_rgba(0,81,165,0.25)] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-                        >
-                            {editingId ? 'Save Changes' : 'Create Job'}
-                            <ArrowRight size={18} />
-                        </button>
+                                    <div className="space-y-2">
+                                        {modalItems.map((item, idx) => (
+                                            <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center gap-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="font-bold text-slate-900 text-sm truncate">{item.description}</div>
+                                                    <div className="text-xs text-slate-500 font-medium">Qty: {item.quantity} × €{item.unit_price.toFixed(2)}</div>
+                                                </div>
+                                                <div className="text-sm font-black text-slate-900 pr-2">€{(item.quantity * item.unit_price).toFixed(2)}</div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
+                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 shrink-0"
+                                                >
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                        {isAddingCustom ? (
+                                            <div className="space-y-3">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Item description..."
+                                                    className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
+                                                    value={newItem.description}
+                                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                                />
+                                                <div className="flex gap-4">
+                                                    <div className="flex-1">
+                                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Qty</div>
+                                                        <input
+                                                            type="number"
+                                                            className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
+                                                            value={newItem.quantity}
+                                                            onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
+                                                        />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Price (€)</div>
+                                                        <input
+                                                            type="number"
+                                                            className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
+                                                            value={newItem.unit_price}
+                                                            onChange={e => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className="flex justify-end gap-2 pt-2">
+                                                    <button type="button" onClick={() => setIsAddingCustom(false)} className="px-4 py-2 text-xs font-bold text-slate-500 bg-slate-50 rounded-lg">Cancel</button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (newItem.description) {
+                                                                setModalItems([...modalItems, { ...newItem, type: 'labor' }]);
+                                                                setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
+                                                                setIsAddingCustom(false);
+                                                            }
+                                                        }}
+                                                        className="px-4 py-2 text-xs font-bold text-white bg-[#0051A5] rounded-lg"
+                                                    >
+                                                        Add Item
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                <select
+                                                    className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
+                                                    value=""
+                                                    onChange={(e) => {
+                                                        const id = e.target.value;
+                                                        const invItem = inventory.find(i => i.id === id);
+                                                        if (invItem) {
+                                                            setModalItems([...modalItems, {
+                                                                description: invItem.name,
+                                                                quantity: 1,
+                                                                unit_price: invItem.sell_price,
+                                                                type: 'part',
+                                                                inventory_id: invItem.id
+                                                            }]);
+                                                        }
+                                                    }}
+                                                >
+                                                    <option value="">Select an inventory item...</option>
+                                                    {inventory.map(i => <option key={i.id} value={i.id}>{i.name} (€{i.sell_price})</option>)}
+                                                </select>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setIsAddingCustom(true)}
+                                                    className="w-full py-3 bg-[#F0F5FA] text-[#0051A5] rounded-xl text-sm font-bold active:scale-[0.98] transition-transform flex justify-center gap-2 items-center"
+                                                >
+                                                    <FileText size={16} />
+                                                    Add Custom / Labor
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Job Description Section (formerly Notes) */}
+                                <div className="space-y-4">
+                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Job Description</label>
+                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                        <textarea
+                                            className="w-full text-slate-900 text-[15px] outline-none bg-transparent min-h-[80px]"
+                                            placeholder="Enter detailed job description or internal notes here..."
+                                            value={newJob.notes || ''}
+                                            onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Removed from here to place below parts and labor */}
+                            </form>
+                        </div>
+
+                        {/* Fixed Bottom Action Bar */}
+                        <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-slate-100 shrink-0 pb-8 rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
+                            <button
+                                type="submit"
+                                form="mobile-job-form"
+                                className="w-full py-4 bg-[#0051A5] text-white rounded-[1.25rem] font-bold text-[15px] shadow-[0_8px_20px_rgba(0,81,165,0.25)] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                            >
+                                {editingId ? 'Save Changes' : 'Create Job'}
+                                <ArrowRight size={18} />
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             <ConfirmModal
                 isOpen={isDeleteModalOpen}
@@ -1038,7 +1043,7 @@ const Jobs = () => {
                 isLoading={isDeleting}
                 confirmText="Delete Job"
             />
-        </div>
+        </div >
     );
 };
 
