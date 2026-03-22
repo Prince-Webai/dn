@@ -164,20 +164,6 @@ export interface ServiceReport {
     customers?: Customer;
 }
 
-export interface Lead {
-    id: string;
-    created_at: string;
-    name: string;
-    email?: string;
-    phone?: string;
-    source?: string;
-    status: 'new' | 'contacted' | 'qualified' | 'unqualified' | 'converted';
-    notes?: string;
-    is_converted?: boolean;
-    converted_at?: string;
-    assigned_to?: string;
-}
-
 export interface WarrantyReport {
     id: string;
     created_at: string;
