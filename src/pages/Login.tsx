@@ -112,7 +112,7 @@ const Login = () => {
                         {view === 'verify_otp' && 'Enter Verification Code'}
                     </h1>
                     <p className="text-slate-500 mt-2">
-                        {view === 'login' && 'Sign in to TN Solar Management'}
+                        {view === 'login' && 'Sign in to Tony Condon Management'}
                         {view === 'forgot_password' && 'Enter your email to receive an OTP code'}
                         {view === 'verify_otp' && 'Check your email for the 6-digit OTP code'}
                     </p>

@@ -39,7 +39,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
                 { icon: Wrench, label: 'Jobs & Services', path: '/jobs' },
                 { icon: Kanban, label: 'Pipeline', path: '/pipeline' },
-                { icon: Users, label: 'Leads (New)', path: '/leads' },
                 { icon: Users, label: 'Customers', path: '/customers' },
             ]
         },
@@ -74,7 +73,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     const mobileNavItems = [
         { icon: LayoutDashboard, label: 'Home', path: '/' },
         { icon: FileText, label: 'Jobs', path: '/jobs' },
-        { icon: Users, label: 'Leads', path: '/leads' },
         { icon: Users, label: 'Customers', path: '/customers' },
         { icon: ShieldCheck, label: 'Warranty', path: '/warranty-forms' },
     ];

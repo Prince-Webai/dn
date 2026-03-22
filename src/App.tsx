@@ -14,7 +14,6 @@ import Reports from './pages/Reports'
 import Team from './pages/Team'
 import Settings from './pages/Settings'
 import JobDetails from './pages/JobDetails'
-import Leads from './pages/Leads'
 import ServiceReports from './pages/ServiceReports'
 import WarrantyForms from './pages/WarrantyForms'
 
@@ -34,7 +33,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
             <div className="h-screen w-full flex items-center justify-center bg-[#F8FAFB]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-delaval-blue/30 border-t-delaval-blue rounded-full animate-spin"></div>
-                    <div className="text-slate-500 font-medium animate-pulse">Loading TN Solar...</div>
+                    <div className="text-slate-500 font-medium animate-pulse">Loading Tony Condon...</div>
                 </div>
             </div>
         );
@@ -152,13 +151,6 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <JobDetails />
-                            </Layout>
-                        </ProtectedRoute>
-                    } />
-                    <Route path="/leads" element={
-                        <ProtectedRoute>
-                            <Layout>
-                                <Leads />
                             </Layout>
                         </ProtectedRoute>
                     } />

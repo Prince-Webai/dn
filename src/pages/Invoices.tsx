@@ -367,7 +367,7 @@ const Invoices = () => {
         }
 
         const subject = `Invoice Reminder: #${invoice.invoice_number}`;
-        const body = `Dear ${invoice.customers.name},\n\nThis is a reminder for Invoice #${invoice.invoice_number} due for ₹${(invoice.total_amount - (invoice.amount_paid || 0)).toFixed(2)}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'TN Solar'}`;
+        const body = `Dear ${invoice.customers.name},\n\nThis is a reminder for Invoice #${invoice.invoice_number} due for ₹${(invoice.total_amount - (invoice.amount_paid || 0)).toFixed(2)}.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'Tony Condon'}`;
 
         window.location.href = `mailto:${invoice.customers.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     };

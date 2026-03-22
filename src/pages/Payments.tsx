@@ -63,7 +63,7 @@ const Payments = () => {
         return map;
     }, [invoices]);
 
-    // Build full 42-day calendar grid (6 weeks) like TN Solar Services style
+    // Build full 42-day calendar grid (6 weeks) like Tony Condon Services style
     const calendarDays = useMemo(() => {
         const days: { day: number; month: number; year: number; currentMonth: boolean }[] = [];
         // Previous month fill
@@ -221,7 +221,7 @@ const Payments = () => {
                     </div>
                 </div>
 
-                {/* Dark Sidebar - TN Solar Manager Branding Style */}
+                {/* Dark Sidebar - Tony Condon Manager Branding Style */}
                 <div className="xl:col-span-1">
                     <div className="bg-black rounded-[2.5rem] p-8 shadow-2xl h-full flex flex-col border border-white/5 relative overflow-hidden">
                         {/* Decorative glow */}

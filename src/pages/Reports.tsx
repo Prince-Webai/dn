@@ -46,7 +46,7 @@ const Reports = () => {
         end: new Date().toISOString().split('T')[0]
     });
 
-    // TN Solar Manager UX States
+    // Tony Condon Manager UX States
     const [sendingReminder, setSendingReminder] = useState<string | null>(null);
     const [selectedInvoiceForDetail, setSelectedInvoiceForDetail] = useState<Invoice | null>(null);
 
@@ -290,9 +290,9 @@ const Reports = () => {
 
         let message = '';
         if (days > 0) {
-            message = `Dear ${customerName},\n\nThis is a friendly reminder that invoice ${inv.invoice_number} for ₹${remaining.toLocaleString()} is currently ${days} days overdue.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'TN Solar Services'}`;
+            message = `Dear ${customerName},\n\nThis is a friendly reminder that invoice ${inv.invoice_number} for ₹${remaining.toLocaleString()} is currently ${days} days overdue.\n\nPlease arrange payment at your earliest convenience.\n\nThank you,\n${settings?.company_name || 'Tony Condon Services'}`;
         } else {
-            message = `Dear ${customerName},\n\nThis is a quick reminder that invoice ${inv.invoice_number} for ₹${remaining.toLocaleString()} is due soon.\n\nThank you for your prompt payment,\n${settings?.company_name || 'TN Solar Services'}`;
+            message = `Dear ${customerName},\n\nThis is a quick reminder that invoice ${inv.invoice_number} for ₹${remaining.toLocaleString()} is due soon.\n\nThank you for your prompt payment,\n${settings?.company_name || 'Tony Condon Services'}`;
         }
 
         await new Promise(r => setTimeout(r, 800)); // Simulate sending

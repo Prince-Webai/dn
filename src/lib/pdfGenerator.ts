@@ -92,12 +92,12 @@ const addAddressSection = (
 
     autoTable(doc, {
         startY: y,
-        head: [[type === 'Quote' ? 'Quote For:' : 'Invoice To:', { content: 'Deliver To:', styles: { cellPadding: { left: 1 } } }, { content: String(settings?.company_name || 'TN Solar Services'), styles: { halign: 'right' } }]],
+        head: [[type === 'Quote' ? 'Quote For:' : 'Invoice To:', { content: 'Deliver To:', styles: { cellPadding: { left: 1 } } }, { content: String(settings?.company_name || 'Tony Condon Dairy Services'), styles: { halign: 'right' } }]],
         body: [[
             { content: String(customer.name || 'Cash Sale') + '\n' + String(customer.address || ''), styles: { fontStyle: 'normal' } },
             { content: String(customer.name || 'Cash Sale') + '\n' + String(customer.address || ''), styles: { fontStyle: 'normal' } },
             {
-                content: (settings?.company_address || 'Clonegogaile, Ballinamult, Co. Tipperary') +
+                content: (settings?.company_address || 'Clonegalla, Ballinamult, Co. Waterford') +
                     '\nTel: ' + (settings?.company_phone || '087 055 1672 / 087 259 0148') +
                     '\nEmail: ' + (settings?.company_email || 'office@condondairy.ie') +
                     '\nWeb: www.condondairy.ie',
@@ -176,7 +176,7 @@ const addBankDetails = (doc: jsPDF, y: number, settings: Settings | null) => {
 
     doc.setFontSize(8);
     const rows = [
-        ['Account Name:', settings?.account_name || 'TN Solar Agri Ltd'],
+        ['Account Name:', settings?.account_name || 'Tony Condon Agri Ltd'],
         ['Bank:', settings?.bank_name || 'AIB'],
         ['BIC/SWIFT:', settings?.bic || 'AIBK IE 2D'],
         ['IBAN:', settings?.iban || 'IE84 AIBK 9340 7031 9910 99'],

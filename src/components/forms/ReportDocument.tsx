@@ -82,8 +82,8 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontWeight: 700, fontSize: '10pt', color: '#003875' }}>TN Solar Services</div>
-                                <div style={{ fontSize: '8pt', color: '#555' }}>TN Solar Manager</div>
+                                <div style={{ fontWeight: 700, fontSize: '10pt', color: '#003875' }}>Tony Condon Services</div>
+                                <div style={{ fontSize: '8pt', color: '#555' }}>Tony Condon Manager</div>
                                 {job && <div style={{ fontSize: '8pt', color: '#888', marginTop: 4 }}>Job #{job.job_number}</div>}
                             </div>
                         </div>
@@ -338,7 +338,7 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
 
                         {/* Footer */}
                         <div style={{ borderTop: '1px solid #ccc', marginTop: 10, paddingTop: 6, fontSize: '7pt', color: '#888', textAlign: 'center' }}>
-                            TN Solar Services — Powering the Future — Certified Installer
+                            Tony Condon Services — Powering the Future — Certified Installer
                             {job ? ` — Job #${job.job_number}` : ''}
                             {' — '}Generated {new Date().toLocaleDateString('en-IN')}
                         </div>

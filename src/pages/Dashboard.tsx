@@ -425,7 +425,7 @@ const Dashboard = () => {
                     <h1 className="text-2xl font-bold mb-1 tracking-tight">
                         Good morning, {(user?.user_metadata?.name || user?.email?.split('@')[0])?.split(' ')[0] || 'Seán'} 👋
                     </h1>
-                    <p className="text-[#a0c5ea] text-sm font-medium">TN Solar Services</p>
+                    <p className="text-[#a0c5ea] text-sm font-medium">Tony Condon Services</p>
                 </div>
 
                 {/* Overlapping Stats Bar */}
