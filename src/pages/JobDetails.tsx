@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Plus, Trash2, FileText, Wrench, Clock, Package, Receipt, CheckCircle } from 'lucide-react';
 import SearchableSelect from '../components/SearchableSelect';
 import { supabase } from '../lib/supabase';
-import { Job, JobItem, InventoryItem } from '../types';
+import { Job, JobItem, InventoryItem, ReportState } from '../types';
 import { generateJobReport } from '../lib/pdfGenerator';
 import { MilkingMachineTestReport } from '../components/forms/MilkingMachineTestReport';
-import { ReportState } from '../types';
+import { dataService } from '../services/dataService';
 const JobDetails = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
@@ -18,7 +18,8 @@ const JobDetails = () => {
         description: '',
         quantity: 1,
         unit_price: 0,
-        type: 'part' as 'part' | 'labor'
+        type: 'part' as 'part' | 'labor',
+        inventory_id: undefined as string | undefined
     });
 
     useEffect(() => {
@@ -61,15 +62,12 @@ const JobDetails = () => {
             const { total, ...itemWithoutTotal } = newItem as any;
             const itemToInsert = { ...itemWithoutTotal, job_id: id };
 
-            const { data, error } = await supabase
-                .from('job_items')
-                .insert([itemToInsert])
-                .select();
+            const { data, error } = await dataService.addJobItem(itemToInsert);
 
             if (error) throw error;
             if (data) {
-                setItems([...items, data[0]]);
-                setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
+                setItems([...items, data]);
+                setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part', inventory_id: undefined });
             }
         } catch (error: any) {
             alert('Error adding item: ' + error.message);
@@ -77,7 +75,7 @@ const JobDetails = () => {
     };
 
     const handleDeleteItem = async (itemId: string) => {
-        const { error } = await supabase.from('job_items').delete().eq('id', itemId);
+        const { error } = await dataService.deleteJobItem(itemId);
         if (!error) setItems(items.filter(i => i.id !== itemId));
     };
 
@@ -218,7 +216,8 @@ const JobDetails = () => {
                                                                     ...newItem,
                                                                     description: item.name,
                                                                     unit_price: item.sell_price,
-                                                                    type: 'part'
+                                                                    type: 'part',
+                                                                    inventory_id: item.id
                                                                 });
                                                             }
                                                         }}
@@ -252,14 +251,17 @@ const JobDetails = () => {
                                                         onChange={e => setNewItem({ ...newItem, description: e.target.value })}
                                                     />
                                                 </div>
-                                                <div className="w-20">
+                                                <div className="w-24">
                                                     <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
-                                                    <input
-                                                        type="number"
-                                                        className="w-full p-2 border rounded"
+                                                    <select
+                                                        className="w-full p-2.5 border rounded-lg bg-white text-sm font-medium outline-none focus:ring-2 focus:ring-delaval-blue/20"
                                                         value={newItem.quantity}
                                                         onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
-                                                    />
+                                                    >
+                                                        {[...Array(20)].map((_, i) => (
+                                                            <option key={i + 1} value={i + 1}>{i + 1}</option>
+                                                        ))}
+                                                    </select>
                                                 </div>
                                                 <div className="w-24">
                                                     <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Cost (€)</label>
@@ -316,8 +318,15 @@ const JobDetails = () => {
                                 <div>
                                     <label className="block text-sm font-medium text-slate-500 mb-2">Status</label>
                                     {job.status === 'completed' ? (
-                                        <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2.5 rounded-lg border border-green-200 font-medium w-full">
-                                            <CheckCircle size={18} /> Completed
+                                        <div className="flex flex-col gap-2 w-full">
+                                            <div className="flex items-center gap-2 bg-green-50 text-green-700 px-3 py-2.5 rounded-lg border border-green-200 font-medium w-full">
+                                                <CheckCircle size={18} /> Completed
+                                            </div>
+                                            {(job as any).is_invoiced && (
+                                                <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-3 py-2.5 rounded-lg border border-blue-200 font-medium w-full">
+                                                    <Receipt size={18} /> Invoiced
+                                                </div>
+                                            )}
                                         </div>
                                     ) : (
                                         <SearchableSelect
@@ -529,7 +538,8 @@ const JobDetails = () => {
                                                     ...newItem,
                                                     description: item.name,
                                                     unit_price: item.sell_price,
-                                                    type: 'part'
+                                                    type: 'part',
+                                                    inventory_id: item.id
                                                 });
                                             }
                                         }}
@@ -538,12 +548,15 @@ const JobDetails = () => {
                                     <div className="flex gap-3 pt-2">
                                         <div className="w-1/3">
                                             <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Qty</label>
-                                            <input
-                                                type="number"
-                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                            <select
+                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-delaval-blue/20"
                                                 value={newItem.quantity}
                                                 onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
-                                            />
+                                            >
+                                                {[...Array(20)].map((_, i) => (
+                                                    <option key={i + 1} value={i + 1}>{i + 1}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div className="w-1/3">
                                             <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Price (€)</label>
@@ -617,12 +630,16 @@ const JobDetails = () => {
                                     <div className="flex gap-3 pt-2">
                                         <div className="w-1/3">
                                             <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Hours</label>
-                                            <input
-                                                type="number"
-                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm"
+                                            <select
+                                                className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-delaval-blue/20"
                                                 value={newItem.quantity}
                                                 onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })}
-                                            />
+                                            >
+                                                {[...Array(12)].map((_, i) => (
+                                                    <option key={i + 1} value={i + 1}>{i + 1} hr</option>
+                                                ))}
+                                                <option value={0.5}>0.5 hr</option>
+                                            </select>
                                         </div>
                                         <div className="w-1/3">
                                             <label className="text-xs font-bold text-slate-500 uppercase block mb-1">Rate (€)</label>

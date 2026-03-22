@@ -9,6 +9,8 @@ import { ArrowLeft, Printer, FileText, Activity, Eye, Download } from 'lucide-re
 const InvoiceBuilder = () => {
     const [searchParams] = useSearchParams();
     const jobId = searchParams.get('jobId');
+    const customerId = searchParams.get('customerId');
+    const type = searchParams.get('type');
     const navigate = useNavigate();
     const { showToast } = useToast();
 
@@ -19,28 +21,62 @@ const InvoiceBuilder = () => {
 
     const [description, setDescription] = useState('Service');
     const [vatRate, setVatRate] = useState<number>(13.5);
+    const [allUninvoicedJobs, setAllUninvoicedJobs] = useState<Job[]>([]);
+    const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
 
     useEffect(() => {
-        if (!jobId) {
+        if (!jobId && (!customerId || type !== 'account')) {
             navigate('/invoices');
             return;
         }
         fetchData();
-    }, [jobId]);
+    }, [jobId, customerId, type]);
+
+    useEffect(() => {
+        if (type === 'account' && allUninvoicedJobs.length > 0) {
+            const selectedJobs = allUninvoicedJobs.filter(j => selectedJobIds.includes(j.id));
+            const flattenedItems = selectedJobs.flatMap(j => (j as any).job_items || []);
+            setJobItems(flattenedItems);
+            setDescription(selectedJobs.length > 1 ? `Account Balance - ${selectedJobs.length} Jobs` : (selectedJobs[0]?.service_type || 'Service'));
+        }
+    }, [selectedJobIds, allUninvoicedJobs, type]);
 
     const fetchData = async () => {
         try {
             setLoading(true);
-            const { data: jobData } = await supabase.from('jobs').select('*, customers(*)').eq('id', jobId).single();
-            if (jobData) {
-                setJob(jobData);
-                setCustomer(jobData.customers);
-                setDescription(jobData.service_type || 'Service');
-            }
+            if (jobId) {
+                const { data: jobData } = await supabase.from('jobs').select('*, customers(*)').eq('id', jobId).single();
+                if (jobData) {
+                    setJob(jobData);
+                    setCustomer(jobData.customers);
+                    setDescription(jobData.service_type || 'Service');
+                }
 
-            const { data: itemsData } = await supabase.from('job_items').select('*').eq('job_id', jobId);
-            if (itemsData) {
-                setJobItems(itemsData);
+                const { data: itemsData } = await supabase.from('job_items').select('*').eq('job_id', jobId);
+                if (itemsData) {
+                    setJobItems(itemsData);
+                }
+            } else if (customerId && type === 'account') {
+                const { data: custData } = await supabase.from('customers').select('*').eq('id', customerId).single();
+                setCustomer(custData);
+
+                const { data: jobsData } = await supabase
+                    .from('jobs')
+                    .select('*, job_items(*)')
+                    .eq('customer_id', customerId)
+                    .eq('status', 'completed')
+                    .order('created_at', { ascending: false });
+
+                if (jobsData) {
+                    setAllUninvoicedJobs(jobsData);
+                    setSelectedJobIds(jobsData.map(j => j.id));
+                    // Initialize with a mock job for the shared UI
+                    setJob({
+                        ...jobsData[0],
+                        service_type: 'Account Statement',
+                        notes: `Consolidated invoice for ${jobsData.length} jobs.`
+                    });
+                }
             }
         } catch (err) {
             console.error(err);
@@ -93,6 +129,12 @@ const InvoiceBuilder = () => {
         }]);
 
         if (!error) {
+            // Update job is_invoiced status for all involved jobs
+            const jobIdsToUpdate = type === 'account' ? selectedJobIds : [job.id];
+            if (jobIdsToUpdate.length > 0) {
+                await supabase.from('jobs').update({ is_invoiced: true }).in('id', jobIdsToUpdate);
+            }
+            
             showToast('Invoice Created', `Invoice ${nextNumber} saved.`, 'success');
             navigate('/invoices');
         } else {
@@ -167,9 +209,43 @@ const InvoiceBuilder = () => {
                         <ArrowLeft size={16} /> Back
                     </button>
                     <h1 className="text-3xl font-black font-display text-slate-900 tracking-tight">Invoice Builder</h1>
-                    <p className="text-slate-500 mt-1">Generate documents for Job #{job.job_number}</p>
+                    <p className="text-slate-500 mt-1">
+                        {type === 'account' ? `Consolidating account for ${customer?.name}` : `Generate documents for Job #${job.job_number}`}
+                    </p>
                 </div>
             </div>
+
+            {type === 'account' && (
+                <div className="section-card p-6 bg-amber-50/30 border-amber-100">
+                    <h2 className="text-sm font-bold text-amber-800 uppercase tracking-widest mb-4">Select Jobs to Include</h2>
+                    <div className="space-y-2">
+                        {allUninvoicedJobs.map(j => (
+                            <label key={j.id} className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-delaval-blue transition-colors">
+                                <input
+                                    type="checkbox"
+                                    className="w-5 h-5 rounded border-slate-300 text-delaval-blue focus:ring-delaval-blue"
+                                    checked={selectedJobIds.includes(j.id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) setSelectedJobIds([...selectedJobIds, j.id]);
+                                        else setSelectedJobIds(selectedJobIds.filter(id => id !== j.id));
+                                    }}
+                                />
+                                <div className="flex-1">
+                                    <div className="flex justify-between items-center">
+                                        <span className="font-bold text-slate-900">#{j.job_number} - {j.service_type}</span>
+                                        <span className="text-sm font-bold text-slate-700">
+                                            €{((j as any).job_items?.reduce((s: number, i: any) => s + (i.quantity * i.unit_price), 0) || 0).toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className="text-xs text-slate-500">
+                                        {j.date_scheduled ? new Date(j.date_scheduled).toLocaleDateString('en-GB') : 'No date'} • {j.engineer_name}
+                                    </div>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Side: Details & Job Items Preview */}

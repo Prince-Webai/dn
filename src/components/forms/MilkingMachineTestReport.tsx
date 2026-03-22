@@ -149,38 +149,80 @@ export const MilkingMachineTestReport: React.FC<FormReportProps> = ({ job, custo
                     {activeTab === 'info' && (
                         <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                             <h3 className="text-lg font-bold text-slate-800 mb-6 border-b border-slate-200 pb-2">1. Header Information</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Customer Name</label>
+                                    <input type="text" value={customer?.name || ''} disabled className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-900 font-bold cursor-not-allowed shadow-inner" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Test Date</label>
+                                    <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 font-bold focus:border-delaval-blue focus:ring-4 focus:ring-delaval-blue/10 transition-all outline-none" />
+                                </div>
+
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Customer Name</label>
-                                        <input type="text" value={customer?.name || ''} disabled className="w-full bg-slate-100 border border-slate-200 rounded-lg p-2.5 text-slate-700 font-medium cursor-not-allowed" />
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Address</label>
+                                        <textarea disabled className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-600 font-medium cursor-not-allowed resize-none h-[118px] shadow-inner text-sm">{customer?.address || ''}</textarea>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Address</label>
-                                        <textarea disabled className="w-full bg-slate-100 border border-slate-200 rounded-lg p-2.5 text-slate-700 font-medium cursor-not-allowed resize-none">{customer?.address || ''}</textarea>
-                                    </div>
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Tester Name</label>
-                                        <input type="text" value={form.tester} onChange={(e) => setForm({ ...form, tester: e.target.value })} className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 font-medium focus:border-delaval-blue focus:ring-1 focus:ring-delaval-blue transition-colors" placeholder="e.g. TN Solar Manager" />
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Tester Name</label>
+                                        <select
+                                            value={form.tester}
+                                            onChange={(e) => setForm({ ...form, tester: e.target.value })}
+                                            className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 font-bold focus:border-delaval-blue focus:ring-4 focus:ring-delaval-blue/10 transition-all outline-none appearance-none"
+                                        >
+                                            <option value="">Select Tester...</option>
+                                            <option value="Tony Condon">Tony Condon</option>
+                                            <option value="Aidan Condon">Aidan Condon</option>
+                                            <option value="Matthew Tobin">Matthew Tobin</option>
+                                            <option value="Prince">Prince</option>
+                                        </select>
+                                    </div>
                                     </div>
                                 </div>
+
                                 <div className="space-y-4">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Test Date</label>
-                                        <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 font-medium focus:border-delaval-blue focus:ring-1 focus:ring-delaval-blue transition-colors" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Machine Make</label>
-                                        <input type="text" value={form.machineMake} onChange={(e) => setForm({ ...form, machineMake: e.target.value })} className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 font-medium focus:border-delaval-blue focus:ring-1 focus:ring-delaval-blue transition-colors" placeholder="e.g. DeLaval" />
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Machine Make</label>
+                                        <select
+                                            value={form.machineMake}
+                                            onChange={(e) => setForm({ ...form, machineMake: e.target.value })}
+                                            className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 font-bold focus:border-delaval-blue focus:ring-4 focus:ring-delaval-blue/10 transition-all outline-none appearance-none"
+                                        >
+                                            <option value="">Select Machine Make...</option>
+                                            <option value="DeLaval">DeLaval</option>
+                                            <option value="Fullwood">Fullwood</option>
+                                            <option value="Westfalia">Westfalia</option>
+                                            <option value="BouMatic">BouMatic</option>
+                                            <option value="Dairymaster">Dairymaster</option>
+                                            <option value="Other">Other</option>
+                                        </select>
                                     </div>
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Plant Type</label>
-                                            <input type="text" value={form.plantType} onChange={(e) => setForm({ ...form, plantType: e.target.value })} className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 font-medium focus:border-delaval-blue focus:ring-1 focus:ring-delaval-blue focus:outline-none transition-colors" />
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Plant Type</label>
+                                            <select
+                                                value={form.plantType}
+                                                onChange={(e) => setForm({ ...form, plantType: e.target.value })}
+                                                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 font-bold focus:border-delaval-blue focus:ring-4 focus:ring-delaval-blue/10 transition-all outline-none appearance-none"
+                                            >
+                                                <option value="">Select Plant Type...</option>
+                                                <option value="DTL">DTL</option>
+                                                <option value="Recorder">Recorder</option>
+                                                <option value="Delpro">Delpro</option>
+                                                <option value="Rotary">Rotary</option>
+                                            </select>
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">No. Units</label>
-                                            <input type="number" value={form.noUnits} onChange={(e) => setForm({ ...form, noUnits: e.target.value })} className="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-slate-900 font-medium focus:border-delaval-blue focus:ring-1 focus:ring-delaval-blue focus:outline-none transition-colors" />
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">No. Units</label>
+                                            <input
+                                                type="number"
+                                                value={form.noUnits}
+                                                onChange={(e) => setForm({ ...form, noUnits: e.target.value })}
+                                                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-slate-900 font-bold focus:border-delaval-blue focus:ring-4 focus:ring-delaval-blue/10 transition-all outline-none"
+                                                placeholder="0"
+                                            />
                                         </div>
                                     </div>
                                 </div>

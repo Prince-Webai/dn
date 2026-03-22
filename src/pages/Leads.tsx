@@ -10,7 +10,8 @@ import {
     Facebook,
     Globe,
     CheckCircle,
-    Clock
+    Clock,
+    Users
 } from 'lucide-react';
 import { dataService } from '../services/dataService';
 import { Lead } from '../types';

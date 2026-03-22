@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, CircleDollarSign as RupeeIcon, PieChart, Kanban, Settings as SettingsIcon, FileCheck } from 'lucide-react';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, Kanban, Settings as SettingsIcon, ClipboardList, ShieldCheck } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
@@ -48,7 +48,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             items: [
                 { icon: FileText, label: 'Invoices', path: '/invoices' },
                 { icon: FileCheck, label: 'Quotes', path: '/quotes' },
-                { icon: RupeeIcon, label: 'Payments', path: '/payments' },
+                { icon: Euro, label: 'Payments', path: '/payments' },
             ]
         },
         {
@@ -60,6 +60,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         {
             title: 'Reports & Admin',
             items: [
+                { icon: ClipboardList, label: 'Service Reports', path: '/service-reports' },
+                { icon: ShieldCheck, label: 'Warranty Forms', path: '/warranty-forms' },
                 ...(user?.user_metadata?.role !== 'Engineer' ? [
                     { icon: PieChart, label: 'Analytics', path: '/reports' },
                     { icon: Users, label: 'Team & Engineers', path: '/team' },
@@ -74,6 +76,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         { icon: FileText, label: 'Jobs', path: '/jobs' },
         { icon: Users, label: 'Leads', path: '/leads' },
         { icon: Users, label: 'Customers', path: '/customers' },
+        { icon: ShieldCheck, label: 'Warranty', path: '/warranty-forms' },
     ];
 
     const closeSidebar = () => setIsSidebarOpen(false);
@@ -81,17 +84,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     return (
         <div className="min-h-screen bg-[#F8FAFB] font-sans text-[#1a1a1a]">
             {/* Desktop Header */}
-            <header className="hidden md:block sticky top-0 z-[1000] border-b border-slate-200 bg-white shadow-sm">
+            <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white shadow-sm">
                 <div className="max-w-[1600px] mx-auto px-8 py-2 flex justify-between items-center flex-wrap gap-4">
 
-                    {/* Logo Section */}
-                    <div className="flex items-center">
+                    <Link to="/" className="flex items-center pt-1 group">
                         <img
                             src={logoImg}
-                            alt="TN Solar Services"
-                            className="h-[65px] w-auto mix-blend-multiply transition-transform duration-300 hover:scale-105"
+                            alt="Tony Condon Dairy Services"
+                            className="h-[52px] w-auto mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
                         />
-                    </div>
+                    </Link>
 
                     {/* User Info & Mobile Toggle */}
                     <div className="flex items-center gap-4">
@@ -192,7 +194,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </div>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around items-center px-4 pt-3 pb-8 z-[2000] shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex overflow-x-auto no-scrollbar items-center px-2 pt-3 pb-8 z-[2000] shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
                 {mobileNavItems.map((item) => {
                     const Icon = item.icon;
                     // Strict active checking for home, looser for others
@@ -204,7 +206,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                         <Link
                             key={item.path}
                             to={item.path}
-                            className={`flex flex-col items-center gap-1 transition-colors px-4 ${isActive ? 'text-[#0051A5]' : 'text-slate-400'}`}
+                            className={`flex flex-col items-center gap-1 transition-colors px-4 flex-shrink-0 ${isActive ? 'text-[#0051A5]' : 'text-slate-400'}`}
                         >
                             <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
                             <span className="text-[10px] uppercase font-bold tracking-wider">{item.label}</span>

@@ -98,9 +98,9 @@ const addAddressSection = (
             { content: String(customer.name || 'Cash Sale') + '\n' + String(customer.address || ''), styles: { fontStyle: 'normal' } },
             {
                 content: (settings?.company_address || 'Clonegogaile, Ballinamult, Co. Tipperary') +
-                    '\nTel: ' + (settings?.company_phone || '(052) 915 6345') +
-                    '\nEmail: ' + (settings?.company_email || 'info@tnsolar.in') +
-                    '\nWeb: www.tnsolar.in',
+                    '\nTel: ' + (settings?.company_phone || '087 055 1672 / 087 259 0148') +
+                    '\nEmail: ' + (settings?.company_email || 'office@condondairy.ie') +
+                    '\nWeb: www.condondairy.ie',
                 styles: { fontStyle: 'normal', halign: 'right' }
             }
         ]],
@@ -760,6 +760,99 @@ export const generateJobReport = async (
         return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${documentNumber}_Report.pdf`);
+        return null as any;
+    }
+};
+
+// ============================================================
+// WARRANTY REPORT GENERATOR
+// ============================================================
+export const generateWarrantyReport = async (
+    report: any, 
+    customer: Customer,
+    action: 'download' | 'preview' = 'download'
+) => {
+    const settings = await dataService.getSettings();
+    const doc = new jsPDF();
+    const documentNumber = report.serial_number || 'WNTY-000';
+    const safeName = customer?.name?.replace(/[^a-z0-9]/gi, '_') || 'Customer';
+    doc.setProperties({ title: `${safeName}-${report.form_type}` });
+
+    let y = await addHeader(doc, report.form_type, `Serial: ${documentNumber}`);
+    y = addAddressSection(doc, customer, y, 'Warranty For', settings);
+
+    const isInstallCert = report.form_type === 'Installation Certificate';
+    const data = report.report_data || {};
+
+    const infoData = [
+        { label: 'Date Issued', value: new Date(report.created_at).toLocaleDateString('en-GB') },
+        { label: 'Form Type', value: String(report.form_type) },
+        { label: 'Technician', value: String(report.technician_name || 'Tony Condon') },
+        { label: 'Install Date', value: String(report.install_date || 'N/A') },
+    ];
+    y = addInfoGrid(doc, infoData, y);
+
+    // Main Section Header
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(0, 81, 165); // DeLaval Blue
+    doc.text(isInstallCert ? 'Installation Details' : 'Testing & Commissioning Details', LEFT, y + 5);
+    y += 12;
+
+    // Body Fields
+    const bodyData = isInstallCert ? [
+        ['Equipment Type', data.equipment_type || 'N/A'],
+        ['ETCI Cert Done', data.etci_cert || 'N/A'],
+        ['Supp. Ag Cert', data.supp_ag_cert || 'N/A'],
+        ['Installer Name', data.installer_name || 'N/A'],
+        ['Installer Address', data.installer_address || 'N/A'],
+    ] : [
+        ['Equipment Details', data.equipment_details || 'N/A'],
+        ['Testing Date', data.test_date || 'N/A'],
+        ['Declaration By', data.declaration_name || 'N/A'],
+        ['Company', data.install_company || 'N/A'],
+        ['Company Address', data.install_company_address || 'N/A'],
+    ];
+
+    autoTable(doc, {
+        startY: y,
+        body: bodyData,
+        theme: 'striped',
+        styles: { fontSize: 10, cellPadding: 4 },
+        columnStyles: {
+            0: { fontStyle: 'bold', cellWidth: 50 },
+            1: { cellWidth: 'auto' }
+        },
+        margin: { left: LEFT, right: RIGHT },
+    });
+
+    // @ts-expect-error - ts ignore legacy
+    y = doc.lastAutoTable.finalY + 20;
+
+    // Signatures Area
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Authorized Signature:', LEFT, y);
+    doc.line(LEFT, y + 15, LEFT + 70, y + 15);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'italic');
+    doc.text('Installer Representative', LEFT, y + 20);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('Date:', 120, y);
+    doc.line(120, y + 15, 170, y + 15);
+
+    addFooter(doc);
+
+    if (action === 'preview') {
+        const blob = doc.output('blob');
+        const filename = `${safeName}-${report.form_type.replace(/\s+/g, '_')}.pdf`;
+        const blobUrl = URL.createObjectURL(blob);
+        return { url: blobUrl, filename } as any;
+    } else {
+        doc.save(`${safeName}-${report.form_type.replace(/\s+/g, '_')}.pdf`);
         return null as any;
     }
 };

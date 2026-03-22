@@ -11,6 +11,8 @@ export interface Customer {
     payment_terms: string;
     notes?: string;
     status: 'active' | 'inactive' | 'lead';
+    machine_model?: string;
+    plant_type?: 'DTL' | 'Recorder' | 'Delpro' | 'Rotary' | string;
 }
 
 export interface InventoryItem {
@@ -174,6 +176,23 @@ export interface Lead {
     is_converted?: boolean;
     converted_at?: string;
     assigned_to?: string;
+}
+
+export interface WarrantyReport {
+    id: string;
+    created_at: string;
+    customer_id: string;
+    job_id?: string;
+    form_type: string;
+    machine_model?: string;
+    serial_number?: string;
+    install_date?: string;
+    report_data: any;
+    technician_name?: string;
+    customers?: Customer;
+    jobs?: { 
+        job_number: string;
+    };
 }
 
 export * from './report';

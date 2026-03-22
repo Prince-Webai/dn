@@ -215,7 +215,11 @@ const Jobs = () => {
 
     const filteredJobs = jobs.filter(job => {
         // Tab (Status) filtering
-        const matchesTab = activeTab === 'all' || job.status === activeTab;
+        let matchesTab = activeTab === 'all' || job.status === activeTab;
+
+        if (activeTab === 'unbilled') {
+            matchesTab = job.status === 'completed' && !(job as any).is_invoiced;
+        }
 
         // Search filtering
         const matchesSearch =
@@ -229,6 +233,7 @@ const Jobs = () => {
 
     const getTabCount = (tab: string) => {
         if (tab === 'all') return jobs.length;
+        if (tab === 'unbilled') return jobs.filter(j => j.status === 'completed' && !(j as any).is_invoiced).length;
         return jobs.filter(j => j.status === tab).length;
     };
 
@@ -267,8 +272,8 @@ const Jobs = () => {
                     </div>
 
                     <div className="border-b border-slate-200 px-6">
-                        <div className="flex gap-6 overflow-x-auto">
-                            {['all', 'scheduled', 'in_progress', 'completed'].map((tab) => (
+                        <div className="flex gap-6 overflow-x-auto no-scrollbar">
+                            {['all', 'scheduled', 'in_progress', 'completed', 'unbilled'].map((tab) => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -278,7 +283,7 @@ const Jobs = () => {
                                             : 'border-transparent text-slate-500 hover:text-slate-700'
                                         }`}
                                 >
-                                    {tab === 'all' ? 'All' : tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} ({getTabCount(tab)})
+                                    {tab === 'all' ? 'All' : tab === 'unbilled' ? 'Unbilled' : tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} ({getTabCount(tab)})
                                 </button>
                             ))}
                         </div>
@@ -373,62 +378,59 @@ const Jobs = () => {
             {/* MOBILE VIEW */}
             <div className="block md:hidden pb-24 bg-[#F8FAFB] min-h-screen text-[#1a1a1a]">
 
-                {/* Consolidated Mobile Sticky Header */}
-                <div className="sticky top-0 z-30 bg-[#F8FAFB]/95 backdrop-blur-md border-b border-slate-100/50">
-                    {/* Modern Mobile Header with safe area bleed */}
-                    <div className="bg-white/90 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-12">
-                        <div className="flex justify-between items-center mb-5">
-                            <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Jobs</h1>
-                            <button
-                                onClick={() => {
-                                    setEditingId(null);
-                                    setNewJob({
-                                        customer_id: '',
-                                        engineer_name: '',
-                                        service_type: '',
-                                        status: 'scheduled',
-                                        date_scheduled: new Date().toISOString().split('T')[0],
-                                        notes: ''
-                                    });
-                                    setModalItems([]);
-                                    setIsModalOpen(true);
-                                }}
-                                className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
-                            >
-                                <Plus size={20} />
-                            </button>
-                        </div>
-
-                        {/* Integrated Search Bar */}
-                        <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
-                            <Search size={18} className="text-slate-400 mr-3 shrink-0" />
-                            <input
-                                type="text"
-                                placeholder="Search jobs, farms, engineers..."
-                                className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                            />
-                        </div>
+                {/* Modern Mobile Header with safe area bleed */}
+                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-12">
+                    <div className="flex justify-between items-center mb-5">
+                        <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Jobs</h1>
+                        <button
+                            onClick={() => {
+                                setEditingId(null);
+                                setNewJob({
+                                    customer_id: '',
+                                    engineer_name: '',
+                                    service_type: '',
+                                    status: 'scheduled',
+                                    date_scheduled: new Date().toISOString().split('T')[0],
+                                    notes: ''
+                                });
+                                setModalItems([]);
+                                setIsModalOpen(true);
+                            }}
+                            className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                        >
+                            <Plus size={20} />
+                        </button>
                     </div>
 
-                    {/* Status Tabs Slider */}
-                    <div className="pt-4 pb-3">
-                        <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5">
-                            {['all', 'scheduled', 'in_progress', 'completed'].map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap transition-all shadow-sm
-                                        ${activeTab === tab
-                                            ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95'
-                                            : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
-                                        }`}
-                                >
-                                    {tab === 'all' ? 'All' : tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} <span className="opacity-60 ml-1">({getTabCount(tab)})</span>
-                                </button>
-                            ))}
-                        </div>
+                    {/* Integrated Search Bar */}
+                    <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
+                        <Search size={18} className="text-slate-400 mr-3 shrink-0" />
+                        <input
+                            type="text"
+                            placeholder="Search jobs, farms, engineers..."
+                            className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {/* Status Tabs Slider - Sticky below header */}
+                <div className="sticky top-[146px] z-10 bg-[#F8FAFB]/95 backdrop-blur-sm pt-4 pb-3 border-b border-slate-100/50">
+                    <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5">
+                        {['all', 'scheduled', 'in_progress', 'completed', 'unbilled'].map((tab) => (
+                            <button
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap transition-all shadow-sm
+                                    ${activeTab === tab
+                                        ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95'
+                                        : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                                    }`}
+                            >
+                                {tab === 'all' ? 'All' : tab === 'unbilled' ? 'Unbilled' : tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} <span className="opacity-60 ml-1">({getTabCount(tab)})</span>
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -693,32 +695,65 @@ const Jobs = () => {
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-[1fr_auto] gap-3">
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                                <div className="md:col-span-2">
                                     <SearchableSelect
                                         label=""
                                         options={inventory.map(i => ({ value: i.id, label: `${i.name} (€${i.sell_price})` }))}
-                                        value=""
+                                        value={newItem.description ? '__selected__' : ''}
                                         onChange={(id) => {
                                             const invItem = inventory.find(i => i.id === id);
                                             if (invItem) {
-                                                setModalItems([...modalItems, {
+                                                setNewItem({
                                                     description: invItem.name,
                                                     quantity: 1,
                                                     unit_price: invItem.sell_price,
-                                                    type: 'part',
+                                                    type: 'part' as const,
+                                                    // @ts-ignore
                                                     inventory_id: invItem.id
-                                                }]);
+                                                });
                                             }
                                         }}
                                         placeholder="Search inventory parts..."
                                         icon={<Package size={16} />}
                                     />
+                                </div>
+                                <div className="md:col-span-1">
+                                    <select
+                                        className="w-full h-[42px] px-3 border border-slate-300 rounded-lg text-sm font-medium outline-none focus:border-delaval-blue bg-white"
+                                        value={newItem.quantity}
+                                        onChange={e => setNewItem({ ...newItem, quantity: parseInt(e.target.value) || 1 })}
+                                    >
+                                        {[...Array(20)].map((_, i) => (
+                                            <option key={i + 1} value={i + 1}>Qty: {i + 1}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="md:col-span-1">
                                     <button
                                         type="button"
-                                        onClick={() => setIsAddingCustom(true)}
-                                        className="h-[42px] px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-bold transition-colors flex justify-center gap-2 items-center"
+                                        onClick={() => {
+                                            if (newItem.description) {
+                                                setModalItems([...modalItems, { ...newItem }]);
+                                                setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
+                                            }
+                                        }}
+                                        disabled={!newItem.description}
+                                        className="w-full h-[42px] bg-delaval-blue text-white rounded-lg text-sm font-bold flex justify-center gap-2 items-center hover:bg-delaval-dark-blue disabled:opacity-50 transition-all font-display"
                                     >
-                                        <Plus size={16} /> Labor/Custom
+                                        <Plus size={18} /> Add Part
                                     </button>
+                                </div>
+                            </div>
+                            <div className="mt-2 text-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsAddingCustom(true)}
+                                    className="text-xs font-bold text-slate-400 hover:text-delaval-blue transition-colors uppercase tracking-widest"
+                                >
+                                    + Add Custom Item / Labor
+                                </button>
+                            </div>
                                 </div>
                             )}
                         </div>

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Package, CheckCircle, Clock, Tag, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Package, CheckCircle, Clock, Tag, Pencil, Trash2, Upload } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { InventoryItem } from '../types';
 import Modal from '../components/Modal';
@@ -11,6 +11,8 @@ const Inventory = () => {
     const [items, setItems] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage] = useState(12);
     const [activeTab, setActiveTab] = useState<'inventory' | 'allocation'>('inventory');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newItem, setNewItem] = useState({
@@ -32,6 +34,8 @@ const Inventory = () => {
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [importing, setImporting] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const handleDeleteClick = (id: string) => {
         setDeleteId(id);
@@ -113,6 +117,68 @@ const Inventory = () => {
         else setAllocations(data || []);
     };
 
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setImporting(true);
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const csvText = event.target?.result as string;
+            if (!csvText) return;
+
+            try {
+                // Simple CSV Parser (handles headers and basic quotes)
+                const lines = csvText.split(/\r?\n/).filter(line => line.trim());
+                if (lines.length < 2) throw new Error("File is empty or missing headers");
+
+                const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]+/g, ''));
+                const products = lines.slice(1).map(line => {
+                    const values = line.split(',').map(v => v.trim().replace(/['"]+/g, ''));
+                    const obj: any = {};
+                    headers.forEach((header, i) => {
+                        obj[header] = values[i];
+                    });
+                    return obj;
+                });
+
+                // Map to snake_case schema
+                const mappedProducts = products.map(p => ({
+                    sku: p.sku || p.part_number,
+                    name: p.name || p.part_name || p.description,
+                    category: p.category || 'Uncategorized',
+                    description: p.description || '',
+                    cost_price: parseFloat(p.cost_price || p.cost) || 0,
+                    sell_price: parseFloat(p.sell_price || p.price) || 0,
+                    stock_level: parseInt(p.stock_level || p.qty || p.stock) || 0,
+                    location: p.location || ''
+                })).filter(p => p.sku && p.name);
+
+                if (mappedProducts.length === 0) throw new Error("No valid products found in CSV");
+
+                const { error } = await supabase
+                    .from('inventory')
+                    .upsert(mappedProducts, { onConflict: 'sku' });
+
+                if (error) throw error;
+                
+                alert(`Successfully imported ${mappedProducts.length} products.`);
+                fetchInventory();
+            } catch (error: any) {
+                console.error('Import error:', error);
+                alert(`Import failed: ${error.message}`);
+            } finally {
+                setImporting(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            }
+        };
+        reader.readAsText(file);
+    };
+
     const handleAddItem = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -179,6 +245,17 @@ const Inventory = () => {
         return matchesSearch && matchesCategory;
     });
 
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, categoryFilter]);
+
+    const paginatedItems = filteredItems.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
+    const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
     // Extract unique categories from items
     const categories = Array.from(new Set(items.map(item => item.category).filter(Boolean))) as string[];
 
@@ -202,7 +279,20 @@ const Inventory = () => {
                     </div>
                     {activeTab === 'inventory' ? (
                         <div className="flex gap-2">
-                            <button className="btn btn-secondary">Import CSV</button>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleFileChange} 
+                                accept=".csv" 
+                                className="hidden" 
+                            />
+                            <button 
+                                onClick={handleImportClick} 
+                                disabled={importing}
+                                className="btn btn-secondary flex items-center gap-2"
+                            >
+                                <Upload size={18} /> {importing ? 'Importing...' : 'Import CSV'}
+                            </button>
                             <button onClick={() => setIsModalOpen(true)} className="btn btn-primary shadow-lg shadow-blue-900/20">
                                 <Plus size={20} className="mr-2" /> Add Part
                             </button>
@@ -319,7 +409,7 @@ const Inventory = () => {
                                     <tbody className="divide-y divide-slate-100">
                                         {loading ? (
                                             <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-500">Loading inventory...</td></tr>
-                                        ) : filteredItems.map((item) => (
+                                        ) : paginatedItems.map((item) => (
                                             <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="px-6 py-4 font-bold text-slate-900">{item.sku}</td>
                                                 <td className="px-6 py-4 font-medium text-slate-700">{item.name}</td>
@@ -374,6 +464,42 @@ const Inventory = () => {
                                     </tbody>
                                 </table>
                             </div>
+
+                            {/* Pagination Controls */}
+                            {!loading && totalPages > 1 && (
+                                <div className="p-6 border-t border-slate-100 flex items-center justify-between">
+                                    <div className="text-sm text-slate-500">
+                                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-semibold text-slate-900">{Math.min(currentPage * itemsPerPage, filteredItems.length)}</span> of <span className="font-semibold text-slate-900">{filteredItems.length}</span> parts
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            Previous
+                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            {[...Array(totalPages)].map((_, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setCurrentPage(i + 1)}
+                                                    className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${currentPage === i + 1 ? 'bg-delaval-blue text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </>
                     )}
 

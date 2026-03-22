@@ -15,6 +15,8 @@ import Team from './pages/Team'
 import Settings from './pages/Settings'
 import JobDetails from './pages/JobDetails'
 import Leads from './pages/Leads'
+import ServiceReports from './pages/ServiceReports'
+import WarrantyForms from './pages/WarrantyForms'
 
 import Login from './pages/Login'
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -157,6 +159,20 @@ function App() {
                         <ProtectedRoute>
                             <Layout>
                                 <Leads />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/service-reports" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <ServiceReports />
+                            </Layout>
+                        </ProtectedRoute>
+                    } />
+                    <Route path="/warranty-forms" element={
+                        <ProtectedRoute>
+                            <Layout>
+                                <WarrantyForms />
                             </Layout>
                         </ProtectedRoute>
                     } />

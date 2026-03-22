@@ -16,6 +16,7 @@ export const ReportStartModal: React.FC<ReportStartModalProps> = ({ isOpen, onCl
     const [jobs, setJobs] = useState<Job[]>([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [selectedJobId, setSelectedJobId] = useState('');
+    const [existingReports, setExistingReports] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -28,13 +29,24 @@ export const ReportStartModal: React.FC<ReportStartModalProps> = ({ isOpen, onCl
 
     const fetchData = async () => {
         setLoading(true);
-        const [customersRes, jobsRes] = await Promise.all([
+        const [customersRes, jobsRes, reportsRes] = await Promise.all([
             supabase.from('customers').select('*').order('name'),
-            supabase.from('jobs').select('*, customers(name)').order('job_number', { ascending: false })
+            supabase.from('jobs')
+                .select('*, customers(name)')
+                .order('job_number', { ascending: false }),
+            supabase.from('service_reports')
+                .select('customer_id, created_at, test_date')
         ]);
 
         if (customersRes.data) setCustomers(customersRes.data);
-        if (jobsRes.data) setJobs(jobsRes.data);
+        if (jobsRes.data) {
+            // ONLY show jobs that are services
+            const serviceJobs = jobsRes.data.filter(j =>
+                j.service_type?.toLowerCase().includes('service')
+            );
+            setJobs(serviceJobs);
+        }
+        if (reportsRes.data) setExistingReports(reportsRes.data);
         setLoading(false);
     };
 
@@ -53,7 +65,13 @@ export const ReportStartModal: React.FC<ReportStartModalProps> = ({ isOpen, onCl
     const customerOptions = customers.map(c => ({ value: c.id, label: c.name }));
     const jobOptions = filteredJobs.map(j => ({
         value: j.id,
-        label: `Job #${j.job_number}`
+        label: `Job #${j.job_number} - ${j.service_type}`
+    }));
+
+    const currentYear = new Date().getFullYear();
+    const customerHasReportThisYear = !!(selectedCustomerId && existingReports.some(r => {
+        const reportYear = new Date(r.test_date || r.created_at).getFullYear();
+        return r.customer_id === selectedCustomerId && reportYear === currentYear;
     }));
 
     // Auto-select customer if a job is picked
@@ -94,9 +112,18 @@ export const ReportStartModal: React.FC<ReportStartModalProps> = ({ isOpen, onCl
                             placeholder={selectedCustomerId && jobOptions.length === 0 ? "No jobs for this customer" : "Select Job..."}
                         />
                         {selectedCustomerId && jobOptions.length === 0 && (
-                            <p className="text-xs text-orange-600 mt-1 font-medium">Please create a job for this customer first.</p>
+                            <p className="text-xs text-orange-600 mt-1 font-medium italic">Only jobs with "Service" in the description can have reports.</p>
                         )}
                     </div>
+
+                    {customerHasReportThisYear && (
+                        <div className="p-3 bg-red-50 border border-red-100 rounded-lg">
+                            <p className="text-xs text-red-600 font-bold">
+                                Warning: This customer already has a {currentYear} Service Report.
+                                Only one service report per year is permitted.
+                            </p>
+                        </div>
+                    )}
 
                     <div className="pt-4 flex justify-end gap-3">
                         <button
@@ -107,7 +134,7 @@ export const ReportStartModal: React.FC<ReportStartModalProps> = ({ isOpen, onCl
                         </button>
                         <button
                             onClick={handleStart}
-                            disabled={!selectedCustomerId || !selectedJobId}
+                            disabled={!selectedCustomerId || !selectedJobId || customerHasReportThisYear}
                             className="px-6 py-2 bg-delaval-blue hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors shadow-sm"
                         >
                             Start Report

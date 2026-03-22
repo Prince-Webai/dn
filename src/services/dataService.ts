@@ -98,7 +98,52 @@ export const dataService = {
 
     async addJobItem(item: any): Promise<{ data: any, error: any }> {
         if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
-        return await supabase.from('job_items').insert([item]).select().single();
+
+        // 1. Insert the item
+        const result = await supabase.from('job_items').insert([item]).select().single();
+
+        // 2. If it's a part from inventory, decrement stock
+        if (!result.error && item.inventory_id && item.type === 'part') {
+            await this.adjustStock(item.inventory_id, -(item.quantity || 1));
+        }
+
+        return result;
+    },
+
+    async deleteJobItem(itemId: string): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+
+        // 1. Get the item first to know its inventory link and quantity
+        const { data: item } = await supabase
+            .from('job_items')
+            .select('inventory_id, quantity, type')
+            .eq('id', itemId)
+            .single();
+
+        // 2. Delete the item
+        const result = await supabase.from('job_items').delete().eq('id', itemId);
+
+        // 3. If it was a part, restore stock
+        if (!result.error && item && item.inventory_id && item.type === 'part') {
+            await this.adjustStock(item.inventory_id, item.quantity || 1);
+        }
+
+        return result;
+    },
+
+    async adjustStock(inventoryId: string, amount: number): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+
+        // Get current stock
+        const { data } = await supabase.from('inventory').select('stock_level').eq('id', inventoryId).single();
+        if (!data) return { error: 'Item not found' };
+
+        const newStock = (data.stock_level || 0) + amount;
+
+        return await supabase
+            .from('inventory')
+            .update({ stock_level: Math.max(0, newStock) })
+            .eq('id', inventoryId);
     },
 
     async addJobItems(items: any[]): Promise<{ data: any, error: any }> {

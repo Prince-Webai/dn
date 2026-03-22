@@ -11,6 +11,8 @@ import ConfirmModal from '../components/ConfirmModal';
 const Quotes = () => {
     const { showToast } = useToast();
     const [quotes, setQuotes] = useState<Quote[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 8;
     const [deleteQuoteId, setDeleteQuoteId] = useState<string | null>(null);
 
     useEffect(() => {
@@ -182,7 +184,7 @@ const Quotes = () => {
                                     </td>
                                 </tr>
                             ) : (
-                                quotes.map((quote) => (
+                                quotes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((quote) => (
                                     <tr key={quote.id} className="hover:bg-slate-50/50 transition-colors">
                                         <td className="px-6 py-4 font-bold text-slate-900">{quote.quote_number}</td>
                                         <td className="px-6 py-4 font-medium text-slate-700">{quote.customers?.name}</td>
@@ -244,6 +246,40 @@ const Quotes = () => {
                         </tbody>
                     </table>
                 </div>
+
+                {/* Pagination Controls */}
+                {quotes.length > itemsPerPage && (
+                    <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-[#F8FAFB]/50">
+                        <div className="text-sm text-slate-500 font-medium">
+                            Showing <span className="text-slate-900 font-bold">{Math.min(quotes.length, (currentPage - 1) * itemsPerPage + 1)}</span> to <span className="text-slate-900 font-bold">{Math.min(quotes.length, currentPage * itemsPerPage)}</span> of <span className="text-slate-900 font-bold">{quotes.length}</span> quotes
+                        </div>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                            >
+                                Previous
+                            </button>
+                            {Array.from({ length: Math.ceil(quotes.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => setCurrentPage(page)}
+                                    className={`w-9 h-9 rounded-lg text-sm font-bold transition-all ${currentPage === page ? 'bg-delaval-blue text-white shadow-md shadow-blue-900/20' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(quotes.length / itemsPerPage), prev + 1))}
+                                disabled={currentPage === Math.ceil(quotes.length / itemsPerPage)}
+                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <ConfirmModal

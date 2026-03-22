@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Search, Plus, Trash2, ArrowLeft, Eye, Wrench, FileText, Briefcase, Euro, Package, Download, Upload } from 'lucide-react';
+import { Search, Plus, Trash2, ArrowLeft, Eye, Wrench, FileText, Briefcase, Euro, Package, Download, Upload, ShieldCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
@@ -27,7 +27,9 @@ const Customers = () => {
         contact_person: '',
         email: '',
         phone: '',
-        payment_terms: 'Net 30'
+        payment_terms: 'Net 30',
+        machine_model: '',
+        plant_type: ''
     });
 
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -209,7 +211,16 @@ const Customers = () => {
             }
             setIsModalOpen(false);
             setEditingId(null);
-            setNewCustomer({ name: '', address: '', contact_person: '', email: '', phone: '', payment_terms: 'Net 30' });
+            setNewCustomer({
+                name: '',
+                address: '',
+                contact_person: '',
+                email: '',
+                phone: '',
+                payment_terms: 'Net 30',
+                machine_model: '',
+                plant_type: ''
+            });
         } catch (error: any) {
             console.error('Error saving customer:', error);
             alert(`Failed to save customer: ${error.message || JSON.stringify(error)}`);
@@ -224,7 +235,9 @@ const Customers = () => {
             contact_person: selectedCustomer.contact_person || '',
             email: selectedCustomer.email || '',
             phone: selectedCustomer.phone || '',
-            payment_terms: selectedCustomer.payment_terms
+            payment_terms: selectedCustomer.payment_terms,
+            machine_model: selectedCustomer.machine_model || '',
+            plant_type: selectedCustomer.plant_type || ''
         });
         setEditingId(selectedCustomer.id);
         setIsModalOpen(true);
@@ -435,6 +448,16 @@ const Customers = () => {
                                     <div className="flex gap-3">
                                         <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">Active Account</span>
                                         <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">Terms: {selectedCustomer.payment_terms}</span>
+                                        {selectedCustomer.machine_model && (
+                                            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 flex items-center gap-1.5">
+                                                <Wrench size={12} /> {selectedCustomer.machine_model}
+                                            </span>
+                                        )}
+                                        {selectedCustomer.plant_type && (
+                                            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 flex items-center gap-1.5">
+                                                <Briefcase size={12} /> {selectedCustomer.plant_type}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="text-right flex flex-col items-end gap-2">
@@ -445,7 +468,10 @@ const Customers = () => {
                                         </div>
                                     </div>
                                     <div className="flex gap-2">
-                                        <Link to="/invoices" className="btn btn-primary shadow-lg shadow-blue-900/10">
+                                        <Link
+                                            to={`/invoices/builder?customerId=${selectedCustomer.id}&type=account`}
+                                            className="btn btn-primary shadow-lg shadow-blue-900/10"
+                                        >
                                             Generate Invoice
                                         </Link>
                                         <button
@@ -508,7 +534,7 @@ const Customers = () => {
                         <div className="section-card">
                             <div className="border-b border-slate-200 px-6">
                                 <div className="flex gap-8 overflow-x-auto">
-                                    {['service-history', 'parts-history', 'invoices', 'quotes', 'statements'].map((tab) => (
+                                    {['service-history', 'parts-history', 'invoices', 'quotes', 'statements', 'service-reports', 'warranty-forms'].map((tab) => (
                                         <button
                                             key={tab}
                                             onClick={() => setActiveTab(tab)}
@@ -728,7 +754,36 @@ const Customers = () => {
                                     </div>
                                 )}
 
-                                {/* Removed dairy-specific service reports tab */}
+                                {activeTab === 'service-reports' && (
+                                    <div className="p-12 text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl m-2">
+                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mx-auto mb-4">
+                                            <FileText size={32} className="text-slate-400" />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-800">Service Reports</h3>
+                                        <p className="text-slate-500 mt-1 max-w-sm mx-auto">Upload and manage service reports for this customer.</p>
+                                        <button className="mt-6 px-6 py-2 bg-white border border-slate-200 text-slate-700 font-bold rounded-lg shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center gap-2 mx-auto disabled:opacity-50" title="Coming Soon">
+                                            <Upload size={18} />
+                                            Upload Report (Coming Soon)
+                                        </button>
+                                    </div>
+                                )}
+
+                                {activeTab === 'warranty-forms' && (
+                                    <div className="p-12 text-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl m-2">
+                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mx-auto mb-4">
+                                            <ShieldCheck size={32} className="text-delaval-blue" strokeWidth={2.5} />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-800">Warranty Forms</h3>
+                                        <p className="text-slate-500 mt-1 max-w-sm mx-auto">Digital warranty and commissioning forms for this customer.</p>
+                                        <Link 
+                                            to="/warranty-forms" 
+                                            className="mt-6 px-6 py-2.5 bg-delaval-blue text-white font-bold rounded-xl shadow-lg shadow-blue-900/20 hover:bg-blue-600 transition-all flex items-center gap-2 mx-auto w-fit"
+                                        >
+                                            <Plus size={18} />
+                                            New Warranty Form
+                                        </Link>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -766,8 +821,16 @@ const Customers = () => {
                                 </button>
                                 <button
                                     onClick={() => {
-                                        setEditingId(null);
-                                        setNewCustomer({ name: '', address: '', contact_person: '', email: '', phone: '', payment_terms: 'Net 30' });
+                                        setNewCustomer({
+                                            name: '',
+                                            address: '',
+                                            contact_person: '',
+                                            email: '',
+                                            phone: '',
+                                            payment_terms: 'Net 30',
+                                            machine_model: '',
+                                            plant_type: ''
+                                        });
                                         setIsModalOpen(true);
                                     }}
                                     className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-semibold transition-all shadow-lg shadow-blue-900/20 active:scale-95"
@@ -909,7 +972,10 @@ const Customers = () => {
                                 </div>
                                 <span className="text-[11px] font-bold text-slate-700 tracking-wide uppercase">New Job</span>
                             </Link>
-                            <Link to="/invoices" className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-2 active:scale-95 transition-transform">
+                            <Link
+                                to={`/invoices/new?customerId=${selectedCustomer.id}&type=account`}
+                                className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center justify-center gap-2 active:scale-95 transition-transform"
+                            >
                                 <div className="w-10 h-10 rounded-full bg-[#E6F9F3] text-[#00A862] flex items-center justify-center">
                                     <FileText size={20} />
                                 </div>
@@ -1012,35 +1078,41 @@ const Customers = () => {
                     </div>
                 ) : (
                     <>
-                        {/* Consolidated Mobile Sticky Header */}
-                        <div className="sticky top-0 z-30 bg-[#F8FAFB]/95 backdrop-blur-md border-b border-slate-100/50">
-                            {/* Modern Mobile Header with safe area bleed */}
-                            <div className="bg-white/90 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-12">
-                                <div className="flex justify-between items-center mb-5">
-                                    <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Customers</h1>
-                                    <button
-                                        onClick={() => {
-                                            setEditingId(null);
-                                            setNewCustomer({ name: '', address: '', contact_person: '', email: '', phone: '', payment_terms: 'Net 30' });
-                                            setIsModalOpen(true);
-                                        }}
-                                        className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
-                                    >
-                                        <Plus size={20} />
-                                    </button>
-                                </div>
+                        {/* Modern Mobile Header with safe area bleed */}
+                        <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-12">
+                            <div className="flex justify-between items-center mb-5">
+                                <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Customers</h1>
+                                <button
+                                    onClick={() => {
+                                        setEditingId(null);
+                                        setNewCustomer({
+                                            name: '',
+                                            address: '',
+                                            contact_person: '',
+                                            email: '',
+                                            phone: '',
+                                            payment_terms: 'Net 30',
+                                            machine_model: '',
+                                            plant_type: ''
+                                        });
+                                        setIsModalOpen(true);
+                                    }}
+                                    className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            </div>
 
-                                {/* Integrated Search Bar */}
-                                <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
-                                    <Search size={18} className="text-slate-400 mr-3 shrink-0" />
-                                    <input
-                                        type="text"
-                                        placeholder="Search customers..."
-                                        className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
+                            {/* Integrated Search Bar */}
+                            <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
+                                <Search size={18} className="text-slate-400 mr-3 shrink-0" />
+                                <input
+                                    type="text"
+                                    placeholder="Search customers..."
+                                    className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
                             </div>
                         </div>
 
@@ -1114,6 +1186,32 @@ const Customers = () => {
                         <div className="col-span-2">
                             <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
                             <input type="email" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Machine Model</label>
+                                <input
+                                    type="text"
+                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
+                                    value={newCustomer.machine_model}
+                                    onChange={e => setNewCustomer({ ...newCustomer, machine_model: e.target.value })}
+                                    placeholder="e.g. VMS V300"
+                                />
+                            </div>
+                            <div>
+                                <SearchableSelect
+                                    label="Plant Type"
+                                    searchable={false}
+                                    options={[
+                                        { value: 'DTL', label: 'DTL' },
+                                        { value: 'Recorder', label: 'Recorder' },
+                                        { value: 'Delpro', label: 'Delpro' },
+                                        { value: 'Rotary', label: 'Rotary' }
+                                    ]}
+                                    value={newCustomer.plant_type}
+                                    onChange={(val) => setNewCustomer({ ...newCustomer, plant_type: val })}
+                                />
+                            </div>
                         </div>
                         <div className="col-span-2">
                             <SearchableSelect
