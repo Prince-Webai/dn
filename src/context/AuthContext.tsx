@@ -18,17 +18,47 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            setUser(session?.user ?? null);
+        const checkSession = async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            const isDevBypass = localStorage.getItem('dev_bypass') === 'true';
+            if (isDevBypass && !session) {
+                const devRole = localStorage.getItem('dev_role') || 'Admin';
+                setSession(null);
+                setUser({
+                    id: 'dev-user',
+                    email: 'dev@example.com',
+                    user_metadata: { 
+                        role: devRole, 
+                        name: `Dev ${devRole}`,
+                        full_name: `Dev ${devRole}` 
+                    }
+                } as any);
+            } else {
+                setSession(session);
+                setUser(session?.user ?? null);
+            }
             setLoading(false);
-        });
+        };
+
+        checkSession();
 
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            setSession(session);
-            setUser(session?.user ?? null);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+            const isDevBypass = localStorage.getItem('dev_bypass') === 'true';
+            
+            if (isDevBypass && !session) {
+                const devRole = localStorage.getItem('dev_role') || 'Admin';
+                setSession(null);
+                setUser({
+                    id: 'dev-user',
+                    email: 'dev@example.com',
+                    user_metadata: { role: devRole, full_name: `Dev ${devRole}` }
+                } as any);
+            } else {
+                setSession(session);
+                setUser(session?.user ?? null);
+            }
             setLoading(false);
         });
 

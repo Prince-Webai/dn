@@ -26,9 +26,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
         try {
             await signOut();
-            // Navigation to login is handled by ProtectedRoute/AuthContext state change
+            // Clear dev bypass just in case
+            localStorage.removeItem('dev_bypass');
+            localStorage.removeItem('dev_role');
+            navigate('/login');
         } catch (error) {
             console.error('Error signing out:', error);
+            // Even on error, try to get back to login if session is weird
+            navigate('/login');
         }
     };
 

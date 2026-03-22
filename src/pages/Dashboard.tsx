@@ -235,7 +235,7 @@ const Dashboard = () => {
 
     const quickActions = [
         { icon: Plus, title: 'New Job', desc: 'Log installation', path: '/jobs', color: 'bg-blue-50 text-blue-600', mColor: 'bg-[#E6F0FF] text-[#0051A5]' },
-        { icon: Wrench, title: 'Inventory', desc: 'Solar parts', path: '/inventory', color: 'bg-green-50 text-green-600', mColor: 'bg-[#FFF3E6] text-[#FF6B00]' },
+        { icon: Wrench, title: 'Inventory', desc: 'Dairy parts', path: '/inventory', color: 'bg-green-50 text-green-600', mColor: 'bg-[#FFF3E6] text-[#FF6B00]' },
         { icon: Users, title: 'Customers', desc: 'Sites & contacts', path: '/customers', color: 'bg-blue-50 text-blue-600', mColor: 'bg-[#E6F9F3] text-[#00A862]' },
         { icon: FileText, title: 'All Jobs', desc: 'Full list', path: '/jobs', color: 'bg-orange-50 text-orange-600', mColor: 'bg-[#FFE6E6] text-[#DC3545]' },
         { icon: Calendar, title: 'Monthly Invoice', desc: 'Bill site account', path: '/invoices', color: 'bg-indigo-50 text-indigo-600', mColor: 'bg-indigo-50 text-indigo-600' },
@@ -489,9 +489,9 @@ const Dashboard = () => {
                                     </span>
                                 </div>
                                 <p className="text-[#334155] text-sm mb-3">
-                                    {job.service_type === 'Emergency Repair' ? 'Solar PV System — Inverter issue' :
-                                        job.service_type === 'Routine Maintenance' ? 'Annual panel cleaning' :
-                                            'Controller check'}
+                                    {job.service_type === 'Emergency Repair' ? 'Milking Machine — Vacuum pump issue' :
+                                        job.service_type === 'Routine Maintenance' ? 'Annual service & test' :
+                                            'System check'}
                                 </p>
                                 <div className="flex items-center text-[#64748B] text-xs font-medium">
                                     <span>{job.date_scheduled ? new Date(job.date_scheduled).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '11:30'}</span>

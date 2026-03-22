@@ -222,17 +222,32 @@ const Login = () => {
                     </button>
 
                     {/* DEV ONLY BYPASS */}
-                    <button
-                        type="button"
-                        onClick={() => {
-                            localStorage.setItem('dev_bypass', 'true');
-                            showToast('Bypassing login for dev testing', 'success');
-                            navigate('/inventory');
-                        }}
-                        className="w-full mt-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2 rounded-xl border border-slate-300 transition-all"
-                    >
-                        Bypass Login (Dev)
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                localStorage.setItem('dev_bypass', 'true');
+                                localStorage.setItem('dev_role', 'Admin');
+                                showToast('Bypassing as Admin', 'success');
+                                navigate('/');
+                            }}
+                            className="flex-1 mt-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 rounded-xl border border-slate-300 transition-all"
+                        >
+                            Bypass (Admin)
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                localStorage.setItem('dev_bypass', 'true');
+                                localStorage.setItem('dev_role', 'Engineer');
+                                showToast('Bypassing as Engineer', 'success');
+                                navigate('/');
+                            }}
+                            className="flex-1 mt-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-2 rounded-xl border border-slate-300 transition-all"
+                        >
+                            Bypass (Engineer)
+                        </button>
+                    </div>
                 </form>
 
                 <div className="bg-slate-50 p-4 text-center text-xs text-slate-400 border-t border-slate-100">
