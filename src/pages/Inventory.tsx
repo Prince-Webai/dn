@@ -160,9 +160,17 @@ const Inventory = () => {
 
                 if (mappedProducts.length === 0) throw new Error("No valid products found in CSV");
 
+                // Deduplicate by SKU before upsert to avoid PostgreSQL "ON CONFLICT DO UPDATE command cannot affect row a second time" error
+                const uniqueProducts = Array.from(
+                    mappedProducts.reduce((map, item) => {
+                        map.set(item.sku, item);
+                        return map;
+                    }, new Map()).values()
+                );
+
                 const { error } = await supabase
                     .from('inventory')
-                    .upsert(mappedProducts, { onConflict: 'sku' });
+                    .upsert(uniqueProducts, { onConflict: 'sku' });
 
                 if (error) throw error;
                 
