@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { ServiceReport } from '../types';
-import { FileText, Search, Plus, Filter, Calendar, User, LayoutGrid, List, Eye, Download, Wrench, MoreHorizontal, ExternalLink, ClipboardList, Loader2, CalendarDays } from 'lucide-react';
+import { FileText, Plus, User, Eye, Download, Wrench, ClipboardList, Loader2, CalendarDays } from 'lucide-react';
 import { ReportDocument } from '../components/forms/ReportDocument';
 import { ReportStartModal } from '../components/forms/ReportStartModal';
 import { MilkingMachineTestReport } from '../components/forms/MilkingMachineTestReport';
