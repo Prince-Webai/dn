@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Search, Calendar, User, FileText, Trash2, Pencil, Wrench, Activity, Plus, ArrowRight, Package } from 'lucide-react';
 import { Job, Customer } from '../types';
 import { Link } from 'react-router-dom';
@@ -238,148 +239,150 @@ const Jobs = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <>
             {/* DESKTOP VIEW */}
-            <div className="hidden md:block space-y-6">
-                <div className="flex justify-between items-center">
+            <div className="hidden md:block space-y-6 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24">
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                >
                     <div>
-                        <h1 className="text-2xl font-bold font-display text-slate-900">Jobs & Services</h1>
-                        <p className="text-slate-500">Track equipment installations and maintenance schedules</p>
+                        <h1 className="text-2xl font-bold text-slate-900">Jobs & Services</h1>
+                        <p className="text-slate-500">Manage and schedule service calls</p>
                     </div>
+                    <button
+                        onClick={() => {
+                            setEditingId(null);
+                            setNewJob({
+                                customer_id: '',
+                                engineer_name: '',
+                                service_type: '',
+                                status: 'scheduled',
+                                date_scheduled: new Date().toISOString().split('T')[0],
+                                notes: ''
+                            });
+                            setModalItems([]);
+                            setIsModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-900/10 active:scale-95"
+                    >
+                        <Plus size={20} />
+                        New Job
+                    </button>
+                </motion.div>
+
+                {/* Status Tabs */}
+                <div className="flex gap-2 p-1 bg-white border border-slate-200 rounded-xl w-fit shadow-sm">
+                    {['all', 'scheduled', 'in_progress', 'completed', 'unbilled'].map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all
+                                ${activeTab === tab
+                                    ? 'bg-blue-600 text-white shadow-md'
+                                    : 'text-slate-600 hover:bg-slate-50'
+                                }`}
+                        >
+                            {tab === 'all' ? 'All' : tab === 'unbilled' ? 'Unbilled' : tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                            <span className="ml-2 px-1.5 py-0.5 bg-black/10 rounded text-xs">
+                                {getTabCount(tab)}
+                            </span>
+                        </button>
+                    ))}
                 </div>
 
-                <div className="section-card">
-                    <div className="flex flex-col sm:flex-row justify-between items-center p-6 border-b border-slate-100 gap-4">
-                        <h2 className="text-lg font-bold text-slate-900">Job List</h2>
-                        <div className="flex gap-2 w-full sm:w-auto">
-                            <button className="btn btn-secondary text-sm">Export</button>
-                            <button onClick={() => {
-                                setEditingId(null);
-                                setNewJob({
-                                    customer_id: '',
-                                    engineer_name: '',
-                                    service_type: '',
-                                    status: 'scheduled',
-                                    date_scheduled: new Date().toISOString().split('T')[0],
-                                    notes: ''
-                                });
-                                setModalItems([]);
-                                setIsModalOpen(true);
-                            }} className="btn btn-primary text-sm shadow-md shadow-blue-900/10">
-                                + New Job
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="border-b border-slate-200 px-6">
-                        <div className="flex gap-6 overflow-x-auto no-scrollbar">
-                            {['all', 'scheduled', 'in_progress', 'completed', 'unbilled'].map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`py-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap capitalize
-                                    ${activeTab === tab
-                                            ? 'border-blue-600 text-blue-600'
-                                            : 'border-transparent text-slate-500 hover:text-slate-700'
-                                        }`}
-                                >
-                                    {tab === 'all' ? 'All' : tab === 'unbilled' ? 'Unbilled' : tab.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} ({getTabCount(tab)})
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="p-6">
-                        <div className="relative mb-6">
+                {/* Jobs Table */}
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <h2 className="font-bold text-slate-900">Job List</h2>
+                        <div className="relative max-w-sm w-full">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 type="text"
-                                placeholder="Search jobs by site, engineer, or job ID..."
-                                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600/20 focus:border-blue-600 transition-all"
+                                placeholder="Search jobs, customers..."
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-600 focus:bg-white transition-all"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
+                    </div>
 
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-[#F8FAFB] border-b border-slate-100">
-                                    <tr>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job Details</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Service Type</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Engineer</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead className="bg-[#F8FAFB] border-b border-slate-100">
+                                <tr>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job Details</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Service Type</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Engineer</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {loading ? (
+                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-500">Loading jobs...</td></tr>
+                                ) : filteredJobs.map((job) => (
+                                    <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-6 py-4">
+                                            <div className="font-bold text-slate-900">#{job.job_number}</div>
+                                            <div className="text-xs text-slate-500">ID</div>
+                                        </td>
+                                        <td className="px-6 py-4 font-medium text-slate-700">{job.customers?.name || 'Unknown'}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600">{job.service_type}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-600">
+                                            <div className="flex items-center gap-2">
+                                                <User size={14} className="text-slate-400" />
+                                                {job.engineer_name || 'Unassigned'}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-slate-600">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar size={14} className="text-slate-400" />
+                                                {job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {getStatusBadge(job.status)}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex gap-2">
+                                                <Link to={`/jobs/${job.id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-block" title="View Details">
+                                                    <FileText size={18} />
+                                                </Link>
+                                                <button
+                                                    onClick={() => handleEditClick(job)}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                    title="Edit Job"
+                                                >
+                                                    <Pencil size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteClick(job.id)}
+                                                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                                    title="Delete Job"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100">
-                                    {loading ? (
-                                        <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-500">Loading jobs...</td></tr>
-                                    ) : filteredJobs.map((job) => (
-                                        <tr key={job.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="font-bold text-slate-900">#{job.job_number}</div>
-                                                <div className="text-xs text-slate-500">ID</div>
-                                            </td>
-                                            <td className="px-6 py-4 font-medium text-slate-700">{job.customers?.name || 'Unknown'}</td>
-                                            <td className="px-6 py-4 text-sm text-slate-600">{job.service_type}</td>
-                                            <td className="px-6 py-4 text-sm text-slate-600">
-                                                <div className="flex items-center gap-2">
-                                                    <User size={14} className="text-slate-400" />
-                                                    {job.engineer_name || 'Unassigned'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-600">
-                                                <div className="flex items-center gap-2">
-                                                    <Calendar size={14} className="text-slate-400" />
-                                                    {job.date_scheduled ? new Date(job.date_scheduled).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Not set'}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {getStatusBadge(job.status)}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex gap-2">
-                                                    <Link to={`/jobs/${job.id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors inline-block" title="View Details">
-                                                        <FileText size={18} />
-                                                    </Link>
-
-
-                                                    <button
-                                                        onClick={() => handleEditClick(job)}
-                                                        className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="Edit Job"
-                                                    >
-                                                        <Pencil size={18} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDeleteClick(job.id)}
-                                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Delete Job"
-                                                    >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {filteredJobs.length === 0 && !loading && (
-                                        <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">No jobs found</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                ))}
+                                {filteredJobs.length === 0 && !loading && (
+                                    <tr><td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">No jobs found</td></tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
             {/* MOBILE VIEW */}
             <div className="block md:hidden pb-24 bg-[#F8FAFB] min-h-screen text-[#1a1a1a]">
-
-                {/* Modern Mobile Header with safe area bleed */}
-                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-12">
+                {/* Modern Mobile Header without extra pt-12, reduced to pt-6 for tighter look */}
+                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-6">
                     <div className="flex justify-between items-center mb-5">
                         <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Jobs</h1>
                         <button
@@ -416,7 +419,7 @@ const Jobs = () => {
                 </div>
 
                 {/* Status Tabs Slider - Sticky below header */}
-                <div className="sticky top-[146px] z-10 bg-[#F8FAFB]/95 backdrop-blur-sm pt-4 pb-3 border-b border-slate-100/50">
+                <div className="sticky top-[118px] z-10 bg-[#F8FAFB]/95 backdrop-blur-sm pt-4 pb-3 border-b border-slate-100/50">
                     <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5">
                         {['all', 'scheduled', 'in_progress', 'completed', 'unbilled'].map((tab) => (
                             <button
@@ -435,7 +438,7 @@ const Jobs = () => {
                 </div>
 
                 {/* Job Cards List */}
-                <div className="px-5 space-y-3">
+                <div className="px-5 space-y-3 pt-4">
                     {loading ? (
                         <div className="text-center py-10 text-slate-400 font-medium text-sm">Loading jobs...</div>
                     ) : (
@@ -481,219 +484,217 @@ const Jobs = () => {
                 </div>
             </div>
 
-            <div className="hidden md:block">
-                <Modal
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    title={editingId ? "Edit Job" : "Create New Job"}
-                    size="wide"
-                >
-                    <form onSubmit={handleAddJob} className="space-y-4 md:space-y-6">
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="font-bold text-slate-900">Customer Details</h3>
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
-                                    className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
-                                >
-                                    {isAddingNewCustomer ? 'Select Existing Site' : '+ Add New Site'}
-                                </button>
-                            </div>
+            <Modal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                title={editingId ? "Edit Job" : "Create New Job"}
+                size="wide"
+                backdropClassName="hidden md:flex"
+            >
+                <form onSubmit={handleAddJob} className="space-y-4 md:space-y-6">
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-slate-900">Customer Details</h3>
+                            <button
+                                type="button"
+                                onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
+                                className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
+                            >
+                                {isAddingNewCustomer ? 'Select Existing Site' : '+ Add New Site'}
+                            </button>
+                        </div>
 
-                            {isAddingNewCustomer ? (
-                                <div className="grid grid-cols-1 gap-4">
+                        {isAddingNewCustomer ? (
+                            <div className="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Installation Site Name / Customer *</label>
+                                    <input
+                                        type="text"
+                                        required
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
+                                        value={newCustomerData.name}
+                                        onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                                    <input
+                                        type="tel"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
+                                        value={newCustomerData.phone || ''}
+                                        onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                                    <textarea
+                                        rows={2}
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
+                                        value={newCustomerData.address || ''}
+                                        onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <SearchableSelect
+                                label="Select Existing Site *"
+                                options={customers.map(c => ({ value: c.id, label: c.name }))}
+                                value={newJob.customer_id || ''}
+                                onChange={val => setNewJob({ ...newJob, customer_id: val })}
+                                placeholder="Search and select..."
+                                icon={<User size={16} />}
+                            />
+                        )}
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-100 grid grid-cols-2 gap-4">
+                        <div className="col-span-2">
+                            <h3 className="font-bold text-slate-900 mb-4">Job Details</h3>
+                            <SearchableSelect
+                                label="Service Type"
+                                options={[
+                                    { value: 'Milking Machine Service', label: 'Milking Machine Service' },
+                                    { value: 'Plant Installation', label: 'Plant Installation' },
+                                    { value: 'Maintenance Check', label: 'Maintenance Check' },
+                                    { value: 'Emergency Repair', label: 'Emergency Repair' },
+                                    { value: 'System Audit', label: 'System Audit' }
+                                ]}
+                                allowCustom={true}
+                                value={newJob.service_type || ''}
+                                onChange={val => setNewJob({ ...newJob, service_type: val })}
+                                icon={<FileText size={16} />}
+                            />
+                        </div>
+
+                        <div className="col-span-1">
+                            <SearchableSelect
+                                label="Assign Engineer"
+                                options={engineers.map(eng => ({ value: eng.name, label: eng.name }))}
+                                value={newJob.engineer_name || ''}
+                                onChange={val => setNewJob({ ...newJob, engineer_name: val })}
+                                icon={<Wrench size={16} />}
+                            />
+                        </div>
+
+                        <div className="col-span-1">
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
+                            <DatePicker
+                                required
+                                value={newJob.date_scheduled || ''}
+                                onChange={(date) => setNewJob({ ...newJob, date_scheduled: date })}
+                            />
+                        </div>
+
+                        <div className="col-span-2">
+                            <SearchableSelect
+                                label="Status"
+                                searchable={false}
+                                options={[
+                                    { value: 'scheduled', label: 'Scheduled' },
+                                    { value: 'in_progress', label: 'In Progress' },
+                                    { value: 'completed', label: 'Completed' },
+                                    { value: 'cancelled', label: 'Cancelled' }
+                                ]}
+                                value={newJob.status || 'scheduled'}
+                                onChange={val => setNewJob({ ...newJob, status: val as Job['status'] })}
+                                icon={<Activity size={16} />}
+                            />
+                        </div>
+
+                    </div>
+
+                    <div className="bg-white p-4 rounded-xl border border-slate-100">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-slate-900">Parts & Labor</h3>
+                            <div className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                                Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
+                            </div>
+                        </div>
+
+                        <div className="space-y-3 mb-4">
+                            {modalItems.map((item, idx) => (
+                                <div key={idx} className="flex justify-between items-center p-3 border border-slate-200 rounded-lg">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Installation Site Name / Customer *</label>
-                                        <input
-                                            type="text"
-                                            required
-                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
-                                            value={newCustomerData.name}
-                                            onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
-                                        />
+                                        <div className="font-medium text-slate-900">{item.description}</div>
+                                        <div className="text-sm text-slate-500">Qty: {item.quantity} × €{item.unit_price.toFixed(2)}</div>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Phone</label>
-                                        <input
-                                            type="tel"
-                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
-                                            value={newCustomerData.phone || ''}
-                                            onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                                        <textarea
-                                            rows={2}
-                                            className="w-full px-4 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600/20 outline-none"
-                                            value={newCustomerData.address || ''}
-                                            onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
-                                        />
+                                    <div className="flex items-center gap-4">
+                                        <div className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
+                                            className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                     </div>
                                 </div>
-                            ) : (
-                                <SearchableSelect
-                                    label="Select Existing Site *"
-                                    options={customers.map(c => ({ value: c.id, label: c.name }))}
-                                    value={newJob.customer_id || ''}
-                                    onChange={val => setNewJob({ ...newJob, customer_id: val })}
-                                    placeholder="Search and select..."
-                                    icon={<User size={16} />}
-                                />
+                            ))}
+                            {modalItems.length === 0 && (
+                                <div className="text-center py-6 text-sm text-slate-500 border border-dashed border-slate-300 rounded-lg">
+                                    No items added yet. Search inventory below or add custom labor.
+                                </div>
                             )}
                         </div>
 
-                        <div className="bg-white p-4 rounded-xl border border-slate-100 grid grid-cols-2 gap-4">
-                            <div className="col-span-2">
-                                <h3 className="font-bold text-slate-900 mb-4">Job Details</h3>
-                                <SearchableSelect
-                                    label="Service Type"
-                                    options={[
-                                        { value: 'Milking Machine Service', label: 'Milking Machine Service' },
-                                        { value: 'Plant Installation', label: 'Plant Installation' },
-                                        { value: 'Maintenance Check', label: 'Maintenance Check' },
-                                        { value: 'Emergency Repair', label: 'Emergency Repair' },
-                                        { value: 'System Audit', label: 'System Audit' }
-                                    ]}
-                                    allowCustom={true}
-                                    value={newJob.service_type || ''}
-                                    onChange={val => setNewJob({ ...newJob, service_type: val })}
-                                    icon={<FileText size={16} />}
+                        {isAddingCustom ? (
+                            <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
+                                <div className="font-bold text-sm text-slate-700">Add Custom Item / Labor</div>
+                                <input
+                                    type="text"
+                                    placeholder="Description (e.g. Installation Labor)"
+                                    className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-blue-600"
+                                    value={newItem.description}
+                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
                                 />
-                            </div>
-
-                            <div className="col-span-1">
-                                <SearchableSelect
-                                    label="Assign Engineer"
-                                    options={engineers.map(eng => ({ value: eng.name, label: eng.name }))}
-                                    value={newJob.engineer_name || ''}
-                                    onChange={val => setNewJob({ ...newJob, engineer_name: val })}
-                                    icon={<Wrench size={16} />}
-                                />
-                            </div>
-
-                            <div className="col-span-1">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Date</label>
-                                <DatePicker
-                                    required
-                                    value={newJob.date_scheduled || ''}
-                                    onChange={(date) => setNewJob({ ...newJob, date_scheduled: date })}
-                                />
-                            </div>
-
-                            <div className="col-span-2">
-                                <SearchableSelect
-                                    label="Status"
-                                    searchable={false}
-                                    options={[
-                                        { value: 'scheduled', label: 'Scheduled' },
-                                        { value: 'in_progress', label: 'In Progress' },
-                                        { value: 'completed', label: 'Completed' },
-                                        { value: 'cancelled', label: 'Cancelled' }
-                                    ]}
-                                    value={newJob.status || 'scheduled'}
-                                    onChange={val => setNewJob({ ...newJob, status: val as Job['status'] })}
-                                    icon={<Activity size={16} />}
-                                />
-                            </div>
-
-                        </div>
-
-                        {/* DESKTOP Line Items Editor */}
-                        <div className="bg-white p-4 rounded-xl border border-slate-100">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-bold text-slate-900">Parts & Labor</h3>
-                                <div className="text-sm font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                                    Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
-                                </div>
-                            </div>
-
-                            <div className="space-y-3 mb-4">
-                                {modalItems.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center p-3 border border-slate-200 rounded-lg">
-                                        <div>
-                                            <div className="font-medium text-slate-900">{item.description}</div>
-                                            <div className="text-sm text-slate-500">Qty: {item.quantity} × €{item.unit_price.toFixed(2)}</div>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="font-bold text-slate-900">€{(item.quantity * item.unit_price).toFixed(2)}</div>
-                                            <button
-                                                type="button"
-                                                onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
-                                                className="text-red-500 hover:bg-red-50 p-1 rounded transition-colors"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-xs text-slate-500 mb-1">Quantity</label>
+                                        <input
+                                            type="number"
+                                            min="0.5"
+                                            step="0.5"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-blue-600"
+                                            value={newItem.quantity}
+                                            onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
+                                        />
                                     </div>
-                                ))}
-                                {modalItems.length === 0 && (
-                                    <div className="text-center py-6 text-sm text-slate-500 border border-dashed border-slate-300 rounded-lg">
-                                        No items added yet. Search inventory below or add custom labor.
-                                    </div>
-                                )}
-                            </div>
-
-                            {isAddingCustom ? (
-                                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
-                                    <div className="font-bold text-sm text-slate-700">Add Custom Item / Labor</div>
-                                    <input
-                                        type="text"
-                                        placeholder="Description (e.g. Installation Labor)"
-                                        className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-blue-600"
-                                        value={newItem.description}
-                                        onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                    />
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label className="block text-xs text-slate-500 mb-1">Quantity</label>
-                                            <input
-                                                type="number"
-                                                min="0.5"
-                                                step="0.5"
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-blue-600"
-                                                value={newItem.quantity}
-                                                onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs text-slate-500 mb-1">Unit Price (€)</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                step="0.01"
-                                                className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-blue-600"
-                                                value={newItem.unit_price}
-                                                onChange={e => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="flex justify-end gap-2 pt-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsAddingCustom(false)}
-                                            className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (newItem.description) {
-                                                    setModalItems([...modalItems, { ...newItem, type: 'labor' }]);
-                                                    setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
-                                                    setIsAddingCustom(false);
-                                                }
-                                            }}
-                                            className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-                                        >
-                                            Add Custom Line
-                                        </button>
+                                    <div>
+                                        <label className="block text-xs text-slate-500 mb-1">Unit Price (€)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.01"
+                                            className="w-full px-3 py-2 border border-slate-300 rounded-md outline-none focus:border-blue-600"
+                                            value={newItem.unit_price}
+                                            onChange={e => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
+                                        />
                                     </div>
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-[1fr_auto] gap-3">
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddingCustom(false)}
+                                        className="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-md transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            if (newItem.description) {
+                                                setModalItems([...modalItems, { ...newItem, type: 'labor' }]);
+                                                setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
+                                                setIsAddingCustom(false);
+                                            }
+                                        }}
+                                        className="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                                    >
+                                        Add Custom Line
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
                             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                                 <div className="md:col-span-2">
                                     <SearchableSelect
@@ -738,334 +739,153 @@ const Jobs = () => {
                                             }
                                         }}
                                         disabled={!newItem.description}
-                                        className="w-full h-[42px] bg-delaval-blue text-white rounded-lg text-sm font-bold flex justify-center gap-2 items-center hover:bg-delaval-dark-blue disabled:opacity-50 transition-all font-display"
+                                        className="w-full h-[42px] bg-blue-600 text-white rounded-lg text-sm font-bold flex justify-center gap-2 items-center hover:bg-blue-700 disabled:opacity-50 transition-all"
                                     >
                                         <Plus size={18} /> Add Part
                                     </button>
                                 </div>
-                            </div>
-                            <div className="mt-2 text-center">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsAddingCustom(true)}
-                                    className="text-xs font-bold text-slate-400 hover:text-delaval-blue transition-colors uppercase tracking-widest"
-                                >
-                                    + Add Custom Item / Labor
-                                </button>
-                            </div>
+                                <div className="md:col-span-4 text-center mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddingCustom(true)}
+                                        className="text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors uppercase tracking-widest"
+                                    >
+                                        + Add Custom Item / Labor
+                                    </button>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+                    </div>
 
-                        {/* Job Description (formerly Notes), moved below Parts & Labor */}
-                        <div className="bg-white p-4 rounded-xl border border-slate-100">
-                            <label className="block text-sm font-bold text-slate-900 mb-2">Job Description</label>
-                            <textarea
-                                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-600/20 outline-none text-slate-700 bg-slate-50 focus:bg-white transition-colors min-h-[100px]"
-                                placeholder="Enter detailed job description or internal notes here..."
-                                rows={3}
-                                value={newJob.notes}
-                                onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
-                            />
-                        </div>
+                    <div className="bg-white p-4 rounded-xl border border-slate-100">
+                        <label className="block text-sm font-bold text-slate-900 mb-2">Job Description</label>
+                        <textarea
+                            className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-600/20 outline-none text-slate-700 bg-slate-50 focus:bg-white transition-colors min-h-[100px]"
+                            placeholder="Enter detailed job description or internal notes here..."
+                            rows={3}
+                            value={newJob.notes}
+                            onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
+                        />
+                    </div>
 
-                        <div className="pt-4 flex justify-end gap-3">
-                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
-                            <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-900/10">
-                                {editingId ? 'Save Changes' : 'Create Job'}
-                            </button>
-                        </div>
-                    </form>
-                </Modal>
-            </div>
+                    <div className="pt-4 flex justify-end gap-3">
+                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
+                        <button type="submit" className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-lg shadow-blue-900/10">
+                            {editingId ? 'Save Changes' : 'Create Job'}
+                        </button>
+                    </div>
+                </form>
+            </Modal>
 
             {/* FULL SCREEN MOBILE MODAL */}
-            {
-                isModalOpen && (
-                    <div className="fixed inset-0 bg-[#F8FAFB] z-[100] md:hidden flex flex-col overflow-hidden">
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-5 pt-12 pb-4 bg-white border-b border-slate-100 shrink-0">
-                            <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center text-slate-400 bg-slate-50 rounded-full hover:text-slate-600 transition-colors">
-                                <div className="w-4 h-4 relative">
-                                    <span className="absolute left-0 top-1/2 w-4 h-0.5 bg-current -translate-y-1/2 rotate-45 rounded-full"></span>
-                                    <span className="absolute left-0 top-1/2 w-4 h-0.5 bg-current -translate-y-1/2 -rotate-45 rounded-full"></span>
-                                </div>
-                            </button>
-                            <h2 className="text-lg font-bold text-slate-900 tracking-tight">{editingId ? "Edit Job" : "New Job"}</h2>
-                            <div className="w-10"></div> {/* Spacer */}
-                        </div>
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-[#F8FAFB] z-[3000] md:hidden flex flex-col overflow-hidden">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-5 pt-12 pb-4 bg-white border-b border-slate-100 shrink-0">
+                        <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center text-slate-400 bg-slate-50 rounded-full hover:text-slate-600 transition-colors">
+                            <Plus size={24} className="rotate-45" />
+                        </button>
+                        <h2 className="text-lg font-bold text-slate-900 tracking-tight">{editingId ? "Edit Job" : "New Job"}</h2>
+                        <div className="w-10"></div>
+                    </div>
 
-                        {/* Form Content */}
-                        <div className="flex-1 overflow-y-auto px-5 py-6">
-                            <form id="mobile-job-form" onSubmit={handleAddJob} className="space-y-6 pb-24">
-
-                                {/* Schedule Section */}
-                                <div className="space-y-4">
-                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Schedule</label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                                            <div className="flex items-center gap-2 mb-2 text-[#0051A5]">
-                                                <Calendar size={16} />
-                                                <span className="font-bold text-sm">Date</span>
-                                            </div>
-                                            <input
-                                                type="date"
-                                                className="w-full text-slate-900 font-medium text-sm outline-none bg-transparent"
-                                                value={newJob.date_scheduled || ''}
-                                                onChange={(e) => setNewJob({ ...newJob, date_scheduled: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                                            <div className="flex items-center gap-2 mb-2 text-[#FF6B00]">
-                                                <Activity size={16} />
-                                                <span className="font-bold text-sm">Status</span>
-                                            </div>
-                                            <select
-                                                className="w-full text-slate-900 font-medium text-sm outline-none bg-transparent appearance-none"
-                                                value={newJob.status || 'scheduled'}
-                                                onChange={e => setNewJob({ ...newJob, status: e.target.value as Job['status'] })}
-                                            >
-                                                <option value="scheduled">Scheduled</option>
-                                                <option value="in_progress">In Progress</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="cancelled">Cancelled</option>
-                                            </select>
-                                        </div>
-                                    </div>
+                    <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-32">
+                        <form onSubmit={handleAddJob} id="mobile-job-form" className="space-y-6">
+                            {/* Mobile Form content from original if needed, or simplified versions */}
+                             <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="font-bold text-slate-900">Site Information</h3>
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
+                                        className="text-xs font-bold text-blue-600"
+                                    >
+                                        {isAddingNewCustomer ? 'Select Existing' : '+ New Site'}
+                                    </button>
                                 </div>
 
-                                {/* Details Section */}
-                                <div className="space-y-4">
-                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Details</label>
-                                    <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] divide-y divide-slate-50">
-                                        <div className="p-4">
-                                            <div className="text-xs font-bold text-slate-500 mb-1">Service Type</div>
-                                            <select
-                                                className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
-                                                value={newJob.service_type || ''}
-                                                onChange={e => setNewJob({ ...newJob, service_type: e.target.value })}
-                                            >
-                                                <option value="">Select Service Type...</option>
-                                                <option value="Machine Service">Machine Service</option>
-                                                <option value="Breakdown">Breakdown</option>
-                                                <option value="Emergency Call Out">Emergency Call Out</option>
-                                            </select>
-                                        </div>
-                                        <div className="p-4">
-                                            <div className="text-xs font-bold text-slate-500 mb-1">Assigned Engineer</div>
-                                            <select
-                                                className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
-                                                value={newJob.engineer_name || ''}
-                                                onChange={e => setNewJob({ ...newJob, engineer_name: e.target.value })}
-                                            >
-                                                <option value="">Select Engineer...</option>
-                                                {engineers.map(eng => <option key={eng.id} value={eng.name}>{eng.name}</option>)}
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Customer Section */}
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between pl-1">
-                                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Customer</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
-                                            className="text-[11px] font-bold text-[#0051A5] uppercase tracking-wider"
-                                        >
-                                            {isAddingNewCustomer ? 'Select Existing' : 'Add New'}
-                                        </button>
-                                    </div>
-                                    <div className="bg-white rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] p-4">
-                                        {isAddingNewCustomer ? (
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Customer / Site Name *"
-                                                        required
-                                                        className="w-full text-slate-900 font-bold text-[15px] outline-none border-b border-slate-100 pb-2"
-                                                        value={newCustomerData.name}
-                                                        onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <input
-                                                        type="tel"
-                                                        placeholder="Phone Number"
-                                                        className="w-full text-slate-900 text-[15px] outline-none border-b border-slate-100 pb-2"
-                                                        value={newCustomerData.phone || ''}
-                                                        onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <textarea
-                                                        placeholder="Full Address"
-                                                        rows={2}
-                                                        className="w-full text-slate-900 text-[15px] outline-none"
-                                                        value={newCustomerData.address || ''}
-                                                        onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <select
-                                                className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
-                                                value={newJob.customer_id || ''}
-                                                onChange={e => setNewJob({ ...newJob, customer_id: e.target.value })}
-                                                required
-                                            >
-                                                <option value="">Select a customer...</option>
-                                                {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                            </select>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Line Items Editor */}
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center pl-1">
-                                        <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">Parts & Labor</label>
-                                        <div className="text-[11px] font-bold text-[#0051A5] bg-[#E6F0FF] px-2 py-0.5 rounded-full">
-                                            Total: €{modalItems.reduce((sum, i) => sum + (i.quantity * i.unit_price), 0).toFixed(2)}
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {modalItems.map((item, idx) => (
-                                            <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex items-center gap-3">
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="font-bold text-slate-900 text-sm truncate">{item.description}</div>
-                                                    <div className="text-xs text-slate-500 font-medium">Qty: {item.quantity} × €{item.unit_price.toFixed(2)}</div>
-                                                </div>
-                                                <div className="text-sm font-black text-slate-900 pr-2">€{(item.quantity * item.unit_price).toFixed(2)}</div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setModalItems(modalItems.filter((_, i) => i !== idx))}
-                                                    className="w-8 h-8 flex items-center justify-center rounded-full bg-red-50 text-red-500 shrink-0"
-                                                >
-                                                    <Trash2 size={14} />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-                                        {isAddingCustom ? (
-                                            <div className="space-y-3">
-                                                <input
-                                                    type="text"
-                                                    placeholder="Item description..."
-                                                    className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
-                                                    value={newItem.description}
-                                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                                />
-                                                <div className="flex gap-4">
-                                                    <div className="flex-1">
-                                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Qty</div>
-                                                        <input
-                                                            type="number"
-                                                            className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
-                                                            value={newItem.quantity}
-                                                            onChange={e => setNewItem({ ...newItem, quantity: parseFloat(e.target.value) || 0 })}
-                                                        />
-                                                    </div>
-                                                    <div className="flex-1">
-                                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1">Price (€)</div>
-                                                        <input
-                                                            type="number"
-                                                            className="w-full text-slate-900 text-[15px] font-medium outline-none border-b border-slate-100 pb-2"
-                                                            value={newItem.unit_price}
-                                                            onChange={e => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
-                                                        />
-                                                    </div>
-                                                </div>
-                                                <div className="flex justify-end gap-2 pt-2">
-                                                    <button type="button" onClick={() => setIsAddingCustom(false)} className="px-4 py-2 text-xs font-bold text-slate-500 bg-slate-50 rounded-lg">Cancel</button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (newItem.description) {
-                                                                setModalItems([...modalItems, { ...newItem, type: 'labor' }]);
-                                                                setNewItem({ description: '', quantity: 1, unit_price: 0, type: 'part' });
-                                                                setIsAddingCustom(false);
-                                                            }
-                                                        }}
-                                                        className="px-4 py-2 text-xs font-bold text-white bg-[#0051A5] rounded-lg"
-                                                    >
-                                                        Add Item
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                <select
-                                                    className="w-full text-slate-900 font-bold text-[15px] outline-none bg-transparent"
-                                                    value=""
-                                                    onChange={(e) => {
-                                                        const id = e.target.value;
-                                                        const invItem = inventory.find(i => i.id === id);
-                                                        if (invItem) {
-                                                            setModalItems([...modalItems, {
-                                                                description: invItem.name,
-                                                                quantity: 1,
-                                                                unit_price: invItem.sell_price,
-                                                                type: 'part',
-                                                                inventory_id: invItem.id
-                                                            }]);
-                                                        }
-                                                    }}
-                                                >
-                                                    <option value="">Select an inventory item...</option>
-                                                    {inventory.map(i => <option key={i.id} value={i.id}>{i.name} (€{i.sell_price})</option>)}
-                                                </select>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setIsAddingCustom(true)}
-                                                    className="w-full py-3 bg-[#F0F5FA] text-[#0051A5] rounded-xl text-sm font-bold active:scale-[0.98] transition-transform flex justify-center gap-2 items-center"
-                                                >
-                                                    <FileText size={16} />
-                                                    Add Custom / Labor
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Job Description Section (formerly Notes) */}
-                                <div className="space-y-4">
-                                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest pl-1">Job Description</label>
-                                    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
+                                {isAddingNewCustomer ? (
+                                    <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-100">
+                                        <input
+                                            placeholder="Site Name *"
+                                            className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none text-[15px]"
+                                            value={newCustomerData.name}
+                                            onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
+                                        />
+                                        <input
+                                            placeholder="Phone"
+                                            className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none text-[15px]"
+                                            value={newCustomerData.phone || ''}
+                                            onChange={e => setNewCustomerData({ ...newCustomerData, phone: e.target.value })}
+                                        />
                                         <textarea
-                                            className="w-full text-slate-900 text-[15px] outline-none bg-transparent min-h-[80px]"
-                                            placeholder="Enter detailed job description or internal notes here..."
-                                            value={newJob.notes || ''}
-                                            onChange={e => setNewJob({ ...newJob, notes: e.target.value })}
+                                            placeholder="Address"
+                                            className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none text-[15px]"
+                                            value={newCustomerData.address || ''}
+                                            onChange={e => setNewCustomerData({ ...newCustomerData, address: e.target.value })}
                                         />
                                     </div>
+                                ) : (
+                                    <SearchableSelect
+                                        label=""
+                                        options={customers.map(c => ({ value: c.id, label: c.name }))}
+                                        value={newJob.customer_id || ''}
+                                        onChange={val => setNewJob({ ...newJob, customer_id: val })}
+                                        placeholder="Choose a site..."
+                                    />
+                                )}
+                            </div>
+
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-slate-900">Service Type</h3>
+                                <SearchableSelect
+                                    label=""
+                                    options={[
+                                        { value: 'Milking Machine Service', label: 'Milking Machine Service' },
+                                        { value: 'Plant Installation', label: 'Plant Installation' },
+                                        { value: 'Maintenance Check', label: 'Maintenance Check' },
+                                        { value: 'Emergency Repair', label: 'Emergency Repair' }
+                                    ]}
+                                    allowCustom={true}
+                                    value={newJob.service_type || ''}
+                                    onChange={val => setNewJob({ ...newJob, service_type: val })}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <h3 className="font-bold text-slate-900">Date</h3>
+                                    <DatePicker
+                                        value={newJob.date_scheduled || ''}
+                                        onChange={(date) => setNewJob({ ...newJob, date_scheduled: date })}
+                                    />
                                 </div>
-
-                                {/* Removed from here to place below parts and labor */}
-                            </form>
-                        </div>
-
-                        {/* Fixed Bottom Action Bar */}
-                        <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-slate-100 shrink-0 pb-8 rounded-t-3xl shadow-[0_-8px_30px_rgba(0,0,0,0.04)]">
-                            <button
-                                type="submit"
-                                form="mobile-job-form"
-                                className="w-full py-4 bg-[#0051A5] text-white rounded-[1.25rem] font-bold text-[15px] shadow-[0_8px_20px_rgba(0,81,165,0.25)] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-                            >
-                                {editingId ? 'Save Changes' : 'Create Job'}
-                                <ArrowRight size={18} />
-                            </button>
-                        </div>
+                                <div className="space-y-2">
+                                    <h3 className="font-bold text-slate-900">Engineer</h3>
+                                    <SearchableSelect
+                                        label=""
+                                        options={engineers.map(eng => ({ value: eng.name, label: eng.name }))}
+                                        value={newJob.engineer_name || ''}
+                                        onChange={val => setNewJob({ ...newJob, engineer_name: val })}
+                                    />
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                )
-            }
+
+                    {/* Mobile Footer */}
+                    <div className="p-5 bg-white border-t border-slate-100 shrink-0">
+                        <button
+                            form="mobile-job-form"
+                            type="submit"
+                            className="flex items-center justify-center gap-2 w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200"
+                        >
+                            {editingId ? 'Update Job' : 'Create Job'}
+                            <ArrowRight size={18} />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <ConfirmModal
                 isOpen={isDeleteModalOpen}
@@ -1077,8 +897,9 @@ const Jobs = () => {
                 isLoading={isDeleting}
                 confirmText="Delete Job"
             />
-        </div >
+        </>
     );
 };
 
 export default Jobs;
+

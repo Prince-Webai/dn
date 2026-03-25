@@ -10,9 +10,10 @@ interface ModalProps {
     children: React.ReactNode;
     size?: 'default' | 'wide' | 'xl';
     overflowVisible?: boolean;
+    backdropClassName?: string;
 }
 
-const Modal = ({ isOpen, onClose, title, children, size = 'default', overflowVisible = false }: ModalProps) => {
+const Modal = ({ isOpen, onClose, title, children, size = 'default', overflowVisible = false, backdropClassName = '' }: ModalProps) => {
     const modalRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -38,7 +39,7 @@ const Modal = ({ isOpen, onClose, title, children, size = 'default', overflowVis
     if (size === 'xl') maxWidthClass = 'max-w-6xl';
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 ${backdropClassName}`}>
             <div
                 ref={modalRef}
                 className={`bg-white rounded-xl shadow-xl w-full ${maxWidthClass} max-h-[96vh] sm:max-h-[92vh] flex flex-col ${overflowVisible ? '' : 'overflow-hidden'} transform transition-all animate-in zoom-in-95 duration-200`}

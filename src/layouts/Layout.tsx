@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, Kanban, Settings as SettingsIcon, ClipboardList, ShieldCheck } from 'lucide-react';
+import { Menu, LayoutDashboard, Wrench, Users, Package, FileText, LogOut, User, Euro, PieChart, FileCheck, Kanban, Settings as SettingsIcon, ClipboardList, ShieldCheck, ChevronUp, ChevronDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
@@ -91,17 +92,22 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     // Mobile Bottom Nav Structure
     const mobileNavItems = [
         { icon: LayoutDashboard, label: 'Home', path: '/' },
-        { icon: FileText, label: 'Jobs', path: '/jobs' },
+        { icon: Wrench, label: 'Jobs', path: '/jobs' },
         { icon: Users, label: 'Customers', path: '/customers' },
         { icon: ShieldCheck, label: 'Warranty', path: '/warranty-forms' },
     ];
 
-    const closeSidebar = () => setIsSidebarOpen(false);
+    const [isMobileNavExpanded, setIsMobileNavExpanded] = useState(false);
+
+    const closeSidebar = () => {
+        setIsSidebarOpen(false);
+        setIsMobileNavExpanded(false);
+    };
 
     return (
         <div className="min-h-screen bg-[#F8FAFB] font-sans text-[#1a1a1a]">
-            {/* Desktop Header */}
-            <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white shadow-sm">
+            {/* Desktop Header - Hidden on Mobile */}
+            <header className="hidden md:block sticky top-0 z-[1000] border-b border-slate-200 bg-white shadow-sm">
                 <div className="max-w-[1600px] mx-auto px-8 py-2 flex justify-between items-center flex-wrap gap-4">
 
                     <Link to="/" className="flex items-center pt-1 group">
@@ -224,25 +230,122 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </div>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex overflow-x-auto no-scrollbar items-center px-2 pt-3 pb-8 z-[2000] shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
-                {mobileNavItems.map((item) => {
-                    const Icon = item.icon;
-                    // Strict active checking for home, looser for others
-                    const isActive = item.path === '/'
-                        ? location.pathname === '/'
-                        : location.pathname.startsWith(item.path);
+            <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 z-[2000] shadow-[0_-1px_10px_rgba(0,0,0,0.05)] pb-safe">
+                {/* Expanded Nav Overlay */}
+                <AnimatePresence>
+                    {isMobileNavExpanded && (
+                        <>
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setIsMobileNavExpanded(false)}
+                                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[-1]"
+                            />
+                            <motion.div
+                                initial={{ y: '100%' }}
+                                animate={{ y: 0 }}
+                                exit={{ y: '100%' }}
+                                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                                className="bg-white rounded-t-3xl p-6 pb-12 shadow-2xl overflow-y-auto max-h-[70vh]"
+                            >
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Full Navigation</h3>
+                                    <button 
+                                        onClick={() => setIsMobileNavExpanded(false)}
+                                        className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                                    >
+                                        <ChevronDown size={24} className="text-slate-400" />
+                                    </button>
+                                </div>
+                                
+                                <div className="grid grid-cols-3 gap-4">
+                                    {navSections.flatMap(s => s.items).map((item) => {
+                                        const Icon = item.icon;
+                                        const isActive = location.pathname === item.path;
+                                        return (
+                                            <Link
+                                                key={item.path}
+                                                to={item.path}
+                                                onClick={() => setIsMobileNavExpanded(false)}
+                                                className={`flex flex-col items-center gap-2 p-4 rounded-2xl transition-all ${isActive ? 'bg-blue-50 text-delaval-blue ring-2 ring-delaval-blue/20' : 'bg-slate-50 text-slate-600 active:bg-slate-100'}`}
+                                            >
+                                                <div className={`p-2 rounded-xl ${isActive ? 'bg-delaval-blue text-white shadow-lg shadow-blue-900/20' : 'bg-white text-slate-400'}`}>
+                                                    <Icon size={20} strokeWidth={2.5} />
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase text-center leading-tight tracking-wider">{item.label}</span>
+                                            </Link>
+                                        );
+                                    })}
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-red-50 text-red-600 active:bg-red-100"
+                                    >
+                                        <div className="p-2 rounded-xl bg-white text-red-400">
+                                            <LogOut size={20} strokeWidth={2.5} />
+                                        </div>
+                                        <span className="text-[10px] font-black uppercase text-center leading-tight tracking-wider">Sign Out</span>
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </>
+                    )}
+                </AnimatePresence>
 
-                    return (
-                        <Link
-                            key={item.path}
-                            to={item.path}
-                            className={`flex flex-col items-center gap-1 transition-colors px-4 flex-shrink-0 ${isActive ? 'text-[#0051A5]' : 'text-slate-400'}`}
+                <div className="flex items-center justify-between px-1 pt-3 pb-2 relative bg-white">
+                    {/* Home & Jobs */}
+                    {mobileNavItems.slice(0, 2).map((item) => {
+                        const Icon = item.icon;
+                        const isActive = item.path === '/'
+                            ? location.pathname === '/'
+                            : location.pathname.startsWith(item.path);
+
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                onClick={() => setIsMobileNavExpanded(false)}
+                                className={`flex flex-col items-center gap-1 transition-all px-0 flex-1 ${isActive ? 'text-[#0051A5] translate-y-[-2px]' : 'text-slate-400'}`}
+                            >
+                                <Icon size={isActive ? 27 : 25} strokeWidth={isActive ? 2.5 : 2} />
+                                <span className="text-[9px] uppercase font-bold tracking-tight">{item.label}</span>
+                            </Link>
+                        );
+                    })}
+                    
+                    {/* Centered "More" Pull-up Button */}
+                    <div className="flex-1 flex flex-col items-center">
+                        <button
+                            onClick={() => setIsMobileNavExpanded(!isMobileNavExpanded)}
+                            className={`relative -top-3 flex flex-col items-center justify-center transition-all duration-300 ${isMobileNavExpanded ? 'text-[#0051A5] scale-110' : 'text-slate-500 hover:text-[#0051A5]'}`}
                         >
-                            <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                            <span className="text-[10px] uppercase font-bold tracking-wider">{item.label}</span>
-                        </Link>
-                    );
-                })}
+                            <div className={`w-14 h-14 bg-white rounded-full shadow-[0_4px_15px_rgba(0,81,165,0.15)] border border-slate-100 flex items-center justify-center mb-1 transition-transform ${isMobileNavExpanded ? 'rotate-180 bg-blue-50' : ''}`}>
+                                <ChevronUp size={28} strokeWidth={3} />
+                            </div>
+                            <span className="text-[10px] uppercase font-black tracking-widest -mt-1">{isMobileNavExpanded ? 'Close' : 'More'}</span>
+                        </button>
+                    </div>
+
+                    {/* Customers & Warranty */}
+                    {mobileNavItems.slice(2, 4).map((item) => {
+                        const Icon = item.icon;
+                        const isActive = item.path === '/'
+                            ? location.pathname === '/'
+                            : location.pathname.startsWith(item.path);
+
+                        return (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                onClick={() => setIsMobileNavExpanded(false)}
+                                className={`flex flex-col items-center gap-1 transition-all px-0 flex-1 ${isActive ? 'text-[#0051A5] translate-y-[-2px]' : 'text-slate-400'}`}
+                            >
+                                <Icon size={isActive ? 25 : 23} strokeWidth={isActive ? 2.5 : 2} />
+                                <span className="text-[9px] uppercase font-bold tracking-tight">{item.label}</span>
+                            </Link>
+                        );
+                    })}
+                </div>
             </nav>
 
             <CommandPalette 

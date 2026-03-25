@@ -218,3 +218,15 @@ main>div {
         page-break-inside: avoid;
     }
 }
+/* Safe-area utilities */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.pt-safe {
+    padding-top: env(safe-area-inset-top);
+}
+
+.pb-safe-offset {
+    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}

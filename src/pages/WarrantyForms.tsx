@@ -413,8 +413,8 @@ const WarrantyForms: React.FC = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="section-card overflow-hidden shadow-2xl shadow-slate-200/50 border-slate-200"
                 >
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                        <table className="w-full text-left border-collapse min-w-[800px]">
                             <thead className="bg-slate-50/50 border-b border-slate-200">
                                 <tr>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Date</th>

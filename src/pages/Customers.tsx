@@ -399,7 +399,7 @@ const Customers = () => {
     };
 
     return (
-        <div className="space-y-6">
+        <div>
             <div className="hidden md:block space-y-6">
                 {selectedCustomer ? (
                     <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300 overflow-hidden">
@@ -549,8 +549,8 @@ const Customers = () => {
 
                             <div className="p-6">
                                 {activeTab === 'service-history' && (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left">
+                                    <div className="overflow-x-auto -mx-6">
+                                        <table className="w-full text-left min-w-[1000px]">
                                             <thead className="bg-[#F8FAFB] border-b border-slate-100">
                                                 <tr>
                                                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
@@ -1079,7 +1079,7 @@ const Customers = () => {
                 ) : (
                     <>
                         {/* Modern Mobile Header with safe area bleed */}
-                        <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-12">
+                        <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-6">
                             <div className="flex justify-between items-center mb-5">
                                 <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Customers</h1>
                                 <button
@@ -1164,75 +1164,183 @@ const Customers = () => {
                 )}
             </div>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title={editingId ? "Edit Customer" : "Add New Customer"}>
-                <form onSubmit={handleSaveCustomer} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Company / Customer Name</label>
-                            <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
-                            <textarea className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" rows={3} value={newCustomer.address} onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })} />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
-                            <input type="text" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.contact_person} onChange={e => setNewCustomer({ ...newCustomer, contact_person: e.target.value })} />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
-                            <input type="tel" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.phone} onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-                            <input type="email" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Machine Model</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
-                                    value={newCustomer.machine_model}
-                                    onChange={e => setNewCustomer({ ...newCustomer, machine_model: e.target.value })}
-                                    placeholder="e.g. VMS V300"
-                                />
+            <Modal 
+                isOpen={isModalOpen} 
+                onClose={() => setIsModalOpen(false)} 
+                title={editingId ? "Edit Customer" : "Add New Customer"}
+                backdropClassName="hidden md:flex"
+            >
+                    <form onSubmit={handleSaveCustomer} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Company / Customer Name</label>
+                                <input required type="text" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                                <textarea className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" rows={3} value={newCustomer.address} onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })} />
                             </div>
                             <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Contact Person</label>
+                                <input type="text" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.contact_person} onChange={e => setNewCustomer({ ...newCustomer, contact_person: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Phone Number</label>
+                                <input type="tel" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.phone} onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
+                                <input type="email" className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Machine Model</label>
+                                    <input
+                                        type="text"
+                                        className="w-full px-4 py-2 rounded-lg border border-slate-300 outline-none focus:ring-2 focus:ring-delaval-blue/20"
+                                        value={newCustomer.machine_model}
+                                        onChange={e => setNewCustomer({ ...newCustomer, machine_model: e.target.value })}
+                                        placeholder="e.g. VMS V300"
+                                    />
+                                </div>
+                                <div>
+                                    <SearchableSelect
+                                        label="Plant Type"
+                                        searchable={false}
+                                        options={[
+                                            { value: 'DTL', label: 'DTL' },
+                                            { value: 'Recorder', label: 'Recorder' },
+                                            { value: 'Delpro', label: 'Delpro' },
+                                            { value: 'Rotary', label: 'Rotary' }
+                                        ]}
+                                        value={newCustomer.plant_type}
+                                        onChange={(val) => setNewCustomer({ ...newCustomer, plant_type: val })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="col-span-2">
                                 <SearchableSelect
-                                    label="Plant Type"
+                                    label="Payment Terms"
                                     searchable={false}
                                     options={[
-                                        { value: 'DTL', label: 'DTL' },
-                                        { value: 'Recorder', label: 'Recorder' },
-                                        { value: 'Delpro', label: 'Delpro' },
-                                        { value: 'Rotary', label: 'Rotary' }
+                                        { value: 'Net 30', label: 'Net 30' },
+                                        { value: 'Net 60', label: 'Net 60' },
+                                        { value: 'Immediate', label: 'Immediate' }
                                     ]}
-                                    value={newCustomer.plant_type}
-                                    onChange={(val) => setNewCustomer({ ...newCustomer, plant_type: val })}
+                                    value={newCustomer.payment_terms}
+                                    onChange={(val) => setNewCustomer({ ...newCustomer, payment_terms: val })}
                                 />
                             </div>
                         </div>
-                        <div className="col-span-2">
-                            <SearchableSelect
-                                label="Payment Terms"
-                                searchable={false}
-                                options={[
-                                    { value: 'Net 30', label: 'Net 30' },
-                                    { value: 'Net 60', label: 'Net 60' },
-                                    { value: 'Immediate', label: 'Immediate' }
-                                ]}
-                                value={newCustomer.payment_terms}
-                                onChange={(val) => setNewCustomer({ ...newCustomer, payment_terms: val })}
-                            />
+                        <div className="pt-4 flex justify-end gap-3">
+                            <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
+                            <button type="submit" className="px-6 py-2 bg-delaval-blue text-white rounded-lg font-bold hover:bg-delaval-dark-blue">Save Customer</button>
                         </div>
+                    </form>
+                </Modal>
+
+            {/* FULL SCREEN MOBILE MODAL */}
+            {isModalOpen && (
+                <div className="fixed inset-0 bg-[#F8FAFB] z-[3000] md:hidden flex flex-col overflow-hidden">
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-5 pt-12 pb-4 bg-white border-b border-slate-100 shrink-0">
+                        <button onClick={() => setIsModalOpen(false)} className="w-10 h-10 flex items-center justify-center text-slate-400 bg-slate-50 rounded-full hover:text-slate-600 transition-colors">
+                            <Plus size={24} className="rotate-45" />
+                        </button>
+                        <h2 className="text-lg font-bold text-slate-900 tracking-tight">{editingId ? "Edit Customer" : "New Customer"}</h2>
+                        <div className="w-10"></div>
                     </div>
-                    <div className="pt-4 flex justify-end gap-3">
-                        <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-medium">Cancel</button>
-                        <button type="submit" className="px-6 py-2 bg-delaval-blue text-white rounded-lg font-bold hover:bg-delaval-dark-blue">Save Customer</button>
+
+                    <div className="flex-1 overflow-y-auto p-5 space-y-6 pb-32">
+                        <form onSubmit={handleSaveCustomer} id="mobile-customer-form" className="space-y-6">
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-slate-900">Basic Info</h3>
+                                <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-100">
+                                    <input
+                                        placeholder="Customer Name *"
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none text-[15px]"
+                                        value={newCustomer.name}
+                                        onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                                        required
+                                    />
+                                    <input
+                                        placeholder="Phone Number"
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none text-[15px]"
+                                        value={newCustomer.phone}
+                                        onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                                    />
+                                    <input
+                                        placeholder="Email Address"
+                                        className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none text-[15px]"
+                                        value={newCustomer.email}
+                                        onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-slate-900">Address</h3>
+                                <textarea
+                                    placeholder="Full Address"
+                                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none text-[15px] min-h-[100px]"
+                                    value={newCustomer.address}
+                                    onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-4">
+                                <h3 className="font-bold text-slate-900">Equipment & Terms</h3>
+                                <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-100">
+                                    <div>
+                                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">Machine Model</label>
+                                        <input
+                                            placeholder="e.g. VMS V300"
+                                            className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none text-[15px]"
+                                            value={newCustomer.machine_model}
+                                            onChange={e => setNewCustomer({ ...newCustomer, machine_model: e.target.value })}
+                                        />
+                                    </div>
+                                    <SearchableSelect
+                                        label="Plant Type"
+                                        searchable={false}
+                                        options={[
+                                            { value: 'DTL', label: 'DTL' },
+                                            { value: 'Recorder', label: 'Recorder' },
+                                            { value: 'Delpro', label: 'Delpro' },
+                                            { value: 'Rotary', label: 'Rotary' }
+                                        ]}
+                                        value={newCustomer.plant_type}
+                                        onChange={(val) => setNewCustomer({ ...newCustomer, plant_type: val })}
+                                    />
+                                    <SearchableSelect
+                                        label="Payment Terms"
+                                        searchable={false}
+                                        options={[
+                                            { value: 'Net 30', label: 'Net 30' },
+                                            { value: 'Net 60', label: 'Net 60' },
+                                            { value: 'Immediate', label: 'Immediate' }
+                                        ]}
+                                        value={newCustomer.payment_terms}
+                                        onChange={(val) => setNewCustomer({ ...newCustomer, payment_terms: val })}
+                                    />
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                </form>
-            </Modal>
+
+                    {/* Mobile Footer */}
+                    <div className="p-5 bg-white border-t border-slate-100 shrink-0">
+                        <button
+                            form="mobile-customer-form"
+                            type="submit"
+                            className="flex items-center justify-center gap-2 w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg shadow-blue-200"
+                        >
+                            {editingId ? 'Update Customer' : 'Add Customer'}
+                            <ArrowLeft size={18} className="rotate-180" />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <ConfirmModal
                 isOpen={isDeleteModalOpen}
