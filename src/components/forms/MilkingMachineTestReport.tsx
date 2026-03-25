@@ -122,7 +122,7 @@ export const MilkingMachineTestReport: React.FC<FormReportProps> = ({ job, custo
                     <button onClick={onCancel} className="px-3 md:px-5 py-2 md:py-2.5 rounded-lg md:rounded-xl font-bold text-xs md:text-sm text-slate-600 hover:bg-slate-200 transition-colors whitespace-nowrap">{readOnly ? 'Close' : 'Cancel'}</button>
                     {!readOnly && (
                         <button onClick={() => onSubmit(form)} className="px-4 md:px-6 py-2 md:py-2.5 rounded-lg md:rounded-xl font-bold text-xs md:text-sm text-white bg-delaval-blue hover:bg-blue-700 shadow-lg shadow-blue-900/20 flex items-center gap-2 transition-transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap">
-                            Save
+                            Finalize & Save
                         </button>
                     )}
                 </div>
@@ -365,7 +365,22 @@ export const MilkingMachineTestReport: React.FC<FormReportProps> = ({ job, custo
                                     ].map(({ key, label }) => (
                                         <div key={key}>
                                             <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">{label}</label>
-                                            <input type="text" value={(form.maintenance as any)[key]} onChange={(e) => updateForm('maintenance', key, e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-sm focus:border-delaval-blue focus:ring-1 focus:ring-delaval-blue transition-colors" />
+                                            <div className="relative">
+                                                <select 
+                                                    value={(form.maintenance as any)[key]} 
+                                                    onChange={(e) => updateForm('maintenance', key, e.target.value)} 
+                                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm font-bold text-slate-900 focus:border-delaval-blue focus:ring-4 focus:ring-delaval-blue/10 transition-all outline-none appearance-none shadow-inner"
+                                                >
+                                                    <option value="">Select Status...</option>
+                                                    <option value="Okay">Okay</option>
+                                                    <option value="New">New</option>
+                                                </select>
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </div>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>

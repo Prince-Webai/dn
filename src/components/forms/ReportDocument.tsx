@@ -1,6 +1,7 @@
 import React from 'react';
 import { ReportState } from '../../types/report';
 import { Customer, Job } from '../../types';
+import { Download } from 'lucide-react';
 
 interface ReportDocumentProps {
     report: ReportState;
@@ -27,29 +28,42 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const handlePrint = () => window.print();
+
+    const reportTitle = report.plantType?.toLowerCase().includes('solar') 
+        ? 'SOLAR PV SYSTEM COMMISSIONING REPORT' 
+        : 'MILKING MACHINE TEST REPORT';
+    
+    const reportSubTitle = report.plantType?.toLowerCase().includes('solar')
+        ? 'Electrical & Performance Stability Test — Certified Installation Report'
+        : 'Professional Milking Machine Performance & Stability Record';
 
     return (
         <div
-            className="fixed inset-0 z-[5000] bg-slate-950/80 backdrop-blur-2xl overflow-y-auto flex flex-col items-center animate-in fade-in zoom-in-95 duration-500"
+            className="fixed inset-0 z-[5000] bg-slate-950/80 backdrop-blur-2xl overflow-y-auto flex flex-col items-center animate-in fade-in duration-500"
             onClick={onClose}
         >
             {/* Glossy Top Toolbar */}
-            <div className="print:hidden sticky top-0 z-[5010] w-full bg-slate-900/40 backdrop-blur-xl border-b border-white/10 text-white px-6 py-4 flex items-center justify-between shadow-2xl transition-all duration-300">
+            <div className="print:hidden fixed top-0 left-0 right-0 z-[5010] w-full bg-slate-900 border-b border-white/10 text-white px-6 py-2 flex items-center justify-between shadow-2xl transition-all duration-300">
                 <div className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-delaval-blue rounded-xl flex items-center justify-center font-black text-white shadow-lg shadow-blue-900/20">TC</div>
                     <div>
-                        <h2 className="font-bold text-sm leading-tight">Solar System Report</h2>
+                        <h2 className="font-bold text-sm leading-tight">{reportTitle}</h2>
                         <p className="text-xs text-white/50">{customer?.name || 'Unknown Site'}</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={handlePrint}
-                        className="hidden md:flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all transform active:scale-95 whitespace-nowrap"
+                        onClick={async () => {
+                            const { generateServiceReport } = await import('../../lib/pdfGenerator');
+                            const result = await generateServiceReport(report, customer || { name: 'Customer' } as any, job || undefined, 'preview');
+                            if (result && result.url) {
+                                window.open(result.url, '_blank');
+                            }
+                        }}
+                        className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all transform active:scale-95 whitespace-nowrap shadow-lg shadow-blue-900/40"
                     >
-                        🖨️ Print / Save PDF
+                        <Download size={18} /> Download PDF
                     </button>
                     <button
                         onClick={onClose}
@@ -62,7 +76,7 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
 
             {/* A4 Document Container */}
             <div
-                className="py-12 px-4 print:py-0 print:px-0 w-full flex justify-center origin-top transition-transform duration-300 ease-out"
+                className="pt-16 px-4 pb-24 print:py-0 print:px-0 w-full flex justify-center origin-top transition-transform duration-300 ease-out print:transform-none print:block print:static"
                 style={{ transform: `scale(${scale})` }}
                 onClick={e => e.stopPropagation()}
             >
@@ -75,10 +89,10 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
                                 <div style={{ fontSize: '16pt', fontWeight: 900, color: '#003875', letterSpacing: '-0.5px' }}>
-                                    SOLAR PV SYSTEM COMMISSIONING REPORT
+                                    {reportTitle}
                                 </div>
                                 <div style={{ fontSize: '8pt', color: '#555', marginTop: 2 }}>
-                                    Electrical & Performance Stability Test — Certified Installation Report
+                                    {reportSubTitle}
                                 </div>
                             </div>
                             <div style={{ textAlign: 'right' }}>
@@ -99,8 +113,8 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
                             <Field label="System Make" value={report.machineMake} />
                             <Field label="Engineer Name" value={report.tester} />
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                                <Field label="Inverter Type" value={report.plantType} />
-                                <Field label="No. Panels" value={report.noUnits} />
+                                <Field label={report.plantType?.toLowerCase().includes('solar') ? "Inverter Type" : "Plant Type"} value={report.plantType} />
+                                <Field label={report.plantType?.toLowerCase().includes('solar') ? "No. Panels" : "No. Units"} value={report.noUnits} />
                             </div>
                         </div>
 
@@ -348,8 +362,20 @@ export const ReportDocument: React.FC<ReportDocumentProps> = ({ report, job, cus
 
             <style>{`
                 @media print {
-                    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-                    @page { size: A4; margin: 8mm; }
+                    body { 
+                        -webkit-print-color-adjust: exact; 
+                        print-color-adjust: exact; 
+                        background: #f8fafc !important; 
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+                    @page { size: A4; margin: 0; }
+                    .print\\:hidden { display: none !important; }
+                    .print\\:transform-none { transform: none !important; }
+                    .print\\:block { display: block !important; }
+                    .print\\:static { position: static !important; }
+                    .print\\:py-0 { padding-top: 0 !important; padding-bottom: 0 !important; }
+                    .print\\:shadow-none { border: none !important; box-shadow: none !important; }
                 }
             `}</style>
         </div>

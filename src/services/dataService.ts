@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { Job, Invoice, Customer, InventoryItem, Settings } from '../types';
+import { Job, Invoice, Customer, InventoryItem, Settings, JobAttachment } from '../types';
 
 // Helper to check if Supabase is configured
 const isSupabaseConfigured = () => {
@@ -190,28 +190,53 @@ export const dataService = {
 
         let shouldRecalculate = false;
         let customerIdToRecalculate: string | null = null;
+        let shouldUpdateServiceDate = false;
+        let jobType: string | undefined = undefined;
 
-        // Determine if status is changing to or from 'completed'
-        if (updates.status) {
-            const { data: currentJob } = await supabase
+        if (updates.status === 'completed') {
+            const { data: jobInfo } = await supabase
+                .from('jobs')
+                .select('status, customer_id, service_type')
+                .eq('id', id)
+                .single();
+
+            if (jobInfo && jobInfo.status !== 'completed') {
+                shouldRecalculate = true;
+                customerIdToRecalculate = jobInfo.customer_id;
+                jobType = updates.service_type || jobInfo.service_type;
+
+                // Typical service types that should trigger a reminder reset
+                const serviceTypes = ['Service', 'Routine Maintenance', 'Annual service & test', 'Milking Machine Test'];
+                if (jobType && serviceTypes.some(t => jobType?.toLowerCase().includes(t.toLowerCase()))) {
+                    shouldUpdateServiceDate = true;
+                }
+            }
+        } else if (updates.status && (updates.status as string) !== 'completed') {
+            // Check if it WAS completed
+            const { data: jobInfo } = await supabase
                 .from('jobs')
                 .select('status, customer_id')
                 .eq('id', id)
                 .single();
-
-            if (currentJob && currentJob.status !== updates.status &&
-                (currentJob.status === 'completed' || updates.status === 'completed')) {
+            if (jobInfo && (jobInfo.status as string) === 'completed') {
                 shouldRecalculate = true;
-                customerIdToRecalculate = currentJob.customer_id;
+                customerIdToRecalculate = jobInfo.customer_id;
             }
         }
 
         const result = await supabase.from('jobs').update(updates).eq('id', id);
 
-        // Trigger secure synchronized recalculation
+        // Trigger balance recalculation
         if (shouldRecalculate && customerIdToRecalculate && !result.error) {
-            // Using logic added earlier
             await this.recalculateCustomerBalance(customerIdToRecalculate);
+        }
+
+        // Update last_service_date if applicable
+        if (shouldUpdateServiceDate && customerIdToRecalculate && !result.error) {
+            const completionDate = updates.date_completed || new Date().toISOString();
+            await supabase.from('customers').update({ 
+                last_service_date: completionDate 
+            }).eq('id', customerIdToRecalculate);
         }
 
         return result;
@@ -228,7 +253,7 @@ export const dataService = {
             // 2. Safely delete associated invoices and their items
             const { data: invoices } = await supabase.from('invoices').select('id').eq('job_id', id);
             if (invoices && invoices.length > 0) {
-                const invoiceIds = invoices.map(i => i.id);
+                const invoiceIds = invoices.map((i: any) => i.id);
                 // Invoices might have payments in the future, but right now we just delete invoice_items
                 await supabase.from('invoice_items').delete().in('invoice_id', invoiceIds);
                 await supabase.from('invoices').delete().in('id', invoiceIds);
@@ -237,7 +262,7 @@ export const dataService = {
             // 3. Safely delete associated quotes and their items
             const { data: quotes } = await supabase.from('quotes').select('id').eq('job_id', id);
             if (quotes && quotes.length > 0) {
-                const quoteIds = quotes.map(q => q.id);
+                const quoteIds = quotes.map((q: any) => q.id);
                 await supabase.from('quote_items').delete().in('quote_id', quoteIds);
                 await supabase.from('quotes').delete().in('id', quoteIds);
             }
@@ -330,19 +355,19 @@ export const dataService = {
             const { data: completedJobs } = await supabase.from('jobs').select('id').eq('customer_id', customerId).eq('status', 'completed');
             let totalJobValue = 0;
             if (completedJobs && completedJobs.length > 0) {
-                const jobIds = completedJobs.map(j => j.id);
+                const jobIds = completedJobs.map((j: any) => j.id);
                 // Chunk queries if too many jobs, but simple array is fine for normal loads
                 const { data: jobItems } = await supabase.from('job_items').select('total').in('job_id', jobIds);
-                totalJobValue = (jobItems || []).reduce((sum, item) => sum + (item.total || 0), 0);
+                totalJobValue = (jobItems || []).reduce((sum: number, item: any) => sum + (item.total || 0), 0);
             }
 
             // 2. Sum of all standalone invoices (where job_id is null)
             const { data: standaloneInvoices } = await supabase.from('invoices').select('total_amount').eq('customer_id', customerId).is('job_id', null);
-            const totalStandaloneInvoices = (standaloneInvoices || []).reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+            const totalStandaloneInvoices = (standaloneInvoices || []).reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0);
 
             // 3. Sum of all payments (across all invoices)
             const { data: allInvoices } = await supabase.from('invoices').select('amount_paid').eq('customer_id', customerId);
-            const totalPaid = (allInvoices || []).reduce((sum, inv) => sum + (inv.amount_paid || 0), 0);
+            const totalPaid = (allInvoices || []).reduce((sum: number, inv: any) => sum + (inv.amount_paid || 0), 0);
 
             // 4. Calculate proper balance
             const newBalance = totalJobValue + totalStandaloneInvoices - totalPaid;
@@ -352,6 +377,108 @@ export const dataService = {
         } catch (error) {
             console.error('Error recalculating bounds:', error);
             return 0;
+        }
+    },
+
+    async getServiceReminders(): Promise<any[]> {
+        if (!isSupabaseConfigured()) return [];
+        try {
+            // Fetch customers with service data
+            const { data: customers, error } = await supabase
+                .from('customers')
+                .select('id, name, last_service_date, service_interval_months, machine_model, plant_type')
+                .not('last_service_date', 'is', null);
+
+            if (error) throw error;
+            if (!customers) return [];
+
+            const now = new Date();
+            return customers.map((c: any) => {
+                const lastDate = new Date(c.last_service_date);
+                const interval = c.service_interval_months || 12;
+                const nextDate = new Date(lastDate);
+                nextDate.setMonth(nextDate.getMonth() + interval);
+
+                // Calculate days until/since
+                const diffTime = nextDate.getTime() - now.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                return {
+                    ...c,
+                    nextDate: nextDate.toISOString().split('T')[0],
+                    daysRemaining: diffDays,
+                    status: diffDays < 0 ? 'overdue' : diffDays <= 30 ? 'due_soon' : 'upcoming'
+                };
+            }).filter((r: any) => r.status !== 'upcoming').sort((a: any, b: any) => a.daysRemaining - b.daysRemaining);
+        } catch (error) {
+            console.error('Error fetching service reminders:', error);
+            return [];
+        }
+    },
+    async getJobAttachments(jobId: string): Promise<JobAttachment[]> {
+        if (!isSupabaseConfigured()) return [];
+        const { data, error } = await supabase.from('job_attachments').select('*').eq('job_id', jobId).order('created_at', { ascending: false });
+        if (error) {
+            console.error('Error fetching job attachments:', error);
+            return [];
+        }
+        return data || [];
+    },
+
+    async uploadJobAttachment(jobId: string, file: File, uploadedBy?: string): Promise<{ data: JobAttachment | null, error: any }> {
+        if (!isSupabaseConfigured()) return { data: null, error: 'Supabase not configured' };
+
+        try {
+            // 1. Upload to Storage
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${jobId}/${Math.random().toString(36).substring(2)}.${fileExt}`;
+            const { error: storageError } = await supabase.storage
+                .from('photos')
+                .upload(fileName, file);
+
+            if (storageError) throw storageError;
+
+            // 2. Get Public URL
+            const { data: { publicUrl } } = supabase.storage.from('photos').getPublicUrl(fileName);
+
+            // 3. Save to Metadata Table
+            const { data, error } = await supabase.from('job_attachments').insert({
+                job_id: jobId,
+                file_url: publicUrl,
+                file_name: file.name,
+                file_type: file.type,
+                file_size: file.size,
+                uploaded_by: uploadedBy
+            }).select().single();
+
+            if (error) throw error;
+            return { data, error: null };
+        } catch (error) {
+            console.error('Error uploading job attachment:', error);
+            return { data: null, error };
+        }
+    },
+
+    async deleteJobAttachment(attachmentId: string, filePath: string): Promise<{ error: any }> {
+        if (!isSupabaseConfigured()) return { error: 'Supabase not configured' };
+
+        try {
+            // 1. Delete from Storage (path needs to be extracted from URL or stored separately)
+            // For now, we'll just try to delete from the metadata table
+            // In a real app, you'd extract the storage path
+            const { error: dbError } = await supabase.from('job_attachments').delete().eq('id', attachmentId);
+            if (dbError) throw dbError;
+
+            // Optional: Delete from storage if you have the path
+            const pathMatch = filePath.match(/photos\/(.*)/);
+            if (pathMatch && pathMatch[1]) {
+                await supabase.storage.from('photos').remove([pathMatch[1]]);
+            }
+
+            return { error: null };
+        } catch (error) {
+            console.error('Error deleting job attachment:', error);
+            return { error };
         }
     }
 };

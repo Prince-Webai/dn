@@ -40,12 +40,20 @@ const DocumentBuilder = () => {
     useEffect(() => {
         fetchCustomers();
         fetchInventory();
+        fetchDefaultVatRate();
         if (documentId) {
             loadExistingDocument(documentId);
         } else if (jobId) {
             loadJobData(jobId);
         }
     }, [documentId, jobId]);
+
+    const fetchDefaultVatRate = async () => {
+        const settings = await dataService.getSettings();
+        if (settings?.default_vat_rate) {
+            setVatRate(settings.default_vat_rate);
+        }
+    };
 
     const loadExistingDocument = async (id: string) => {
         try {
@@ -174,7 +182,6 @@ const DocumentBuilder = () => {
             }
 
             const subtotal = docData.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-            const vatRate = 13.5;
             const vatAmount = subtotal * (vatRate / 100);
             const totalAmount = subtotal + vatAmount;
             const customDescription = docData.description || docData.items.map(i => i.description).join(', ');
@@ -360,7 +367,6 @@ const DocumentBuilder = () => {
         }
 
         const subtotal = docData.items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-        const vatRate = 13.5;
         const vatAmount = subtotal * (vatRate / 100);
         const totalAmount = subtotal + vatAmount;
         const customDescription = docData.description || docData.items.map(i => i.description).join(', ');
@@ -697,7 +703,7 @@ const DocumentBuilder = () => {
                                     <span className="font-mono">₹{docSubtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-slate-300 text-sm">
-                                    <span>VAT (13.5%)</span>
+                                    <span>VAT ({vatRate}%)</span>
                                     <span className="font-mono">₹{docVat.toFixed(2)}</span>
                                 </div>
                                 <div className="pt-3 border-t border-slate-700 flex justify-between items-end">

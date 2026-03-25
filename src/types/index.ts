@@ -13,6 +13,8 @@ export interface Customer {
     status: 'active' | 'inactive' | 'lead';
     machine_model?: string;
     plant_type?: 'DTL' | 'Recorder' | 'Delpro' | 'Rotary' | string;
+    last_service_date?: string;
+    service_interval_months?: number;
 }
 
 export interface InventoryItem {
@@ -43,6 +45,7 @@ export interface Job {
     // Joins
     customers?: Customer;
     job_items?: JobItem[];
+    attachments?: JobAttachment[];
 }
 
 export interface JobItem {
@@ -146,6 +149,7 @@ export interface Settings {
     iban: string;
     bic: string;
     vat_reg_number: string;
+    default_vat_rate: number;
     webhook_url: string;
     updated_at: string;
 }
@@ -182,3 +186,13 @@ export interface WarrantyReport {
 }
 
 export * from './report';
+export interface JobAttachment {
+    id: string;
+    created_at: string;
+    job_id: string;
+    file_url: string;
+    file_name: string;
+    file_type: string;
+    file_size: number;
+    uploaded_by?: string;
+}

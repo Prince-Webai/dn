@@ -1,6 +1,7 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { Customer, Job, JobItem, Quote, QuoteItem, InvoiceItem, Statement, Settings } from '../types';
+import { Customer, Job, JobItem, Quote, QuoteItem, InvoiceItem, Statement, Settings, WarrantyReport } from '../types';
+import { ReportState } from '../types/report';
 import { dataService } from '../services/dataService';
 
 // === CONSTANTS ===
@@ -8,6 +9,7 @@ const LEFT = 15;   // left margin mm
 const RIGHT = 15;  // right margin mm
 
 // Load logo from public directory at PDF generation time
+// Load logo and process for transparency (pure white to transparent)
 const loadLogoBase64 = (): Promise<string> => {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -19,6 +21,22 @@ const loadLogoBase64 = (): Promise<string> => {
             const ctx = canvas.getContext('2d');
             if (!ctx) { reject('No canvas context'); return; }
             ctx.drawImage(img, 0, 0);
+
+            try {
+                // Process image to make white background transparent
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                const data = imageData.data;
+                for (let i = 0; i < data.length; i += 4) {
+                    // If pixel is very close to white (R, G, B > 250), make it transparent
+                    if (data[i] > 250 && data[i + 1] > 250 && data[i + 2] > 250) {
+                        data[i + 3] = 0;
+                    }
+                }
+                ctx.putImageData(imageData, 0, 0);
+            } catch (e) {
+                console.warn('Could not process image for transparency (likely CORS)', e);
+            }
+
             resolve(canvas.toDataURL('image/png'));
         };
         img.onerror = reject;
@@ -27,10 +45,9 @@ const loadLogoBase64 = (): Promise<string> => {
 };
 
 // === LOGO ===
-// Right-aligned, 80mm wide x 25mm tall, y=8. Matches reference.
 const addLogo = async (doc: jsPDF) => {
-    const logoW = 80;
-    const logoH = 26;
+    const logoW = 50; // Reduced from 80 to avoid text overlap
+    const logoH = 17; // Scaled height
     const x = doc.internal.pageSize.width - RIGHT - logoW;
     try {
         const b64 = await loadLogoBase64();
@@ -336,6 +353,8 @@ export const generateInvoice = async (
         const blob = doc.output('blob');
         const filename = `${safeName}-${documentNumber}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
+        const win = window.open(blobUrl, '_blank');
+        if (win) win.focus();
         return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${documentNumber}.pdf`);
@@ -450,6 +469,8 @@ export const generateQuote = async (
         const blob = doc.output('blob');
         const filename = `${safeName}-${quote.quote_number}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
+        const win = window.open(blobUrl, '_blank');
+        if (win) win.focus();
         return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${quote.quote_number}.pdf`);
@@ -574,7 +595,9 @@ export const generateStatement = async (
         const blob = doc.output('blob');
         const filename = `${safeName}-${documentNumber}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
-        return { url: `${blobUrl}#filename=${filename}`, filename } as any;
+        const win = window.open(blobUrl, '_blank');
+        if (win) win.focus();
+        return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${documentNumber}.pdf`);
         return null as any;
@@ -663,8 +686,10 @@ export const generateOneTimeInvoice = async (
     const safeName = customerName.replace(/[^a-z0-9]/gi, '_');
     if (action === 'preview') {
         const blob = doc.output('blob');
-        const filename = `${safeName}-${invNum}.pdf`;
+        const filename = `${safeName}-Statement.pdf`;
         const blobUrl = URL.createObjectURL(blob);
+        const win = window.open(blobUrl, '_blank');
+        if (win) win.focus();
         return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${invNum}.pdf`);
@@ -696,7 +721,7 @@ export const generateJobReport = async (
         { label: 'Engineer', value: String(job.engineer_name || 'Unassigned') },
         { label: 'VAT No.', value: settings?.vat_reg_number || 'IE 8252470Q' },
         { label: 'Service', value: String(job.service_type || 'General') },
-        { label: 'System Type', value: 'Solar PV Array' }, // Updated from DeLaval VMS
+        { label: 'System Type', value: String(job.service_type || 'Milking Machine') },
     ];
     y = addInfoGrid(doc, infoData, y);
 
@@ -757,6 +782,8 @@ export const generateJobReport = async (
         const blob = doc.output('blob');
         const filename = `${safeName}-${documentNumber}_Report.pdf`;
         const blobUrl = URL.createObjectURL(blob);
+        const win = window.open(blobUrl, '_blank');
+        if (win) win.focus();
         return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${documentNumber}_Report.pdf`);
@@ -765,73 +792,295 @@ export const generateJobReport = async (
 };
 
 // ============================================================
+// PREMIUM REPORT HELPERS (For Service & Warranty)
+// ============================================================
+const addReportSectionHeader = (doc: jsPDF, title: string, y: number) => {
+    doc.setFillColor(0, 56, 117); // DeLaval Blue
+    doc.rect(LEFT, y, doc.internal.pageSize.width - LEFT - RIGHT, 7, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(255, 255, 255);
+    doc.text(title.toUpperCase(), LEFT + 3, y + 5);
+    return y + 10;
+};
+
+const addReportFieldGrid = (doc: jsPDF, data: { label: string; value: string }[], y: number) => {
+    autoTable(doc, {
+        startY: y,
+        body: [
+            data.slice(0, 2).map(d => d.value),
+        ],
+        head: [
+            data.slice(0, 2).map(d => d.label)
+        ],
+        theme: 'plain',
+        margin: { left: LEFT, right: RIGHT },
+        styles: { fontSize: 9, cellPadding: { top: 1, bottom: 4, left: 3, right: 3 }, fontStyle: 'bold' },
+        headStyles: { fontSize: 7, textColor: [100, 100, 100], fontStyle: 'bold', cellPadding: { left: 3, top: 4, bottom: 0 } },
+        columnStyles: {
+            0: { cellWidth: (doc.internal.pageSize.width - LEFT - RIGHT) / 2 },
+            1: { cellWidth: (doc.internal.pageSize.width - LEFT - RIGHT) / 2 }
+        },
+        didDrawCell: (data) => {
+            if (data.section === 'body') {
+                doc.setDrawColor(200, 200, 200);
+                doc.line(data.cell.x, data.cell.y + data.cell.height, data.cell.x + data.cell.width - 5, data.cell.y + data.cell.height);
+            }
+        }
+    });
+    // @ts-expect-error - ts ignore legacy
+    return (doc.lastAutoTable.finalY as number) + 5;
+};
+
+// ============================================================
+// SERVICE REPORT GENERATOR (Milking Machine / Solar)
+// ============================================================
+export const generateServiceReport = async (
+    report: ReportState,
+    customer: Customer,
+    job?: Job,
+    action: 'download' | 'preview' = 'download'
+) => {
+    const doc = new jsPDF();
+    const safeName = customer?.name?.replace(/[^a-z0-9]/gi, '_') || 'Customer';
+    const title = report.plantType?.toLowerCase().includes('solar') ? 'SOLAR PV COMMISSIONING REPORT' : 'MILKING MACHINE TEST REPORT';
+    doc.setProperties({ title: `${safeName}-${title}` });
+
+    // Custom Header
+    doc.setFillColor(240, 244, 255);
+    doc.rect(0, 0, doc.internal.pageSize.width, 40, 'F');
+    doc.setDrawColor(0, 56, 117);
+    doc.setLineWidth(1.5);
+    doc.line(0, 40, doc.internal.pageSize.width, 40);
+
+    doc.setFont('helvetica', 'black');
+    doc.setFontSize(20);
+    doc.setTextColor(0, 56, 117);
+    doc.text(title, LEFT, 22);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text('Electrical & Performance Stability Test — Professional Record', LEFT, 28);
+
+    // Add Logo
+    await addLogo(doc);
+    if (job) {
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Job #${job.job_number}`, doc.internal.pageSize.width - RIGHT, 38, { align: 'right' });
+    }
+
+    let y = 50;
+
+    // A. Header Info
+    y = addReportSectionHeader(doc, 'A. Header Information', y);
+    y = addReportFieldGrid(doc, [
+        { label: 'CUSTOMER / SITE NAME', value: customer?.name || '---' },
+        { label: 'DATE OF TEST', value: report.date || new Date().toLocaleDateString() }
+    ], y);
+    y = addReportFieldGrid(doc, [
+        { label: 'ADDRESS', value: customer?.address || '---' },
+        { label: 'SYSTEM MAKE', value: report.machineMake || '---' }
+    ], y);
+    y = addReportFieldGrid(doc, [
+        { label: 'ENGINEER NAME', value: report.tester || 'Tony Condon' },
+        { label: 'SYSTEM TYPE', value: report.plantType || '---' }
+    ], y);
+
+    // 1. Installation
+    y = addReportSectionHeader(doc, '1. Installation', y);
+    const inst = report.installation;
+    const instRows = [
+        ['Main Airline', inst.mainAirline.bore, inst.mainAirline.materials, inst.mainAirline.slope, inst.mainAirline.size, inst.mainAirline.location],
+        ['Pulsator Airlines', inst.pulsatorAirlines.bore, inst.pulsatorAirlines.materials, inst.pulsatorAirlines.slope, inst.pulsatorAirlines.size, inst.pulsatorAirlines.location],
+        ['Milkline', inst.milkline.bore, inst.milkline.materials, inst.milkline.slope || inst.milkline.height, inst.milkline.size, inst.milkline.location],
+        ['Washline', inst.washline.bore, inst.washline.materials, inst.washline.slope, inst.washline.size, inst.washline.location],
+        ['Milk Lift', inst.milkLift.bore, inst.milkLift.materials, inst.milkLift.height, '---', '---'],
+    ];
+
+    autoTable(doc, {
+        startY: y,
+        head: [['Component', 'Bore', 'Materials', 'Height/Slope', 'Size', 'Location']],
+        body: instRows,
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [232, 237, 245], textColor: [0, 56, 117], fontStyle: 'bold' },
+        margin: { left: LEFT, right: RIGHT },
+    });
+    // @ts-expect-error - ts ignore legacy
+    y = (doc.lastAutoTable.finalY as number) + 10;
+
+    // 2. Maintenance
+    if (y > 240) { doc.addPage(); y = 20; }
+    y = addReportSectionHeader(doc, '2. Maintenance', y);
+    const maint = report.maintenance;
+    autoTable(doc, {
+        startY: y,
+        body: [
+            ['V. Pump Oil', maint.vPumpOil, 'V. Pump Belts', maint.vPumpBelts, 'M. Pump Belts', maint.mPumpBelts],
+            ['Milk Pump Diaphragm', maint.milkPumpDiaphragm, 'Liners', maint.liners, 'Milk Tubes', maint.milkTubes],
+            ['Pulse Tubes', maint.pulseTubes, 'Relay Diaphragms', maint.relayDiaphragms, 'Pulsators Clean', maint.pulsatorsClean],
+        ],
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 2 },
+        columnStyles: {
+            0: { fontStyle: 'bold', fillColor: [248, 250, 252] },
+            2: { fontStyle: 'bold', fillColor: [248, 250, 252] },
+            4: { fontStyle: 'bold', fillColor: [248, 250, 252] },
+        },
+        margin: { left: LEFT, right: RIGHT },
+    });
+    // @ts-expect-error - ts ignore legacy
+    y = (doc.lastAutoTable.finalY as number) + 10;
+
+    // 3. Air Flow
+    if (y > 200) { doc.addPage(); y = 20; }
+    y = addReportSectionHeader(doc, '3. Air Flow & Vacuum Regulator Tests', y);
+    const af = report.airFlow;
+    const afRows = [
+        ['1', 'Operating Vacuum', af.t1_operatingVacuum, 'Rec. Vacuum', af.t1_recommended],
+        ['2', 'Pump Capacity', `${af.t2_pumpCapacity} @ ${af.t2_rpm}`, 'Req. Capacity', af.t2_requiredCapacity],
+        ['3', 'AFM near Reg', af.t3_afmAtTestPoint, 'Pipeline Leak', af.t3_airPipelineLeakage],
+        ['4', 'Add System', af.t4_addMilkingSystem, 'System Leak', af.t4_systemLeakage],
+        ['5', 'Open Air Claw', af.t5_openAirAdmission, 'Claw Admission', af.t5_clawAdmission],
+        ['6', 'Add Pulsators', af.t6_addPulsators, 'Pulsation Use', af.t6_pulsationUse],
+        ['7', 'Drop Vac 2kPa', af.t7_dropVacuum2kPa, 'Reg. Leakage', af.t7_regulatorLeakage],
+        ['8', 'Add Regulator', af.t8_addRegulator, 'Req. Reserve', af.t8_requiredReserve],
+    ];
+    autoTable(doc, {
+        startY: y,
+        head: [['No.', 'Test Description', 'Reading', 'Derived', 'Value']],
+        body: afRows,
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [232, 237, 245], textColor: [0, 56, 117], fontStyle: 'bold' },
+        columnStyles: { 0: { halign: 'center', fontStyle: 'bold' } },
+        margin: { left: LEFT, right: RIGHT },
+    });
+    // @ts-expect-error - ts ignore legacy
+    y = (doc.lastAutoTable.finalY as number) + 10;
+
+    // Footer
+    addFooter(doc);
+
+    // Save/Download
+    if (action === 'preview') {
+        const blob = doc.output('blob');
+        const filename = `${safeName}-${title.replace(/\s+/g, '_')}.pdf`;
+        const blobUrl = URL.createObjectURL(blob);
+        
+        // Open preview in new tab
+        const win = window.open(blobUrl, '_blank');
+        if (win) {
+            win.focus();
+        } else {
+            console.error('Popup blocked. Please allow popups for this site.');
+            alert('Preview blocked by browser. Please allow popups.');
+        }
+        return { url: blobUrl, filename } as any;
+    } else {
+        doc.save(`${safeName}-${title.replace(/\s+/g, '_')}.pdf`);
+        return null as any;
+    }
+};
+
+// ============================================================
 // WARRANTY REPORT GENERATOR
 // ============================================================
 export const generateWarrantyReport = async (
-    report: any, 
+    report: WarrantyReport,
     customer: Customer,
     action: 'download' | 'preview' = 'download'
 ) => {
-    const settings = await dataService.getSettings();
+    if (!report || !report.form_type) {
+        console.error('Missing report or form_type:', report);
+        alert('Error: Missing report type data. Cannot generate PDF.');
+        return;
+    }
+
     const doc = new jsPDF();
     const documentNumber = report.serial_number || 'WNTY-000';
     const safeName = customer?.name?.replace(/[^a-z0-9]/gi, '_') || 'Customer';
     doc.setProperties({ title: `${safeName}-${report.form_type}` });
 
-    let y = await addHeader(doc, report.form_type, `Serial: ${documentNumber}`);
-    y = addAddressSection(doc, customer, y, 'Warranty For', settings);
+    // Premium Header
+    doc.setFillColor(240, 244, 255);
+    doc.rect(0, 0, doc.internal.pageSize.width, 40, 'F');
+    doc.setDrawColor(0, 56, 117);
+    doc.setLineWidth(1.5);
+    doc.line(0, 40, doc.internal.pageSize.width, 40);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(0, 56, 117);
+    doc.text(report.form_type.toUpperCase(), LEFT, 22);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text('Official Digital Installation & Warranty Record', LEFT, 28);
+
+    // Add Logo
+    await addLogo(doc);
+
+    let y = 50;
+
+    // A. Client Information
+    y = addReportSectionHeader(doc, 'Client Information', y);
+    y = addReportFieldGrid(doc, [
+        { label: 'CLIENT NAME', value: customer?.name || '---' },
+        { label: 'SERIAL NUMBER', value: documentNumber }
+    ], y);
+    y = addReportFieldGrid(doc, [
+        { label: 'DELIVERY ADDRESS', value: customer?.address || '---' },
+        { label: 'INSTALL DATE', value: report.install_date || '---' }
+    ], y);
 
     const isInstallCert = report.form_type === 'Installation Certificate';
     const data = report.report_data || {};
 
-    const infoData = [
-        { label: 'Date Issued', value: new Date(report.created_at).toLocaleDateString('en-GB') },
-        { label: 'Form Type', value: String(report.form_type) },
-        { label: 'Technician', value: String(report.technician_name || 'Tony Condon') },
-        { label: 'Install Date', value: String(report.install_date || 'N/A') },
-    ];
-    y = addInfoGrid(doc, infoData, y);
-
-    // Main Section Header
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.setTextColor(0, 81, 165); // DeLaval Blue
-    doc.text(isInstallCert ? 'Installation Details' : 'Testing & Commissioning Details', LEFT, y + 5);
-    y += 12;
-
-    // Body Fields
+    // B. Specifications
+    y = addReportSectionHeader(doc, isInstallCert ? 'Installation Specifications' : 'Commissioning Details', y);
+    
     const bodyData = isInstallCert ? [
-        ['Equipment Type', data.equipment_type || 'N/A'],
-        ['ETCI Cert Done', data.etci_cert || 'N/A'],
-        ['Supp. Ag Cert', data.supp_ag_cert || 'N/A'],
-        ['Installer Name', data.installer_name || 'N/A'],
-        ['Installer Address', data.installer_address || 'N/A'],
+        ['Type of Equipment', data.equipment_type || 'N/A'],
+        ['ETCI Electrical Cert', data.etci_cert || 'N/A'],
+        ['Supplementary Ag Cert', data.supp_ag_cert || 'N/A'],
+        ['Lead Installer', data.installer_name || 'Tony Condon'],
+        ['Installer Address', data.installer_address || 'CDS, Ballinamult'],
     ] : [
         ['Equipment Details', data.equipment_details || 'N/A'],
-        ['Testing Date', data.test_date || 'N/A'],
-        ['Declaration By', data.declaration_name || 'N/A'],
-        ['Company', data.install_company || 'N/A'],
-        ['Company Address', data.install_company_address || 'N/A'],
+        ['Commissioning Date', data.test_date || 'N/A'],
+        ['Declaration By', data.declaration_name || 'Tony Condon'],
+        ['Company Name', data.install_company || 'Condon Dairy Services'],
+        ['Company Location', data.install_company_address || 'Ballinamult, Co. Waterford'],
     ];
 
     autoTable(doc, {
         startY: y,
         body: bodyData,
         theme: 'striped',
-        styles: { fontSize: 10, cellPadding: 4 },
+        styles: { fontSize: 9, cellPadding: 3 },
         columnStyles: {
-            0: { fontStyle: 'bold', cellWidth: 50 },
-            1: { cellWidth: 'auto' }
+            0: { fontStyle: 'bold', cellWidth: 50, textColor: [0, 56, 117] },
         },
         margin: { left: LEFT, right: RIGHT },
     });
 
     // @ts-expect-error - ts ignore legacy
-    y = doc.lastAutoTable.finalY + 20;
+    y = (doc.lastAutoTable.finalY as number) + 30;
 
-    // Signatures Area
-    doc.setFont('helvetica', 'bold');
+    // C. Verification & Signatures
+    if (y > 240) { doc.addPage(); y = 20; }
+    
+    doc.setDrawColor(200, 200, 200);
+    doc.line(LEFT, y, doc.internal.pageSize.width - RIGHT, y);
+    y += 10;
+
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
     doc.setTextColor(0, 0, 0);
     doc.text('Authorized Signature:', LEFT, y);
     doc.line(LEFT, y + 15, LEFT + 70, y + 15);
@@ -839,10 +1088,15 @@ export const generateWarrantyReport = async (
     doc.setFont('helvetica', 'italic');
     doc.text('Installer Representative', LEFT, y + 20);
 
-    doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text('Date:', 120, y);
-    doc.line(120, y + 15, 170, y + 15);
+    doc.setFont('helvetica', 'bold');
+    doc.text('CDS Official Stamp:', 120, y);
+    doc.setDrawColor(0, 56, 117);
+    doc.setLineWidth(0.5);
+    doc.rect(120, y + 2, 45, 22);
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.text('VERIFICATION SECURED', 142.5, y + 14, { align: 'center' });
 
     addFooter(doc);
 
@@ -850,6 +1104,15 @@ export const generateWarrantyReport = async (
         const blob = doc.output('blob');
         const filename = `${safeName}-${report.form_type.replace(/\s+/g, '_')}.pdf`;
         const blobUrl = URL.createObjectURL(blob);
+        
+        // Open preview in new tab
+        const win = window.open(blobUrl, '_blank');
+        if (win) {
+            win.focus();
+        } else {
+            console.error('Popup blocked. Please allow popups for this site.');
+            alert('Preview blocked by browser. Please allow popups.');
+        }
         return { url: blobUrl, filename } as any;
     } else {
         doc.save(`${safeName}-${report.form_type.replace(/\s+/g, '_')}.pdf`);

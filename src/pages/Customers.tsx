@@ -294,7 +294,7 @@ const Customers = () => {
 
             if (jobsRes.error) throw jobsRes.error;
 
-            const jobs = jobsRes.data?.map(job => {
+            const jobs = jobsRes.data?.map((job: any) => {
                 const total = job.job_items?.reduce((sum: number, item: any) => sum + (item.total || 0), 0) || 0;
                 return { ...job, total };
             }) || [];
@@ -305,11 +305,11 @@ const Customers = () => {
             setCustomerStatements(statementsRes.data || []);
 
             // Calculate Stats
-            const completedJobs = jobs.filter(j => j.status === 'completed');
-            const totalRevenue = completedJobs.reduce((sum, job) => sum + job.total, 0);
+            const completedJobs = jobs.filter((j: any) => j.status === 'completed');
+            const totalRevenue = completedJobs.reduce((sum: number, job: any) => sum + job.total, 0);
 
             // Calculate parts purchased (from all completed jobs)
-            const partsPurchased = completedJobs.reduce((sum, job) => {
+            const partsPurchased = completedJobs.reduce((sum: number, job: any) => {
                 const partsCost = job.job_items
                     ?.filter((item: any) => item.type === 'part')
                     .reduce((itemSum: number, item: any) => itemSum + (item.total || 0), 0) || 0;

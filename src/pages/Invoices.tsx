@@ -82,7 +82,7 @@ const Invoices = () => {
 
             // Filter out jobs that already have an invoice or statement
             const invoicedJobIds = new Set(invData.map(inv => inv.job_id).filter(Boolean));
-            const statementJobIds = new Set((stmtData || []).map(stmt => stmt.job_id).filter(Boolean));
+            const statementJobIds = new Set((stmtData || []).map((stmt: Statement) => stmt.job_id).filter(Boolean));
             const pendingJobs = jobData.filter(job => !invoicedJobIds.has(job.id) && !statementJobIds.has(job.id));
 
             setCompletedJobs(pendingJobs);
@@ -246,7 +246,15 @@ const Invoices = () => {
     const openEditModal = async (invoice: Invoice) => {
         setEditingInvoice(invoice);
         setDescription(invoice.custom_description || '');
-        setVatRate(invoice.vat_rate || 13.5);
+        
+        // Get default from settings if invoice doesn't have one
+        if (invoice.vat_rate) {
+            setVatRate(invoice.vat_rate);
+        } else {
+            const settings = await dataService.getSettings();
+            setVatRate(settings?.default_vat_rate || 13.5);
+        }
+        
         setDueDate(invoice.due_date || '');
 
         // Fetch existing items

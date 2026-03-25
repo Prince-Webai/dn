@@ -41,7 +41,7 @@ export const ReportStartModal: React.FC<ReportStartModalProps> = ({ isOpen, onCl
         if (customersRes.data) setCustomers(customersRes.data);
         if (jobsRes.data) {
             // ONLY show jobs that are services
-            const serviceJobs = jobsRes.data.filter(j =>
+            const serviceJobs = jobsRes.data.filter((j: any) =>
                 j.service_type?.toLowerCase().includes('service')
             );
             setJobs(serviceJobs);

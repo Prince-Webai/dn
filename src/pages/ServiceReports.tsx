@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
 import { ServiceReport } from '../types';
-import { ClipboardList, Eye, Loader2, FileText, CalendarDays, User, Wrench, Plus } from 'lucide-react';
+import { FileText, Search, Plus, Filter, Calendar, User, LayoutGrid, List, Eye, Download, Wrench, MoreHorizontal, ExternalLink, ClipboardList, Loader2, CalendarDays } from 'lucide-react';
 import { ReportDocument } from '../components/forms/ReportDocument';
 import { ReportStartModal } from '../components/forms/ReportStartModal';
 import { MilkingMachineTestReport } from '../components/forms/MilkingMachineTestReport';
@@ -38,18 +38,33 @@ const ServiceReports: React.FC = () => {
         if (!creatingReport) return;
 
         try {
+            // Check authentication OR developer bypass
+            const { data: { session } } = await supabase.auth.getSession();
+            const isDevBypass = localStorage.getItem('dev_bypass') === 'true';
+            
+            if (!session && !isDevBypass) {
+                alert('Authentication required: Please log in to save reports.');
+                return;
+            }
+
             const { error } = await supabase
                 .from('service_reports')
                 .insert([{
                     job_id: creatingReport.job.id,
                     customer_id: creatingReport.customer.id,
                     report_data: reportData,
-                    tester: reportData.tester,
+                    tester: reportData.tester || 'Tony Condon',
                     test_date: reportData.date,
                     machine_make: reportData.machineMake
                 }]);
 
-            if (error) throw error;
+            if (error) {
+                if (error.code === '42501') {
+                    throw new Error('Database Permission Error: Please ensure you have run the provided fix_reports_schema.sql script in your Supabase SQL editor.');
+                }
+                throw error;
+            }
+
             setCreatingReport(null);
             fetchReports(); // Refresh the list
         } catch (err: any) {
@@ -163,13 +178,28 @@ const ServiceReports: React.FC = () => {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => setViewingReport(report)}
-                                                    className="inline-flex items-center gap-2 bg-white border border-slate-200 text-delaval-blue hover:bg-delaval-blue hover:text-white hover:border-delaval-blue px-4 py-2 rounded-xl text-sm font-bold transition-all shadow-sm group-hover:shadow-md active:scale-95"
-                                                >
-                                                    <Eye size={16} />
-                                                    View Report
-                                                </button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={async () => {
+                                                            const { generateServiceReport } = await import('../lib/pdfGenerator');
+                                                            generateServiceReport(report.report_data, (report as any).jobs?.customers || (report as any).customers || { name: 'Customer' } as any, (report as any).jobs || undefined, 'download');
+                                                        }}
+                                                        className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95"
+                                                        title="Download PDF"
+                                                    >
+                                                        <Download size={14} />
+                                                    </button>
+                                                    <button
+                                                        onClick={async () => {
+                                                            const { generateServiceReport } = await import('../lib/pdfGenerator');
+                                                            generateServiceReport(report.report_data, (report as any).jobs?.customers || (report as any).customers || { name: 'Customer' } as any, (report as any).jobs || undefined, 'preview');
+                                                        }}
+                                                        className="inline-flex items-center gap-2 bg-white border border-slate-200 text-delaval-blue shadow-sm hover:shadow-md hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 whitespace-nowrap"
+                                                    >
+                                                        <Eye size={16} />
+                                                        View PDF
+                                                    </button>
+                                                </div>
                                             </td>
                                         </motion.tr>
                                     ))}
@@ -207,12 +237,28 @@ const ServiceReports: React.FC = () => {
                                         <Wrench size={10} /> {report.machine_make || 'Standard Machine'}
                                     </p>
                                 </div>
-                                <button
-                                    onClick={() => setViewingReport(report)}
-                                    className="shrink-0 bg-blue-50 text-delaval-blue p-3 rounded-xl shadow-sm active:scale-90 transition-transform"
-                                >
-                                    <Eye size={18} />
-                                </button>
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={async () => {
+                                            const { generateServiceReport } = await import('../lib/pdfGenerator');
+                                            generateServiceReport(report.report_data, (report as any).jobs?.customers || (report as any).customers || { name: 'Customer' } as any, (report as any).jobs || undefined, 'download');
+                                        }}
+                                        className="shrink-0 bg-blue-50 text-blue-600 p-2.5 rounded-xl shadow-sm active:scale-90 transition-transform flex items-center justify-center"
+                                        title="Download PDF"
+                                    >
+                                        <Download size={16} />
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            const { generateServiceReport } = await import('../lib/pdfGenerator');
+                                            generateServiceReport(report.report_data, (report as any).jobs?.customers || (report as any).customers || { name: 'Customer' } as any, (report as any).jobs || undefined, 'preview');
+                                        }}
+                                        className="shrink-0 bg-indigo-50 text-indigo-600 p-2.5 rounded-xl shadow-sm active:scale-90 transition-transform flex items-center justify-center"
+                                        title="View PDF"
+                                    >
+                                        <Eye size={16} />
+                                    </button>
+                                </div>
                             </motion.div>
                         ))}
                     </div>

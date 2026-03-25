@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Package, CheckCircle, Clock, Tag, Pencil, Trash2, Upload } from 'lucide-react';
+import { Plus, Search, Package, CheckCircle, Clock, Tag, Pencil, Trash2, Upload, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { InventoryItem } from '../types';
 import Modal from '../components/Modal';
@@ -247,14 +247,20 @@ const Inventory = () => {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, categoryFilter]);
+    }, [searchTerm, categoryFilter, activeTab]);
 
     const paginatedItems = filteredItems.slice(
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
 
+    const paginatedAllocations = allocations.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+    );
+
     const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+    const totalAllocationPages = Math.ceil(allocations.length / itemsPerPage);
 
     // Extract unique categories from items
     const categories = Array.from(new Set(items.map(item => item.category).filter(Boolean))) as string[];
@@ -522,7 +528,7 @@ const Inventory = () => {
                                     {allocations.length === 0 ? (
                                         <tr><td colSpan={8} className="px-6 py-12 text-center text-slate-500">No parts allocated yet.</td></tr>
                                     ) : (
-                                        allocations.map((alloc) => (
+                                        paginatedAllocations.map((alloc) => (
                                             <tr key={alloc.id} className="hover:bg-slate-50/50 transition-colors">
                                                 <td className="px-6 py-4">
                                                     <div className="font-bold text-slate-900">{alloc.inventory?.sku || 'N/A'}</div>
@@ -555,6 +561,42 @@ const Inventory = () => {
                                     )}
                                 </tbody>
                             </table>
+
+                            {/* Allocation Pagination Controls */}
+                            {totalAllocationPages > 1 && (
+                                <div className="p-6 border-t border-slate-100 flex items-center justify-between">
+                                    <div className="text-sm text-slate-500">
+                                        Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-semibold text-slate-900">{Math.min(currentPage * itemsPerPage, allocations.length)}</span> of <span className="font-semibold text-slate-900">{allocations.length}</span> allocations
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                            disabled={currentPage === 1}
+                                            className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            Previous
+                                        </button>
+                                        <div className="flex items-center gap-1">
+                                            {[...Array(totalAllocationPages)].map((_, i) => (
+                                                <button
+                                                    key={i}
+                                                    onClick={() => setCurrentPage(i + 1)}
+                                                    className={`w-10 h-10 rounded-lg text-sm font-bold transition-all ${currentPage === i + 1 ? 'bg-delaval-blue text-white' : 'text-slate-600 hover:bg-slate-50'}`}
+                                                >
+                                                    {i + 1}
+                                                </button>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => setCurrentPage(prev => Math.min(totalAllocationPages, prev + 1))}
+                                            disabled={currentPage === totalAllocationPages}
+                                            className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -646,7 +688,7 @@ const Inventory = () => {
                             No parts found matching your criteria.
                         </div>
                     ) : (
-                        filteredItems.map(item => (
+                        paginatedItems.map(item => (
                             <div key={item.id} onClick={() => handleEditClick(item)} className="bg-white rounded-[1.5rem] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100/50 active:scale-[0.98] transition-transform cursor-pointer flex flex-col gap-4">
                                 <div className="flex justify-between items-start">
                                     <div className="pr-3">
@@ -678,6 +720,30 @@ const Inventory = () => {
                                 </div>
                             </div>
                         ))
+                    )}
+
+                    {/* Mobile Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-4 px-1">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 active:scale-95 transition-all shadow-sm"
+                            >
+                                <ArrowRight size={20} className="rotate-180" />
+                            </button>
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-slate-900">Page {currentPage}</span>
+                                <span className="text-sm font-medium text-slate-400">of {totalPages}</span>
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                disabled={currentPage === totalPages}
+                                className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 active:scale-95 transition-all shadow-sm"
+                            >
+                                <ArrowRight size={20} />
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

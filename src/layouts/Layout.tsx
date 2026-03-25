@@ -4,6 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 import logoImg from '../assets/logo_v2.png';
+import CommandPalette from '../components/CommandPalette';
+import { Search } from 'lucide-react';
 
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -33,9 +35,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
             console.error('Error signing out:', error);
             // Even on error, try to get back to login if session is weird
-            navigate('/login');
         }
     };
+
+    const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                setIsCommandPaletteOpen(prev => !prev);
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const navSections = [
         {
@@ -94,9 +108,23 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                         <img
                             src={logoImg}
                             alt="Tony Condon Dairy Services"
-                            className="h-[52px] w-auto mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
+                            className="h-[48px] w-auto mix-blend-multiply transition-transform duration-300 group-hover:scale-105"
                         />
                     </Link>
+
+                    {/* Global Search Bar (Cmd+K) */}
+                    <button 
+                        onClick={() => setIsCommandPaletteOpen(true)}
+                        className="hidden lg:flex flex-1 max-w-md items-center justify-between px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-slate-400 hover:bg-white hover:border-delaval-blue hover:shadow-sm transition-all group"
+                    >
+                        <div className="flex items-center gap-3">
+                            <Search size={18} className="group-hover:text-delaval-blue transition-colors" />
+                            <span className="text-sm font-medium">Search jobs, customers, parts...</span>
+                        </div>
+                        <div className="flex items-center gap-0.5 px-2 py-0.5 bg-white border border-slate-200 rounded text-[10px] font-bold text-slate-400 group-hover:border-delaval-blue/30 group-hover:text-delaval-blue transition-colors">
+                            CMD K
+                        </div>
+                    </button>
 
                     {/* User Info & Mobile Toggle */}
                     <div className="flex items-center gap-4">
@@ -116,7 +144,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                                 {userName}
                             </div>
                         </div>
-
 
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -217,6 +244,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     );
                 })}
             </nav>
+
+            <CommandPalette 
+                isOpen={isCommandPaletteOpen} 
+                onClose={() => setIsCommandPaletteOpen(false)} 
+            />
         </div>
     );
 };

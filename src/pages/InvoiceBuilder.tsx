@@ -69,7 +69,7 @@ const InvoiceBuilder = () => {
 
                 if (jobsData) {
                     setAllUninvoicedJobs(jobsData);
-                    setSelectedJobIds(jobsData.map(j => j.id));
+                    setSelectedJobIds(jobsData.map((j: any) => j.id));
                     // Initialize with a mock job for the shared UI
                     setJob({
                         ...jobsData[0],

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Trash2, FileText, Wrench, Clock, Package, Receipt, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, FileText, Wrench, Clock, Package, Receipt, CheckCircle, Camera, X, Image as ImageIcon } from 'lucide-react';
 import SearchableSelect from '../components/SearchableSelect';
 import { supabase } from '../lib/supabase';
 import { Job, JobItem, InventoryItem, ReportState } from '../types';
@@ -13,7 +13,9 @@ const JobDetails = () => {
     const [job, setJob] = useState<Job | null>(null);
     const [items, setItems] = useState<JobItem[]>([]);
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [attachments, setAttachments] = useState<any[]>([]);
     const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [newItem, setNewItem] = useState({
         description: '',
         quantity: 1,
@@ -27,8 +29,15 @@ const JobDetails = () => {
             fetchJobDetails();
             fetchJobItems();
             fetchInventory();
+            fetchAttachments();
         }
     }, [id]);
+
+    const fetchAttachments = async () => {
+        if (!id) return;
+        const res = await dataService.getJobAttachments(id);
+        setAttachments(res);
+    };
 
     const fetchJobDetails = async () => {
         const { data, error } = await supabase
@@ -79,6 +88,28 @@ const JobDetails = () => {
         if (!error) setItems(items.filter(i => i.id !== itemId));
     };
 
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || !e.target.files[0] || !id) return;
+        
+        setIsUploading(true);
+        try {
+            const file = e.target.files[0];
+            const { data, error } = await dataService.uploadJobAttachment(id, file);
+            if (error) throw error;
+            if (data) setAttachments([data, ...attachments]);
+        } catch (error: any) {
+            alert('Upload failed: ' + error.message);
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleDeleteAttachment = async (attachmentId: string, url: string) => {
+        if (!confirm('Are you sure you want to delete this photo?')) return;
+        const { error } = await dataService.deleteJobAttachment(attachmentId, url);
+        if (!error) setAttachments(attachments.filter(a => a.id !== attachmentId));
+    };
+
     const generatePDF = async () => {
         if (!job) return;
         try {
@@ -89,7 +120,7 @@ const JobDetails = () => {
         }
     };
 
-    const [mobileTab, setMobileTab] = useState<'details' | 'parts' | 'labor' | 'reports'>('details');
+    const [mobileTab, setMobileTab] = useState<'details' | 'parts' | 'labor' | 'reports' | 'photos'>('details');
     const [desktopTab, setDesktopTab] = useState<'items' | 'reports'>('items');
 
     if (!job) return <div className="p-8">Loading...</div>;
@@ -167,6 +198,12 @@ const JobDetails = () => {
                                     className={`py-2 px-1 font-bold text-sm border-b-2 transition-colors ${desktopTab === 'reports' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                                 >
                                     Service Reports
+                                </button>
+                                <button
+                                    onClick={() => setDesktopTab('photos' as any)}
+                                    className={`py-2 px-1 font-bold text-sm border-b-2 transition-colors ${desktopTab === ('photos' as any) ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+                                >
+                                    Photos & Attachments
                                 </button>
                             </div>
 
@@ -279,6 +316,77 @@ const JobDetails = () => {
                                         </div>
                                     )}
                                 </>
+                            )}
+
+                            {desktopTab === 'reports' && (
+                                <div className="bg-white rounded-xl shadow-sm border border-slate-200">
+                                    <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50 rounded-t-xl">
+                                        <div>
+                                            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                                <FileText className="w-5 h-5 text-delaval-blue" />
+                                                Service Reports
+                                            </h2>
+                                            <p className="text-sm text-slate-500 mt-1">Generate and view test reports</p>
+                                        </div>
+                                        <button
+                                            onClick={() => setIsGeneratingReport(true)}
+                                            className="bg-delaval-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
+                                        >
+                                            <Plus className="w-4 h-4" />
+                                            New Report
+                                        </button>
+                                    </div>
+                                    <div className="p-12 text-center text-slate-500">
+                                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <FileText className="w-8 h-8 text-slate-400" />
+                                        </div>
+                                        <p className="font-medium text-slate-700">No reports generated yet</p>
+                                        <p className="text-sm mt-1">Click the button above to create a new IMQCS Test Report.</p>
+                                    </div>
+                                </div>
+                            )}
+
+                            {desktopTab === ('photos' as any) && (
+                                <div className="space-y-6">
+                                    <div className="flex justify-between items-center">
+                                        <h2 className="text-lg font-bold text-slate-800">Field Photos</h2>
+                                        <label className="cursor-pointer bg-delaval-blue text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm">
+                                            <Camera size={18} />
+                                            {isUploading ? 'Uploading...' : 'Upload Photo'}
+                                            <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={isUploading} />
+                                        </label>
+                                    </div>
+
+                                    {attachments.length === 0 ? (
+                                        <div className="p-12 text-center text-slate-400 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200">
+                                            <ImageIcon size={48} className="mx-auto mb-4 opacity-20" />
+                                            <p className="font-medium">No photos attached to this job.</p>
+                                            <p className="text-sm">Upload photos of the site, machinery, or issues.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                            {attachments.map((att) => (
+                                                <div key={att.id} className="group relative aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                                                    <img src={att.file_url} className="w-full h-full object-cover" alt={att.file_name} />
+                                                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                                        <button 
+                                                            onClick={() => window.open(att.file_url, '_blank')}
+                                                            className="p-2 bg-white text-slate-900 rounded-lg hover:scale-110 transition-transform"
+                                                        >
+                                                            <ImageIcon size={18} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => handleDeleteAttachment(att.id, att.file_url)}
+                                                            className="p-2 bg-red-600 text-white rounded-lg hover:scale-110 transition-transform"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                             )}
 
                             {desktopTab === 'reports' && (
@@ -475,10 +583,10 @@ const JobDetails = () => {
                         LABOUR
                     </button>
                     <button
-                        className={`flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-colors ${mobileTab === 'reports' as any ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500'}`}
-                        onClick={() => setMobileTab('reports' as any)}
+                        className={`flex-1 pb-3 text-sm font-bold text-center border-b-2 transition-colors ${mobileTab === 'photos' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500'}`}
+                        onClick={() => setMobileTab('photos')}
                     >
-                        REPORTS
+                        PHOTOS
                     </button>
                 </div>
 
@@ -695,31 +803,42 @@ const JobDetails = () => {
                         </div>
                     )}
 
-                    {(mobileTab as string) === 'reports' && (
-                        <div className="bg-white rounded-xl shadow-sm border border-slate-200">
-                            <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50 rounded-t-xl">
-                                <div>
-                                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                        <FileText className="w-5 h-5 text-delaval-blue" />
-                                        Service Reports
-                                    </h2>
-                                    <p className="text-sm text-slate-500 mt-1">Generate and view test reports</p>
-                                </div>
-                                <button
-                                    onClick={() => setIsGeneratingReport(true)}
-                                    className="bg-delaval-blue text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center gap-2 shadow-sm"
-                                >
-                                    <Plus className="w-4 h-4" />
-                                    New Report
-                                </button>
+                    {(mobileTab as string) === 'photos' && (
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center px-1">
+                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Job Photos ({attachments.length})</span>
+                                <label className="cursor-pointer text-delaval-blue font-bold text-sm flex items-center gap-1">
+                                    <Plus size={16} /> Add Photo
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={isUploading} />
+                                </label>
                             </div>
-                            <div className="p-12 text-center text-slate-500">
-                                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <FileText className="w-8 h-8 text-slate-400" />
+
+                            {isUploading && (
+                                <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-delaval-blue text-sm font-bold flex items-center gap-3 animate-pulse">
+                                    <div className="w-5 h-5 border-2 border-delaval-blue border-t-transparent rounded-full animate-spin" />
+                                    Uploading photo...
                                 </div>
-                                <p className="font-medium text-slate-700">No reports generated yet</p>
-                                <p className="text-sm mt-1">Click the button above to create a new IMQCS Test Report.</p>
-                            </div>
+                            )}
+
+                            {attachments.length === 0 && !isUploading ? (
+                                <div className="p-12 text-center text-slate-400 bg-white rounded-xl border border-slate-100 italic">
+                                    No photos captured.
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-3">
+                                    {attachments.map((att) => (
+                                        <div key={att.id} className="relative aspect-square bg-slate-100 rounded-xl overflow-hidden border border-slate-100 shadow-sm">
+                                            <img src={att.file_url} className="w-full h-full object-cover" alt={att.file_name} onClick={() => window.open(att.file_url, '_blank')} />
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); handleDeleteAttachment(att.id, att.file_url); }}
+                                                className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-lg backdrop-blur"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

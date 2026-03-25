@@ -90,13 +90,23 @@ const WarrantyForms: React.FC = () => {
     };
 
     const handleSaveReport = async () => {
+        if (!selectedCustomerId || !selectedFormType) return;
+
         try {
-            const customer = customers.find(c => c.id === selectedCustomerId);
+            // Check authentication OR developer bypass
+            const { data: { session } } = await supabase.auth.getSession();
+            const isDevBypass = localStorage.getItem('dev_bypass') === 'true';
+            
+            if (!session && !isDevBypass) {
+                showToast('Authentication required: Please log in to save.', 'error');
+                return;
+            }
+
             const reportPayload = {
                 customer_id: selectedCustomerId,
                 job_id: selectedJobId || null,
                 form_type: selectedFormType,
-                machine_model: selectedFormType === 'Installation Certificate' ? formData.equipment_type : formData.equipment_details,
+                machine_model: formData.equipment_type || formData.equipment_details || '',
                 serial_number: formData.serial_no || '',
                 install_date: formData.install_date,
                 technician_name: formData.installer_name || formData.declaration_name || 'Tony Condon',
@@ -107,15 +117,14 @@ const WarrantyForms: React.FC = () => {
                 .from('warranty_reports')
                 .insert([reportPayload]);
 
-            if (error) throw error;
+            if (error) {
+                if (error.code === '42501') {
+                    throw new Error('Database Permission Error: Please ensure you have run the provided fix_reports_schema.sql script in your Supabase SQL editor.');
+                }
+                throw error;
+            }
 
-            // Trigger PDF Download automatically
-            generateWarrantyReport(
-                { ...reportPayload, created_at: new Date().toISOString() }, 
-                customer || { name: 'Customer' } as any
-            );
-
-            showToast('Warranty report saved and PDF downloaded!', 'success');
+            showToast('Warranty report saved successfully!', 'success');
             setIsCreating(false);
             fetchReports();
             
@@ -132,193 +141,184 @@ const WarrantyForms: React.FC = () => {
         const isInstallCert = selectedFormType === 'Installation Certificate';
         
         return (
-            <div className="bg-white shadow-2xl rounded-sm border border-slate-200 overflow-hidden mx-auto max-w-[21cm] min-h-[29.7cm] flex flex-col">
+            <div className="bg-white w-full max-w-[210mm] print:shadow-none relative rounded-sm shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-200 transition-all duration-300 print:transform-none print:block print:static"
+                 style={{ fontFamily: 'Inter, system-ui, -apple-system, sans-serif', fontSize: '9pt', color: '#000', minHeight: '297mm' }}>
+                
                 {/* Certificate Header */}
-                <div className="p-8 md:p-12 border-b-4 border-delaval-blue">
-                    <div className="flex justify-between items-start mb-10">
-                        <img src={logoImg} alt="DeLaval" className="h-12 md:h-16 object-contain" />
-                        <div className="text-right">
-                            <h2 className="text-2xl md:text-3xl font-black text-delaval-blue tracking-tighter uppercase italic">
-                                {isInstallCert ? 'Installation Certificate' : 'Installation & Commissioning Form'}
-                            </h2>
-                            <p className="text-[10px] md:text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">
-                                Official Digital Record • Condon Dairy Services
-                            </p>
+                <div style={{ borderBottom: '3px solid #003875', padding: '20px 30px 15px', background: '#f0f4ff' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div>
+                            <div style={{ fontSize: '18pt', fontWeight: 900, color: '#003875', letterSpacing: '-0.5px', textTransform: 'uppercase' }}>
+                                {isInstallCert ? 'Installation Certificate' : 'Installation & Commissioning'}
+                            </div>
+                            <div style={{ fontSize: '8pt', color: '#555', marginTop: 2, fontWeight: 700, letterSpacing: '1px' }}>
+                                OFFICIAL DIGITAL RECORD • CONDON DAIRY SERVICES
+                            </div>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="md:col-span-2">
-                             <div className="text-[10px] font-black text-delaval-blue uppercase tracking-widest mb-2 border-b border-delaval-blue/10 pb-1">Client Information</div>
-                             <div className="space-y-4">
-                                <div>
-                                    <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">Name & Address of Client</label>
-                                    <textarea 
-                                        className="w-full bg-slate-50/50 border-0 border-b-2 border-slate-200 focus:border-delaval-blue focus:ring-0 text-sm font-bold p-0 min-h-[60px] resize-none transition-colors"
-                                        value={isInstallCert ? formData.client_info : formData.client_name + '\n' + formData.install_address} 
-                                        onChange={e => isInstallCert ? setFormData({...formData, client_info: e.target.value}) : setFormData({...formData, client_name: e.target.value})}
-                                    />
-                                </div>
-                             </div>
-                        </div>
-                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                             <div className="text-[10px] font-black text-delaval-blue uppercase tracking-widest mb-3" >Document Meta</div>
-                             <div className="space-y-3">
-                                <div>
-                                    <label className="block text-[9px] font-black text-slate-400 uppercase">Serial Number</label>
-                                    <input 
-                                        type="text" 
-                                        className="w-full bg-transparent border-0 border-b border-slate-300 focus:border-delaval-blue focus:ring-0 text-xs font-black p-0 py-1"
-                                        placeholder="REQUIRED"
-                                        value={formData.serial_no || ''} 
-                                        onChange={e => setFormData({...formData, serial_no: e.target.value})}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[9px] font-black text-slate-400 uppercase">Date of Installation</label>
-                                    <input 
-                                        type="date" 
-                                        className="w-full bg-transparent border-0 border-b border-slate-300 focus:border-delaval-blue focus:ring-0 text-xs font-black p-0 py-1"
-                                        value={formData.install_date} 
-                                        onChange={e => setFormData({...formData, install_date: e.target.value})}
-                                    />
-                                </div>
-                             </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <img src={logoImg} alt="DeLaval" style={{ height: 40, marginBottom: 4 }} />
+                            <div style={{ fontWeight: 700, fontSize: '10pt', color: '#003875' }}>Tony Condon Services</div>
                         </div>
                     </div>
                 </div>
 
-                {/* Main Body */}
-                <div className="flex-1 p-8 md:p-12 space-y-10">
+                <div style={{ padding: '25px 30px' }}>
+                    {/* Header Info Section */}
+                    <div style={{ background: '#003875', color: 'white', fontWeight: 700, fontSize: '8.5pt', padding: '4px 10px', marginBottom: 12, textTransform: 'uppercase' }}>
+                        Client Information
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 15, marginBottom: 20 }}>
+                        <div className="space-y-4">
+                            <div>
+                                <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>Name & Address of Client</label>
+                                <textarea 
+                                    className="w-full bg-slate-50/50 border-0 border-b border-slate-300 focus:border-delaval-blue focus:ring-0 text-xs font-black p-2 min-h-[60px] resize-none transition-colors"
+                                    value={isInstallCert ? formData.client_info : formData.client_name + '\n' + formData.install_address} 
+                                    onChange={e => isInstallCert ? setFormData({...formData, client_info: e.target.value}) : setFormData({...formData, client_name: e.target.value})}
+                                />
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>Serial Number</label>
+                                <input 
+                                    type="text" 
+                                    className="w-full bg-transparent border-0 border-b border-slate-300 focus:border-delaval-blue focus:ring-0 text-xs font-black p-0 py-1"
+                                    placeholder="REQUIRED"
+                                    value={formData.serial_no || ''} 
+                                    onChange={e => setFormData({...formData, serial_no: e.target.value})}
+                                />
+                            </div>
+                            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase', marginBottom: 2 }}>Date of Installation</label>
+                                <input 
+                                    type="date" 
+                                    className="w-full bg-transparent border-0 border-b border-slate-300 focus:border-delaval-blue focus:ring-0 text-xs font-black p-0 py-1"
+                                    value={formData.install_date} 
+                                    onChange={e => setFormData({...formData, install_date: e.target.value})}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     {isInstallCert ? (
                         <>
-                            <section>
-                                <div className="text-[11px] font-black text-delaval-blue uppercase tracking-[0.2em] mb-4 flex items-center gap-3">
-                                    <div className="h-px bg-delaval-blue/20 flex-1"></div>
-                                    Equipment Specifications
-                                    <div className="h-px bg-delaval-blue/20 flex-1"></div>
+                            <div style={{ background: '#003875', color: 'white', fontWeight: 700, fontSize: '8.5pt', padding: '4px 10px', marginBottom: 12, textTransform: 'uppercase' }}>
+                                Equipment Specifications
+                            </div>
+                            <div className="space-y-6 mb-8">
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Type of Milking Parlour / Equipment (Make & Model)</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-base font-bold text-slate-800 p-0 pb-2 transition-all"
+                                        placeholder="Specify make and model..."
+                                        value={formData.equipment_type} 
+                                        onChange={e => setFormData({...formData, equipment_type: e.target.value})}
+                                    />
                                 </div>
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Type of Milking Parlour / Equipment</label>
-                                        <input 
-                                            type="text" 
-                                            className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-base font-bold text-slate-800 p-0 pb-2 transition-all"
-                                            placeholder="Specify make and model..."
-                                            value={formData.equipment_type} 
-                                            onChange={e => setFormData({...formData, equipment_type: e.target.value})}
-                                        />
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                                    <div style={{ padding: 15, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                            <span style={{ fontSize: '7.5pt', fontWeight: 900, color: '#334155', textTransform: 'uppercase' }}>ETCI Cert Done</span>
+                                            <div style={{ display: 'flex', gap: 4 }}>
+                                                {['YES', 'NO'].map(opt => (
+                                                    <button 
+                                                        key={opt}
+                                                        onClick={() => setFormData({...formData, etci_cert: opt})}
+                                                        className={`px-3 py-1 rounded-lg text-[9px] font-black transition-all ${formData.etci_cert === opt ? 'bg-delaval-blue text-white shadow-lg shadow-blue-900/20 scale-105' : 'bg-white text-slate-400 border border-slate-200'}`}
+                                                    >
+                                                        {opt}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <p style={{ fontSize: '7pt', color: '#64748b', fontStyle: 'italic' }}>Electrical Test Certificate for installation</p>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-8">
-                                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[10px] font-black text-slate-700 uppercase">ETCI Cert Done</span>
-                                                <div className="flex gap-1">
-                                                    {['YES', 'NO'].map(opt => (
-                                                        <button 
-                                                            key={opt}
-                                                            onClick={() => setFormData({...formData, etci_cert: opt})}
-                                                            className={`px-3 py-1 rounded-lg text-[9px] font-black transition-all ${formData.etci_cert === opt ? 'bg-delaval-blue text-white shadow-lg shadow-blue-900/20 scale-105' : 'bg-white text-slate-400 border border-slate-200'}`}
-                                                        >
-                                                            {opt}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                                    <div style={{ padding: 15, borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                                            <span style={{ fontSize: '7.5pt', fontWeight: 900, color: '#334155', textTransform: 'uppercase' }}>Supp. Ag Cert</span>
+                                            <div style={{ display: 'flex', gap: 4 }}>
+                                                {['YES', 'NO'].map(opt => (
+                                                    <button 
+                                                        key={opt}
+                                                        onClick={() => setFormData({...formData, supp_ag_cert: opt})}
+                                                        className={`px-3 py-1 rounded-lg text-[9px] font-black transition-all ${formData.supp_ag_cert === opt ? 'bg-delaval-blue text-white shadow-lg shadow-blue-900/20 scale-105' : 'bg-white text-slate-400 border border-slate-200'}`}
+                                                    >
+                                                        {opt}
+                                                    </button>
+                                                ))}
                                             </div>
-                                            <p className="text-[9px] text-slate-400 font-medium italic leading-relaxed">Electrical Test Certificate for the complete installation</p>
                                         </div>
-                                        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[10px] font-black text-slate-700 uppercase">Supp. Ag Cert</span>
-                                                <div className="flex gap-1">
-                                                    {['YES', 'NO'].map(opt => (
-                                                        <button 
-                                                            key={opt}
-                                                            onClick={() => setFormData({...formData, supp_ag_cert: opt})}
-                                                            className={`px-3 py-1 rounded-lg text-[9px] font-black transition-all ${formData.supp_ag_cert === opt ? 'bg-delaval-blue text-white shadow-lg shadow-blue-900/20 scale-105' : 'bg-white text-slate-400 border border-slate-200'}`}
-                                                        >
-                                                            {opt}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            <p className="text-[9px] text-slate-400 font-medium italic leading-relaxed">Supplementary Agricultural Certificate for grants/grants</p>
-                                        </div>
+                                        <p style={{ fontSize: '7pt', color: '#64748b', fontStyle: 'italic' }}>Supplementary Ag Certificate for grants</p>
                                     </div>
                                 </div>
-                            </section>
+                            </div>
 
-                            <section>
-                                <div className="text-[11px] font-black text-delaval-blue uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
-                                    <div className="h-px bg-delaval-blue/20 flex-1"></div>
-                                    Installer Affirmation
-                                    <div className="h-px bg-delaval-blue/20 flex-1"></div>
+                            <div style={{ background: '#003875', color: 'white', fontWeight: 700, fontSize: '8.5pt', padding: '4px 10px', marginBottom: 12, textTransform: 'uppercase' }}>
+                                Installer Affirmation
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 30 }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Trained Installer Name</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-sm font-bold p-0 pb-2"
+                                        value={formData.installer_name} 
+                                        onChange={e => setFormData({...formData, installer_name: e.target.value})}
+                                    />
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Trained Installer Name</label>
-                                        <input 
-                                            type="text" 
-                                            className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-sm font-bold p-0 pb-2"
-                                            value={formData.installer_name} 
-                                            onChange={e => setFormData({...formData, installer_name: e.target.value})}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Installers Address</label>
-                                        <input 
-                                            type="text" 
-                                            className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-sm font-bold p-0 pb-2"
-                                            value={formData.installer_address} 
-                                            onChange={e => setFormData({...formData, installer_address: e.target.value})}
-                                        />
-                                    </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Installers Address</label>
+                                    <input 
+                                        type="text" 
+                                        className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-sm font-bold p-0 pb-2"
+                                        value={formData.installer_address} 
+                                        onChange={e => setFormData({...formData, installer_address: e.target.value})}
+                                    />
                                 </div>
-                            </section>
+                            </div>
                         </>
                     ) : (
                         <>
-                            <section>
-                                <div className="text-[11px] font-black text-delaval-blue uppercase tracking-[0.2em] mb-4 flex items-center gap-3">
-                                    <div className="h-px bg-delaval-blue/20 flex-1"></div>
-                                    Testing & Commissioning Details
-                                    <div className="h-px bg-delaval-blue/20 flex-1"></div>
+                            <div style={{ background: '#003875', color: 'white', fontWeight: 700, fontSize: '8.5pt', padding: '4px 10px', marginBottom: 12, textTransform: 'uppercase' }}>
+                                Testing & Commissioning Details
+                            </div>
+                            <div className="space-y-6 mb-8">
+                                <div>
+                                    <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Details of Equipment Installed (Make & Model)</label>
+                                    <textarea 
+                                        className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-base font-bold text-slate-800 p-0 pb-2 transition-all min-h-[80px] resize-none"
+                                        placeholder="Provide full technical details..."
+                                        value={formData.equipment_details} 
+                                        onChange={e => setFormData({...formData, equipment_details: e.target.value})}
+                                    />
                                 </div>
-                                <div className="space-y-6">
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 20 }}>
                                     <div>
-                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Details of Equipment Installed (Make & Model)</label>
-                                        <textarea 
-                                            className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-base font-bold text-slate-800 p-0 pb-2 transition-all min-h-[80px] resize-none"
-                                            placeholder="Provide full technical details..."
-                                            value={formData.equipment_details} 
-                                            onChange={e => setFormData({...formData, equipment_details: e.target.value})}
+                                        <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>Date of Testing</label>
+                                        <input 
+                                            type="date" 
+                                            className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-sm font-bold p-0 pb-2"
+                                            value={formData.test_date} 
+                                            onChange={e => setFormData({...formData, test_date: e.target.value})}
                                         />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-8">
-                                        <div>
-                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2">Date of Testing</label>
-                                            <input 
-                                                type="date" 
-                                                className="w-full bg-transparent border-0 border-b-2 border-slate-100 focus:border-delaval-blue focus:ring-0 text-sm font-bold p-0 pb-2"
-                                                value={formData.test_date} 
-                                                onChange={e => setFormData({...formData, test_date: e.target.value})}
-                                            />
-                                        </div>
-                                        <div className="flex items-center text-[10px] text-slate-400 font-medium italic">
-                                            Confirming equipment matches DeLaval standards for commissioning.
-                                        </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', fontSize: '8pt', color: '#64748b', fontStyle: 'italic', background: '#f0f9ff', padding: '8px 12px', borderRadius: 8, borderLeft: '3px solid #003875' }}>
+                                        I confirm equipment matches DeLaval standards for commissioning.
                                     </div>
                                 </div>
-                            </section>
+                            </div>
 
-                            <section className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
-                                <div className="text-[10px] font-black text-delaval-blue uppercase tracking-widest mb-4">Official Declaration</div>
+                            <div style={{ background: '#f8fafc', padding: 20, borderRadius: 12, border: '1px solid #e2e8f0', borderLeft: '4px solid #003875', marginBottom: 30 }}>
+                                <div style={{ fontSize: '7pt', fontWeight: 900, color: '#003875', textTransform: 'uppercase', marginBottom: 8 }}>Official Declaration</div>
                                 <p className="text-xs text-slate-600 leading-relaxed mb-6 font-medium">
                                     I <span className="underline decoration-blue-200 underline-offset-4 decoration-2 font-black">{formData.declaration_name}</span> working on behalf of <span className="font-black text-delaval-blue">{formData.install_company}</span> confirm the above equipment is installed matching DeLaval Standards.
                                 </p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: 15 }}>
                                     <div>
-                                        <label className="block text-[9px] font-black text-slate-400 uppercase">Declaration Person</label>
+                                        <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>Person</label>
                                         <input 
                                             type="text" 
                                             className="w-full bg-transparent border-0 border-b border-blue-200 focus:border-delaval-blue focus:ring-0 text-xs font-black p-0 py-1"
@@ -327,7 +327,7 @@ const WarrantyForms: React.FC = () => {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-[9px] font-black text-slate-400 uppercase">Company Name</label>
+                                        <label style={{ display: 'block', fontSize: '7pt', color: '#666', fontWeight: 700, textTransform: 'uppercase' }}>Company</label>
                                         <input 
                                             type="text" 
                                             className="w-full bg-transparent border-0 border-b border-blue-200 focus:border-delaval-blue focus:ring-0 text-xs font-black p-0 py-1"
@@ -336,41 +336,29 @@ const WarrantyForms: React.FC = () => {
                                         />
                                     </div>
                                 </div>
-                            </section>
+                            </div>
                         </>
                     )}
 
                     {/* Signature Area */}
-                    <div className="pt-10 border-t border-slate-100">
-                        <div className="grid grid-cols-2 gap-12">
-                            <div className="space-y-4">
-                                <div className="h-20 border-b-2 border-slate-300 relative">
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-5">
-                                        <div className="w-12 h-12 bg-slate-200 rounded-full" />
-                                    </div>
-                                    <div className="absolute bottom-2 left-0 right-0 text-center text-[10px] text-slate-300 font-bold tracking-widest uppercase">
-                                        Place Digital Signature Here
-                                    </div>
-                                </div>
-                                <div className="flex justify-between items-center px-1">
-                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Authorized Signature</div>
-                                    <div className="text-[9px] font-bold text-slate-300 italic">Installer Representative</div>
-                                </div>
+                    <div style={{ borderTop: '2px solid #003875', paddingTop: 20, marginTop: 40, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 }}>
+                        <div style={{ fontSize: '8pt' }}>
+                            <div style={{ height: 60, borderBottom: '1px solid #000', marginBottom: 5, position: 'relative' }}>
+                                <div style={{ position: 'absolute', bottom: 5, right: 0, fontSize: '6pt', color: '#ccc', fontWeight: 900 }}>DIGITAL SIGNATURE</div>
                             </div>
-                            <div className="flex items-end justify-center pb-8 opacity-20 grayscale">
-                                <img src={logoImg} alt="" className="h-6" />
-                            </div>
+                            <div style={{ fontWeight: 800, color: '#003875', textTransform: 'uppercase', fontSize: '7pt' }}>Authorized Signature</div>
+                            <div style={{ color: '#666', fontSize: '6.5pt' }}>INSTALLER REPRESENTATIVE</div>
+                        </div>
+                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'flex-end' }}>
+                            <img src={logoImg} alt="" style={{ height: 20, opacity: 0.3, marginBottom: 10 }} />
+                            <div style={{ fontSize: '7pt', color: '#94a3b8', fontWeight: 700, letterSpacing: '1px' }}>CDS OFFICIAL STAMP</div>
+                            <div style={{ width: 80, height: 40, border: '1px solid #e2e8f0', borderRadius: 4, marginTop: 4 }}></div>
                         </div>
                     </div>
-                </div>
 
-                {/* Footer Branding */}
-                <div className="bg-slate-50 p-4 border-t border-slate-100 flex justify-between items-center">
-                    <div className="text-[8px] font-bold text-slate-400 tracking-widest uppercase">
-                        ISO 9001 CERTIFIED • DELAVAL OFFICIAL PARTNER
-                    </div>
-                    <div className="text-[8px] font-black text-delaval-blue tracking-tighter italic">
-                        CONDON DAIRY SERVICES LTD.
+                    {/* Footer */}
+                    <div style={{ borderTop: '1px solid #eee', marginTop: 30, paddingTop: 10, fontSize: '7pt', color: '#94a3b8', textAlign: 'center', fontWeight: 700, letterSpacing: '0.5px' }}>
+                        ISO 9001 CERTIFIED • DELAVAL OFFICIAL PARTNER • CONDON DAIRY SERVICES LTD.
                     </div>
                 </div>
             </div>
@@ -456,12 +444,28 @@ const WarrantyForms: React.FC = () => {
                                             <div className="text-[10px] text-slate-400 font-bold">S/N: {report.serial_number || '---'}</div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => setViewingReport(report)}
-                                                className="inline-flex items-center gap-2 bg-slate-100 hover:bg-delaval-blue hover:text-white text-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                                            >
-                                                <Eye size={14} /> View Details
-                                            </button>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button
+                                                    onClick={async () => {
+                                                        const cust = customers.find(c => c.id === report.customer_id);
+                                                        generateWarrantyReport(report, cust || { name: report.customers?.name || 'Customer' } as any, 'download');
+                                                    }}
+                                                    className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95"
+                                                    title="Download PDF"
+                                                >
+                                                    <Download size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={async () => {
+                                                        const cust = customers.find(c => c.id === report.customer_id);
+                                                        generateWarrantyReport(report, cust || { name: report.customers?.name || 'Customer' } as any, 'preview');
+                                                    }}
+                                                    className="inline-flex items-center gap-2 bg-white border border-slate-200 text-delaval-blue shadow-sm hover:shadow-md hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 whitespace-nowrap"
+                                                >
+                                                    <Eye size={16} />
+                                                    View PDF
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -554,9 +558,9 @@ const WarrantyForms: React.FC = () => {
                             margin: '0px'
                         }}
                     >
-                        <div className="w-full flex flex-col items-center min-h-full pb-12">
+                        <div className="w-full flex flex-col items-center min-h-full pb-12 print:pb-0">
                             {/* Actions Toolbar */}
-                            <div 
+                            <div className="print:hidden"
                                 style={{ 
                                     position: 'sticky', 
                                     top: 0, 
@@ -593,6 +597,22 @@ const WarrantyForms: React.FC = () => {
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <button 
+                                        onClick={async () => {
+                                            const cust = customers.find(c => c.id === selectedCustomerId);
+                                            // Mock a report object from current form data
+                                            const mockReport: any = {
+                                                form_type: selectedFormType,
+                                                serial_number: formData.serial_no || 'TBD',
+                                                install_date: formData.install_date || new Date().toISOString(),
+                                                report_data: { ...formData }
+                                            };
+                                            await generateWarrantyReport(mockReport, cust || { name: 'Customer' } as any);
+                                        }} 
+                                        className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
+                                    >
+                                        <Download size={16} /> Download PDF
+                                    </button>
+                                    <button 
                                         onClick={() => setIsCreating(false)} 
                                         className="px-4 py-2 text-slate-500 hover:text-slate-900 font-black text-xs uppercase tracking-widest transition-colors"
                                     >
@@ -602,7 +622,7 @@ const WarrantyForms: React.FC = () => {
                                         onClick={handleSaveReport}
                                         className="px-6 py-2.5 bg-delaval-blue hover:bg-blue-600 text-white font-black text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-blue-900/20 transition-all flex items-center gap-2 active:scale-95"
                                     >
-                                        <Save size={16} /> Finalize Document
+                                        <Save size={16} /> Finalize & Save
                                     </button>
                                 </div>
                             </div>
@@ -610,8 +630,19 @@ const WarrantyForms: React.FC = () => {
                             {/* The Document */}
                             {renderDynamicForm()}
                             
+                            <style>{`
+                                @media print {
+                                    body { background: white !important; margin: 0 !important; padding: 0 !important; }
+                                    #portal-overlay { background: white !important; padding: 0 !important; }
+                                    .print\\:hidden { display: none !important; }
+                                    .print\\:transform-none { transform: none !important; }
+                                    .print\\:block { display: block !important; }
+                                    .print\\:static { position: static !important; }
+                                }
+                            `}</style>
+
                             {/* Mobile Warning */}
-                            <div className="mt-8 text-center md:hidden pb-12">
+                            <div className="mt-8 text-center md:hidden pb-12 print:hidden">
                                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">A4 Scale Preview • Best viewed on Desktop</p>
                             </div>
                         </div>
@@ -664,9 +695,9 @@ const WarrantyForms: React.FC = () => {
                                     alignItems: 'center',
                                     paddingLeft: '1.5rem',
                                     paddingRight: '1.5rem',
-                                    paddingTop: '1rem',
-                                    paddingBottom: '1rem',
-                                    marginBottom: '3rem'
+                                    paddingTop: '0.5rem',
+                                    paddingBottom: '0.5rem',
+                                    marginBottom: '0'
                                 }}
                             >
                                 <div className="flex items-center gap-4">
@@ -682,11 +713,11 @@ const WarrantyForms: React.FC = () => {
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <button 
-                                        onClick={() => {
+                                        onClick={async () => {
                                             const cust = customers.find(c => c.id === viewingReport.customer_id);
                                             generateWarrantyReport(viewingReport, cust || { name: viewingReport.customers?.name || 'Customer' } as any);
                                         }}
-                                        className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-black text-xs uppercase tracking-widest rounded-xl hover:bg-slate-50 transition-all flex items-center gap-2"
+                                        className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-blue-900/20"
                                     >
                                         <Download size={16} /> Download PDF
                                     </button>

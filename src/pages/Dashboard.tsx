@@ -1,6 +1,6 @@
-import { Bell, Plug as Plus, Users, FileText, Calendar, ArrowUpRight, Filter, CircleDollarSign as RupeeIcon, Wrench, AlertCircle, Package } from 'lucide-react';
+import { Bell, Plug as Plus, Users, FileText, Calendar, Filter, CircleDollarSign as RupeeIcon, Wrench, AlertCircle, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Job } from '../types';
 import { dataService } from '../services/dataService';
 import { useAuth } from '../context/AuthContext';
@@ -16,8 +16,10 @@ const Dashboard = () => {
         completedToday: 0
     });
     const [recentJobs, setRecentJobs] = useState<Job[]>([]);
+    const [serviceReminders, setServiceReminders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const { user } = useAuth();
+    const navigate = useNavigate();
 
     const [filterType, setFilterType] = useState<'all' | 'month' | 'year' | 'custom'>('all');
     const [customRange, setCustomRange] = useState({
@@ -58,10 +60,11 @@ const Dashboard = () => {
             const userRole = user?.user_metadata?.role;
             const engineerName = userRole === 'Engineer' ? (user?.user_metadata?.name || user?.email?.split('@')[0]) : undefined;
 
-            const [invoiceData, allJobs, inventoryArray] = await Promise.all([
+            const [invoiceData, allJobs, inventoryArray, serviceRemindersData] = await Promise.all([
                 dataService.getInvoices(),
                 dataService.getJobs(undefined, engineerName),
-                dataService.getInventory()
+                dataService.getInventory(),
+                dataService.getServiceReminders()
             ]);
 
             const { start, end } = getEffectiveRange();
@@ -156,6 +159,19 @@ const Dashboard = () => {
                 });
             }
 
+            if (serviceRemindersData.length > 0) {
+                const overdueCount = serviceRemindersData.filter((r: any) => r.status === 'overdue').length;
+                if (overdueCount > 0) {
+                    newNotifs.push({
+                        id: 'service-overdue',
+                        title: 'Service Overdue',
+                        message: `${overdueCount} customers are overdue for their annual service.`,
+                        type: 'error',
+                        date: new Date().toISOString()
+                    });
+                }
+            }
+
             setNotifications(newNotifs);
 
             setStats({
@@ -168,6 +184,7 @@ const Dashboard = () => {
             });
 
             setRecentJobs(filteredJobs.slice(0, 5));
+            setServiceReminders(serviceRemindersData.slice(0, 5));
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
         } finally {
@@ -340,70 +357,86 @@ const Dashboard = () => {
                     })}
                 </div>
 
-                {/* Recent Jobs Table */}
-                <div className="section-card">
-                    <div className="flex justify-between items-center p-6 border-b border-slate-100">
-                        <h2 className="text-xl font-bold font-display text-slate-900">Recent Jobs</h2>
-                        <div className="flex gap-3">
-                            <Link to="/jobs" className="px-4 py-2 border border-slate-200 rounded-lg text-slate-700 font-semibold text-sm hover:bg-slate-50 hover:text-blue-600 transition-colors">
-                                View All
-                            </Link>
-                            <Link to="/jobs" className="px-4 py-2 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-lg font-semibold text-sm shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all">
-                                + New Job
-                            </Link>
+                {/* Bottom Row: Recent Jobs & Service Reminders */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Recent Jobs */}
+                    <div className="section-card">
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100">
+                            <h2 className="text-xl font-bold font-display text-slate-900">Recent Jobs</h2>
+                            <Link to="/jobs" className="text-sm font-bold text-delaval-blue hover:underline">View All</Link>
+                        </div>
+                        <div className="overflow-x-auto p-0">
+                            <table className="w-full text-left">
+                                <thead className="bg-[#F8FAFB] border-b border-slate-100">
+                                    <tr>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {loading ? (
+                                        <tr><td colSpan={3} className="px-6 py-8 text-center text-slate-500">Loading...</td></tr>
+                                    ) : recentJobs.map((job) => (
+                                        <tr key={job.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => navigate(`/jobs/${job.id}`)}>
+                                            <td className="px-6 py-4">
+                                                <div className="font-bold text-slate-900">#{job.job_number}</div>
+                                                <div className="text-xs text-slate-500">{job.service_type}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-sm font-medium text-slate-700">{job.customers?.name}</td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${job.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                                                    {job.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {recentJobs.length === 0 && !loading && (
+                                        <tr><td colSpan={3} className="px-6 py-12 text-center text-slate-400 italic font-medium">No recent jobs</td></tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <div className="overflow-x-auto p-0">
-                        <table className="w-full text-left">
-                            <thead className="bg-[#F8FAFB] border-b border-slate-100">
-                                <tr>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job ID</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Customer</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Engineer</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
-                                    <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {loading ? (
-                                    <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-500">Loading jobs...</td></tr>
-                                ) : recentJobs.map((job) => (
-                                    <tr key={job.id} className="hover:bg-slate-50/80 transition-colors group cursor-pointer">
-                                        <td className="px-6 py-4">
+
+                    {/* Service Reminders */}
+                    <div className="section-card border-amber-200">
+                        <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-amber-50/30">
+                            <h2 className="text-xl font-bold font-display text-slate-900 flex items-center gap-2">
+                                <Calendar size={20} className="text-amber-600" />
+                                Upcoming Services
+                            </h2>
+                            <Link to="/customers" className="text-sm font-bold text-amber-600 hover:underline">Manage</Link>
+                        </div>
+                        <div className="p-0">
+                            {loading ? (
+                                <div className="p-6 text-center text-slate-500">Loading...</div>
+                            ) : serviceReminders.length === 0 ? (
+                                <div className="p-12 text-center text-slate-400 italic font-medium">No upcoming services due.</div>
+                            ) : (
+                                <div className="divide-y divide-slate-50">
+                                    {serviceReminders.map((rem: any) => (
+                                        <div key={rem.id} className="p-4 hover:bg-slate-50 transition-all flex items-center justify-between group">
                                             <div className="flex items-center gap-3">
-                                                <div className="font-bold text-slate-900">#{job.job_number}</div>
-                                                <Link to={`/jobs/${job.id}`} className="p-1 hover:bg-slate-100 rounded text-slate-400 hover:text-blue-600 transition-colors">
-                                                    <ArrowUpRight size={16} />
-                                                </Link>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-[#E6F0FF] text-[#0051A5] flex items-center justify-center font-bold text-xs group-hover:scale-110 transition-transform">
-                                                    {job.customers?.name?.substring(0, 2).toUpperCase()}
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${rem.status === 'overdue' ? 'bg-red-50 text-red-600' : 'bg-amber-50 text-amber-600'}`}>
+                                                    {rem.name.charAt(0)}
                                                 </div>
-                                                <span className="font-medium text-slate-700">{job.customers?.name}</span>
+                                                <div>
+                                                    <div className="font-bold text-slate-900">{rem.name}</div>
+                                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{rem.plant_type || 'Milking System'}</div>
+                                                </div>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">{job.service_type}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">{job.engineer_name}</td>
-                                        <td className="px-6 py-4 text-sm text-slate-600">{job.date_scheduled?.split('T')[0]}</td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                                                                    ${job.status === 'completed' ? 'bg-green-100 text-green-800' :
-                                                    job.status === 'in_progress' ? 'bg-orange-100 text-orange-800' :
-                                                        'bg-blue-100 text-blue-800'}`}>
-                                                {job.status.replace('_', ' ')}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {recentJobs.length === 0 && !loading && (
-                                    <tr><td colSpan={6} className="px-6 py-8 text-center text-slate-400 italic">No recent jobs found</td></tr>
-                                )}
-                            </tbody>
-                        </table>
+                                            <div className="text-right">
+                                                <div className={`text-sm font-bold ${rem.status === 'overdue' ? 'text-red-600' : 'text-amber-600'}`}>
+                                                    {rem.daysRemaining < 0 ? `Overdue by ${Math.abs(rem.daysRemaining)} days` : `Due in ${rem.daysRemaining} days`}
+                                                </div>
+                                                <div className="text-[10px] text-slate-400 font-medium">Next: {rem.nextDate}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

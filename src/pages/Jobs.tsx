@@ -244,7 +244,7 @@ const Jobs = () => {
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-2xl font-bold font-display text-slate-900">Jobs & Services</h1>
-                        <p className="text-slate-500">Track solar installations and maintenance schedules</p>
+                        <p className="text-slate-500">Track equipment installations and maintenance schedules</p>
                     </div>
                 </div>
 
@@ -456,7 +456,7 @@ const Jobs = () => {
                                 </div>
                                 <div className="flex flex-wrap items-center gap-2 mb-4">
                                     <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-orange-50 text-orange-600 text-[11px] font-bold tracking-wide">
-                                        Solar PW {/* Updated from dairy mock data */}
+                                        Dairy Service
                                     </span>
                                     <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-600 text-[11px] font-bold tracking-wide">
                                         {job.service_type}
@@ -550,12 +550,11 @@ const Jobs = () => {
                                 <SearchableSelect
                                     label="Service Type"
                                     options={[
-                                        { value: 'Solar Installation', label: 'Solar Installation' },
-                                        { value: 'Panel Cleaning', label: 'Panel Cleaning' },
-                                        { value: 'Inverter Maintenance', label: 'Inverter Maintenance' },
-                                        { value: 'System Audit', label: 'System Audit' },
-                                        { value: 'Battery Service', label: 'Battery Service' },
-                                        { value: 'Emergency Repair', label: 'Emergency Repair' }
+                                        { value: 'Milking Machine Service', label: 'Milking Machine Service' },
+                                        { value: 'Plant Installation', label: 'Plant Installation' },
+                                        { value: 'Maintenance Check', label: 'Maintenance Check' },
+                                        { value: 'Emergency Repair', label: 'Emergency Repair' },
+                                        { value: 'System Audit', label: 'System Audit' }
                                     ]}
                                     allowCustom={true}
                                     value={newJob.service_type || ''}

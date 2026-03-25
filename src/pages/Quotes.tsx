@@ -7,6 +7,7 @@ import { generateQuote } from '../lib/pdfGenerator';
 import { openPdfPreview } from '../lib/pdfViewer';
 import { useToast } from '../context/ToastContext';
 import ConfirmModal from '../components/ConfirmModal';
+import { dataService } from '../services/dataService';
 
 const Quotes = () => {
     const { showToast } = useToast();
@@ -70,13 +71,20 @@ const Quotes = () => {
     const convertToInvoice = async (quote: Quote) => {
         try {
             // 1. Create Invoice
+            // Get default from settings if quote doesn't have one
+            let finalVatRate = quote.vat_rate;
+            if (!finalVatRate) {
+                const settings = await dataService.getSettings();
+                finalVatRate = settings?.default_vat_rate || 13.5;
+            }
+
             const { data: invData, error: invError } = await supabase.from('invoices').insert([{
                 invoice_number: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(3, '0')}`,
                 customer_id: quote.customer_id,
                 date_issued: new Date().toISOString().split('T')[0],
                 due_date: new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0],
                 subtotal: quote.subtotal,
-                vat_rate: quote.vat_rate || 13.5,
+                vat_rate: finalVatRate,
                 vat_amount: quote.vat_amount,
                 total_amount: quote.total_amount,
                 custom_description: quote.description,
@@ -162,7 +170,9 @@ const Quotes = () => {
                 <div className="p-6 border-b border-slate-100">
                     <h2 className="text-lg font-bold text-slate-900">Recent Quotes</h2>
                 </div>
-                <div className="overflow-x-auto">
+                
+                {/* Desktop Table View */}
+                <div className="overflow-x-auto hidden md:block">
                     <table className="w-full text-left">
                         <thead className="bg-[#F8FAFB] border-b border-slate-100">
                             <tr>
@@ -247,13 +257,50 @@ const Quotes = () => {
                     </table>
                 </div>
 
+                {/* Mobile Card View */}
+                <div className="md:hidden divide-y divide-slate-100">
+                    {quotes.length === 0 ? (
+                        <div className="p-12 text-center text-slate-500 italic">
+                            No quotes found.
+                        </div>
+                    ) : (
+                        quotes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((quote) => (
+                            <div key={quote.id} className="p-4 space-y-3">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <div className="font-bold text-slate-900">{quote.quote_number}</div>
+                                        <div className="text-sm font-medium text-slate-700">{quote.customers?.name}</div>
+                                    </div>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${getStatusStyle(quote.status)}`}>
+                                        {quote.status}
+                                    </span>
+                                </div>
+                                <div className="text-sm text-slate-500 line-clamp-1">{quote.description}</div>
+                                <div className="flex justify-between items-center pt-1">
+                                    <div className="font-bold text-delaval-blue">₹{quote.total_amount.toLocaleString()}</div>
+                                    <div className="flex gap-4">
+                                        <button onClick={() => handleGeneratePDF(quote, 'preview')} className="text-slate-400 p-1"><Eye size={20} /></button>
+                                        <button onClick={() => handleGeneratePDF(quote, 'download')} className="text-slate-400 p-1"><Download size={20} /></button>
+                                        {quote.status !== 'accepted' && (
+                                            <button onClick={() => convertToInvoice(quote)} className="text-green-600 p-1"><ArrowRight size={20} /></button>
+                                        )}
+                                        <button onClick={() => setDeleteQuoteId(quote.id)} className="text-red-500 p-1"><Trash2 size={20} /></button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
                 {/* Pagination Controls */}
                 {quotes.length > itemsPerPage && (
-                    <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between bg-[#F8FAFB]/50">
-                        <div className="text-sm text-slate-500 font-medium">
+                    <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between bg-[#F8FAFB]/50 gap-4">
+                        <div className="text-sm text-slate-500 font-medium order-2 sm:order-1">
                             Showing <span className="text-slate-900 font-bold">{Math.min(quotes.length, (currentPage - 1) * itemsPerPage + 1)}</span> to <span className="text-slate-900 font-bold">{Math.min(quotes.length, currentPage * itemsPerPage)}</span> of <span className="text-slate-900 font-bold">{quotes.length}</span> quotes
                         </div>
-                        <div className="flex gap-2">
+                        
+                        {/* Desktop Page Numbers */}
+                        <div className="hidden sm:flex gap-2 order-2">
                             <button
                                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                 disabled={currentPage === 1}
@@ -276,6 +323,28 @@ const Quotes = () => {
                                 className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm font-semibold bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 transition-colors"
                             >
                                 Next
+                            </button>
+                        </div>
+
+                        {/* Mobile Pagination Style */}
+                        <div className="flex sm:hidden items-center justify-between w-full order-1">
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                disabled={currentPage === 1}
+                                className={`p-2 rounded-xl bg-white border border-slate-200 text-slate-600 shadow-sm active:scale-95 transition-all ${currentPage === 1 ? 'opacity-40' : ''}`}
+                            >
+                                <ArrowRight className="rotate-180" size={20} />
+                            </button>
+                            <div className="flex flex-col items-center">
+                                <span className="text-sm font-bold text-slate-900">Page {currentPage}</span>
+                                <span className="text-xs font-medium text-slate-400">of {Math.ceil(quotes.length / itemsPerPage)}</span>
+                            </div>
+                            <button
+                                onClick={() => setCurrentPage(prev => Math.min(Math.ceil(quotes.length / itemsPerPage), prev + 1))}
+                                disabled={currentPage === Math.ceil(quotes.length / itemsPerPage)}
+                                className={`p-2 rounded-xl bg-white border border-slate-200 text-slate-600 shadow-sm active:scale-95 transition-all ${currentPage === Math.ceil(quotes.length / itemsPerPage) ? 'opacity-40' : ''}`}
+                            >
+                                <ArrowRight size={20} />
                             </button>
                         </div>
                     </div>
