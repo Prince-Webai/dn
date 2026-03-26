@@ -620,7 +620,7 @@ export const generateStatement = async (
 // ============================================================
 export const generateOneTimeInvoice = async (
     data: any,
-    items: any[],
+    _items: any[],
     action: 'download' | 'preview' = 'download'
 ) => {
     const settings = await dataService.getSettings();
