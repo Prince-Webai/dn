@@ -272,10 +272,25 @@ export const generateInvoice = async (
     const netAmount = totalAmount / (1 + vatRate / 100);
     const vatAmount = totalAmount - netAmount;
 
-    // Simplified Invoice Item for Tax Reasons
-    const summaryDescription = items.length > 0 
-        ? "Professional Services & Parts Supplied as per Statement"
-        : "Dairy Machine Service & Maintenance";
+    // Filter items: parts are itemized, labor/service are summarized
+    const partItems = items.filter(i => i.type === 'part');
+    const serviceItems = items.filter(i => i.type !== 'part');
+    const serviceTotal = serviceItems.reduce((acc, i) => acc + (i.total || (i.quantity * i.unit_price)), 0);
+
+    const invoiceRows = [
+        ...partItems.map(item => [
+            String(item.description),
+            String(item.quantity),
+            `€${(item.unit_price || 0).toFixed(2)}`,
+            `€${(item.total || (item.quantity * item.unit_price)).toFixed(2)}`
+        ]),
+        ...(serviceTotal > 0 ? [[
+            serviceItems.length > 1 ? "Professional Service & Labor Charges" : serviceItems[0].description,
+            "1",
+            `€${serviceTotal.toFixed(2)}`,
+            `€${serviceTotal.toFixed(2)}`
+        ]] : [])
+    ];
 
     autoTable(doc, {
         startY: y,
@@ -285,12 +300,7 @@ export const generateInvoice = async (
             { content: 'Price', styles: { halign: 'right' } },
             { content: 'Total', styles: { halign: 'right' } }
         ]],
-        body: [[
-            summaryDescription,
-            "1",
-            `€${netAmount.toFixed(2)}`,
-            `€${netAmount.toFixed(2)}`
-        ]],
+        body: invoiceRows,
         theme: 'plain',
         styles: { fontSize: 10, cellPadding: 2 },
         headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: 'bold', cellPadding: { left: 0, top: 2, bottom: 2, right: 2 } },
