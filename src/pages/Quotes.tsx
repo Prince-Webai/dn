@@ -201,7 +201,7 @@ const Quotes = () => {
                                         <td className="px-6 py-4 text-sm text-slate-600">{quote.description}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600">{new Date(quote.created_at).toLocaleDateString()}</td>
                                         <td className="px-6 py-4 text-sm text-slate-600">{quote.valid_until ? new Date(quote.valid_until).toLocaleDateString() : 'N/A'}</td>
-                                        <td className="px-6 py-4 font-bold text-slate-900">₹{quote.total_amount.toLocaleString()}</td>
+                                        <td className="px-6 py-4 font-bold text-slate-900">€{quote.total_amount.toLocaleString()}</td>
                                         <td className="px-6 py-4">
                                             <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium uppercase ${getStatusStyle(quote.status)}`}>
                                                 {quote.status}
@@ -277,7 +277,7 @@ const Quotes = () => {
                                 </div>
                                 <div className="text-sm text-slate-500 line-clamp-1">{quote.description}</div>
                                 <div className="flex justify-between items-center pt-1">
-                                    <div className="font-bold text-delaval-blue">₹{quote.total_amount.toLocaleString()}</div>
+                                    <div className="font-bold text-delaval-blue">€{quote.total_amount.toLocaleString()}</div>
                                     <div className="flex gap-4">
                                         <button onClick={() => handleGeneratePDF(quote, 'preview')} className="text-slate-400 p-1"><Eye size={20} /></button>
                                         <button onClick={() => handleGeneratePDF(quote, 'download')} className="text-slate-400 p-1"><Download size={20} /></button>

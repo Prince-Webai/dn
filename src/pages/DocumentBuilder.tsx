@@ -638,7 +638,7 @@ const DocumentBuilder = () => {
                                             <SearchableSelect
                                                 options={inventory.map(prod => ({
                                                     value: prod.name,
-                                                    label: `${prod.sku ? `[${prod.sku}] ` : ''}${prod.name} (₹${prod.sell_price.toFixed(2)})`
+                                                    label: `${prod.sku ? `[${prod.sku}] ` : ''}${prod.name} (€${prod.sell_price.toFixed(2)})`
                                                 }))}
                                                 value={item.description} // Using description as value is intentional to support free-text, handled in onChange
                                                 onChange={(val) => {
@@ -667,7 +667,7 @@ const DocumentBuilder = () => {
                                             required
                                         />
                                         <div className="col-span-3 relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₹</span>
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">€</span>
                                             <input
                                                 type="number"
                                                 step="0.01"
@@ -700,15 +700,15 @@ const DocumentBuilder = () => {
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-slate-300 text-sm">
                                     <span>Subtotal</span>
-                                    <span className="font-mono">₹{docSubtotal.toFixed(2)}</span>
+                                    <span className="font-mono">€{docSubtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-slate-300 text-sm">
                                     <span>VAT ({vatRate}%)</span>
-                                    <span className="font-mono">₹{docVat.toFixed(2)}</span>
+                                    <span className="font-mono">€{docVat.toFixed(2)}</span>
                                 </div>
                                 <div className="pt-3 border-t border-slate-700 flex justify-between items-end">
                                     <span className="text-sm font-bold text-white">Total Amount</span>
-                                    <span className="text-2xl font-bold font-mono text-blue-400">₹{docTotal.toFixed(2)}</span>
+                                    <span className="text-2xl font-bold font-mono text-blue-400">€{docTotal.toFixed(2)}</span>
                                 </div>
                             </div>
 

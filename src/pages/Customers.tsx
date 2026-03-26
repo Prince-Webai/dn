@@ -464,7 +464,7 @@ const Customers = () => {
                                     <div>
                                         <div className="text-sm text-slate-500 mb-1">Account Balance</div>
                                         <div className={`text-4xl font-extrabold mb-4 ${selectedCustomer.account_balance > 0 ? 'text-blue-600' : 'text-green-600'}`}>
-                                            ₹{selectedCustomer.account_balance.toLocaleString()}
+                                            €{selectedCustomer.account_balance.toLocaleString()}
                                         </div>
                                     </div>
                                     <div className="flex gap-2">

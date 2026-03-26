@@ -7,7 +7,7 @@ import { Invoice } from '../types';
 const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
         style: 'currency',
-        currency: 'INR',
+        currency: 'EUR',
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
     }).format(amount);
@@ -194,7 +194,7 @@ const Payments = () => {
                                                     </div>
                                                 )}
                                                 <div className="mt-2 text-[9px] font-bold text-delaval-blue">
-                                                    ₹{invs.reduce((sum, i) => i.total_amount - (i.amount_paid || 0) + sum, 0).toLocaleString()}
+                                                    €{invs.reduce((sum, i) => i.total_amount - (i.amount_paid || 0) + sum, 0).toLocaleString()}
                                                 </div>
                                             </div>
                                         )}
@@ -275,7 +275,7 @@ const Payments = () => {
                                                     <div className="flex items-center gap-2 mt-1">
                                                         <RupeeIcon size={12} className="text-delaval-blue" />
                                                         <span className="text-xs font-bold text-slate-400">
-                                                            ₹{(inv.total_amount - (inv.amount_paid || 0)).toLocaleString()} Due
+                                                            €{(inv.total_amount - (inv.amount_paid || 0)).toLocaleString()} Due
                                                         </span>
                                                     </div>
                                                 </div>
