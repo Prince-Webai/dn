@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
-import logoImg from '../assets/logo_v3.png';
+import logoImg from '../assets/logo_v5.jpg';
 import CommandPalette from '../components/CommandPalette';
 import { Search } from 'lucide-react';
 

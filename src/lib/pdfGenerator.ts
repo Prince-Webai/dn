@@ -40,7 +40,7 @@ const loadLogoBase64 = (): Promise<string> => {
             resolve(canvas.toDataURL('image/png'));
         };
         img.onerror = reject;
-        img.src = '/logo_v3.png?v=' + Date.now();
+        img.src = '/logo_v5.jpg?v=' + Date.now();
     });
 };
 
