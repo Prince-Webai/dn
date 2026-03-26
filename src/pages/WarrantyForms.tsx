@@ -8,7 +8,7 @@ import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
 import { useToast } from '../context/ToastContext';
 import { generateWarrantyReport } from '../lib/pdfGenerator';
-import logoImg from '../assets/logo_v2.png';
+import logoImg from '../assets/logo_v3.png';
 
 
 const WarrantyForms: React.FC = () => {
