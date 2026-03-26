@@ -46,12 +46,12 @@ const loadLogoBase64 = (): Promise<string> => {
 
 // === LOGO ===
 const addLogo = async (doc: jsPDF) => {
-    const logoW = 50; // Reduced from 80 to avoid text overlap
-    const logoH = 17; // Scaled height
+    const logoW = 65; // Increased from 50
+    const logoH = 22; // Scaled height
     const x = doc.internal.pageSize.width - RIGHT - logoW;
     try {
         const b64 = await loadLogoBase64();
-        doc.addImage(b64, 'PNG', x, 10, logoW, logoH);
+        doc.addImage(b64, 'PNG', x, 30, logoW, logoH);
     } catch (e) {
         console.error('Logo load failed', e);
     }
