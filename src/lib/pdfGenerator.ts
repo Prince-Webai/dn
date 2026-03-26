@@ -51,7 +51,7 @@ const addLogo = async (doc: jsPDF) => {
     const x = doc.internal.pageSize.width - RIGHT - logoW;
     try {
         const b64 = await loadLogoBase64();
-        doc.addImage(b64, 'PNG', x, 30, logoW, logoH);
+        doc.addImage(b64, 'PNG', x, 15, logoW, logoH);
     } catch (e) {
         console.error('Logo load failed', e);
     }
