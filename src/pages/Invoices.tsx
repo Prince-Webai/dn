@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, Eye, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Printer, Download, Plus, Clock, Trash2, Edit, CreditCard, Mail, CheckCircle2, Eye, Check, X, ChevronLeft, ChevronRight, Receipt } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Invoice, Job, Statement } from '../types';
 import Modal from '../components/Modal';
@@ -387,22 +387,67 @@ const Invoices = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold font-display text-slate-900">Invoices & Statements</h1>
-                    <p className="text-slate-500">Manage invoicing and customer statements</p>
-                </div>
-                <div className="flex gap-2">
+            {/* Standardized Mobile Header */}
+            <div className="md:hidden bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-10 -mx-4 mobile-header-safe-bleed">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-delaval-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                            <Receipt size={20} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-[22px] font-black text-slate-900 tracking-tight leading-tight truncate">Invoices</h1>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1 truncate">Financial Records</p>
+                        </div>
+                    </div>
                     <Link
                         to="/documents/new?type=invoice"
-                        className="btn btn-primary shadow-lg shadow-blue-900/20"
+                        className="w-10 h-10 bg-delaval-blue text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-900/20 active:scale-95 transition-transform shrink-0"
                     >
-                        <Plus size={20} className="mr-2" /> Create Invoice
+                        <Plus size={20} />
+                    </Link>
+                </div>
+                
+                {/* Mobile Tabs Integrated into Sticky Header */}
+                <div className="flex gap-4 mt-6 border-b border-slate-100 -mx-5 px-5">
+                    <button
+                        onClick={() => setActiveTab('invoices')}
+                        className={`pb-3 text-[11px] font-black uppercase tracking-widest border-b-2 transition-colors ${activeTab === 'invoices' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-400'}`}
+                    >
+                        Invoices
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('statements')}
+                        className={`pb-3 text-[11px] font-black uppercase tracking-widest border-b-2 transition-colors ${activeTab === 'statements' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-400'}`}
+                    >
+                        Statements
+                    </button>
+                </div>
+            </div>
+
+            {/* Desktop Header - Hidden on Mobile */}
+            <div className="hidden md:flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-delaval-blue text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                        <Receipt size={24} />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-black font-display text-slate-900 leading-tight">Invoices & Statements</h1>
+                        <p className="text-sm text-slate-500 font-medium">Manage invoicing and statements</p>
+                    </div>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                    <Link
+                        to="/documents/new?type=invoice"
+                        className="px-5 py-2.5 bg-delaval-blue hover:bg-blue-600 text-white rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95"
+                    >
+                        <Plus size={20} />
+                        <span className="font-bold text-sm">Create Invoice</span>
                     </Link>
                 </div>
             </div>
 
-            <div className="flex gap-4 border-b border-slate-200">
+            {/* Redundant Desktop Tabs - Hidden on Mobile */}
+            <div className="hidden md:flex gap-4 border-b border-slate-200">
                 <button
                     onClick={() => setActiveTab('invoices')}
                     className={`pb-4 text-sm font-bold border-b-2 transition-colors ${activeTab === 'invoices' ? 'border-delaval-blue text-delaval-blue' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
@@ -427,9 +472,9 @@ const Invoices = () => {
                 {/* INVOICES TAB */}
                 {activeTab === 'invoices' && (
                     <>
-                        <div className="p-4 border-b border-slate-100">
+                        <div className="px-5 py-4 border-b border-slate-100">
                             <div className="flex items-center justify-between mb-3">
-                                <h2 className="text-lg font-bold text-slate-900">Invoices</h2>
+                                <h2 className="hidden md:block text-lg font-bold text-slate-900">Invoices</h2>
                                 <span className="text-xs font-bold text-slate-400">{filteredInvoices.length} results</span>
                             </div>
                             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -457,7 +502,8 @@ const Invoices = () => {
                                 ))}
                             </div>
                         </div>
-                        <div className="overflow-x-auto">
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-[#F8FAFB] border-b border-slate-100">
                                     <tr>
@@ -466,39 +512,38 @@ const Invoices = () => {
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Amount</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {paginatedInvoices.map(inv => (
                                         <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors group">
-                                            <td className="px-6 py-4 font-bold text-slate-900">{inv.invoice_number}</td>
-                                            <td className="px-6 py-4 font-medium text-slate-700">
+                                            <td className="px-6 py-4 font-bold text-slate-900 whitespace-nowrap">{inv.invoice_number}</td>
+                                            <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">
                                                 {inv.customers?.name || inv.guest_name || 'One-Time Customer'}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-slate-600">{inv.date_issued}</td>
-                                            <td className="px-6 py-4 font-bold text-slate-900">
-                                                <div>
-                                                    <span>€{inv.total_amount.toFixed(2)}</span>
-                                                    {/* Payment progress */}
-                                                    <div className="mt-1">
-                                                        <div className="w-full bg-slate-200 rounded-full h-1.5">
-                                                            <div
-                                                                className={`h-1.5 rounded-full transition-all ${inv.amount_paid && inv.amount_paid >= inv.total_amount ? 'bg-green-500' : inv.amount_paid && inv.amount_paid > 0 ? 'bg-blue-500' : 'bg-slate-300'}`}
-                                                                style={{ width: `${Math.min(100, ((inv.amount_paid || 0) / inv.total_amount) * 100)}%` }}
-                                                            />
-                                                        </div>
-                                                        <div className="flex justify-between mt-0.5">
-                                                            <span className="text-[10px] text-green-600 font-medium">€{(inv.amount_paid || 0).toFixed(2)} paid</span>
-                                                            {(inv.amount_paid || 0) < inv.total_amount && (
-                                                                <span className="text-[10px] text-red-500 font-medium">€{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} due</span>
-                                                            )}
-                                                        </div>
+                                            <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">{inv.date_issued}</td>
+                                            <td className="px-6 py-4 font-bold text-slate-900 whitespace-nowrap">
+                                                <div className="min-w-[150px]">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span>€{inv.total_amount.toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-200 rounded-full h-1.5">
+                                                        <div
+                                                            className={`h-1.5 rounded-full transition-all ${inv.amount_paid && inv.amount_paid >= inv.total_amount ? 'bg-green-500' : inv.amount_paid && inv.amount_paid > 0 ? 'bg-blue-500' : 'bg-slate-300'}`}
+                                                            style={{ width: `${Math.min(100, ((inv.amount_paid || 0) / inv.total_amount) * 100)}%` }}
+                                                        />
+                                                    </div>
+                                                    <div className="flex justify-between mt-1">
+                                                        <span className="text-[10px] text-green-600 font-bold uppercase tracking-tighter">€{(inv.amount_paid || 0).toFixed(2)} PAID</span>
+                                                        {(inv.amount_paid || 0) < inv.total_amount && (
+                                                            <span className="text-[10px] text-red-500 font-bold uppercase tracking-tighter">€{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} DUE</span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-xs font-medium uppercase
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className={`inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider
                                                         ${inv.status === 'paid' ? 'bg-green-100 text-green-800' :
                                                         inv.status === 'partial' ? 'bg-blue-100 text-blue-800' :
                                                             inv.status === 'overdue' ? 'bg-red-100 text-red-800' :
@@ -506,37 +551,36 @@ const Invoices = () => {
                                                     {inv.status}
                                                 </span>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex gap-1.5 flex-wrap">
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-1.5 flex-wrap">
                                                     {inv.status !== 'paid' && (
-                                                        <div className="relative z-10">
+                                                        <div className="relative z-[100]">
                                                             <button
                                                                 onClick={() => paymentInvoice?.id === inv.id ? setPaymentInvoice(null) : openPaymentPopup(inv)}
-                                                                className={`p-1.5 rounded-md transition-colors ${paymentInvoice?.id === inv.id ? 'text-white bg-green-500' : 'text-green-600 bg-green-50 hover:bg-green-100'} outline-none`}
+                                                                className={`p-1.5 rounded-lg transition-colors shadow-sm ${paymentInvoice?.id === inv.id ? 'text-white bg-green-500' : 'text-green-600 bg-green-50 hover:bg-green-100'} outline-none`}
                                                                 title="Record Payment"
                                                             >
                                                                 <CreditCard size={16} />
                                                             </button>
 
                                                             {paymentInvoice?.id === inv.id && (
-                                                                <div className="absolute right-0 top-[120%] bg-white rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.15)] border border-slate-100 p-1.5 z-[100] flex items-center gap-1.5 w-max animate-in fade-in zoom-in-95 duration-200">
-                                                                    <button type="button" onClick={() => setPaymentAmount((inv.total_amount - (inv.amount_paid || 0)).toFixed(2))} className="px-3 py-1.5 bg-violet-50 text-violet-600 font-bold rounded-lg text-xs hover:bg-violet-100 transition-colors tracking-wide h-[34px]">FULL</button>
-                                                                    <button type="button" onClick={() => setPaymentAmount(((inv.total_amount - (inv.amount_paid || 0)) * 0.5).toFixed(2))} className="px-3 py-1.5 bg-slate-50 text-slate-600 font-bold rounded-lg text-xs hover:bg-slate-100 transition-colors tracking-wide h-[34px]">50%</button>
-                                                                    <div className="relative flex items-center ml-1">
-                                                                        <span className="absolute left-3 text-slate-400 font-bold text-sm">€</span>
+                                                                <div className="absolute right-0 top-[120%] bg-white rounded-xl shadow-[0_10px_40px_rgba(0,0,0,0.2)] border border-slate-100 p-2 z-[200] flex items-center gap-2 w-max animate-in fade-in zoom-in-95 duration-200">
+                                                                    <button type="button" onClick={() => setPaymentAmount((inv.total_amount - (inv.amount_paid || 0)).toFixed(2))} className="px-3 py-1.5 bg-violet-50 text-violet-600 font-black rounded-lg text-[10px] uppercase hover:bg-violet-100 transition-colors h-[34px]">FULL</button>
+                                                                    <div className="relative flex items-center">
+                                                                        <span className="absolute left-3 text-slate-400 font-black text-sm">€</span>
                                                                         <input
                                                                             type="number"
                                                                             value={paymentAmount}
                                                                             onChange={(e) => setPaymentAmount(e.target.value)}
-                                                                            className="w-[90px] pl-7 pr-1 py-1 border-[2px] border-violet-500 rounded-lg text-sm font-bold text-slate-800 focus:outline-none focus:ring-4 focus:ring-violet-100 h-[34px]"
+                                                                            className="w-[90px] pl-7 pr-1 py-1 border-2 border-slate-100 rounded-lg text-sm font-black text-slate-800 focus:border-delaval-blue focus:ring-0 h-[34px]"
                                                                             step="0.01"
                                                                         />
                                                                     </div>
-                                                                    <button onClick={() => handlePaymentSubmit()} className="w-[34px] h-[34px] flex items-center justify-center bg-[#22C55E] text-white rounded-lg hover:bg-green-600 transition-colors shadow-sm ml-1">
+                                                                    <button onClick={() => handlePaymentSubmit()} className="w-[34px] h-[34px] flex items-center justify-center bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-lg shadow-green-900/10">
                                                                         <Check size={18} strokeWidth={3} />
                                                                     </button>
                                                                     <button onClick={() => setPaymentInvoice(null)} className="w-[34px] h-[34px] flex items-center justify-center bg-slate-50 text-slate-500 rounded-lg hover:bg-slate-100 transition-colors">
-                                                                        <X size={18} strokeWidth={2.5} />
+                                                                        <X size={18} />
                                                                     </button>
                                                                 </div>
                                                             )}
@@ -544,35 +588,35 @@ const Invoices = () => {
                                                     )}
                                                     <button
                                                         onClick={() => handlePreviewInvoice(inv)}
-                                                        className="p-1.5 rounded-md text-delaval-blue bg-blue-50 hover:bg-blue-100 transition-colors"
+                                                        className="p-1.5 rounded-lg text-delaval-blue bg-blue-50 hover:bg-blue-100 transition-colors shadow-sm"
                                                         title="Preview Invoice"
                                                     >
                                                         <Eye size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDownloadInvoice(inv, 'download')}
-                                                        className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
+                                                        className="p-1.5 rounded-lg text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors shadow-sm"
                                                         title="Download Invoice"
                                                     >
                                                         <Download size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleSendReminder(inv)}
-                                                        className="p-1.5 rounded-md text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors"
-                                                        title="Send Reminder Email"
+                                                        className="p-1.5 rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors shadow-sm"
+                                                        title="Send Mail"
                                                     >
                                                         <Mail size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => openEditModal(inv)}
-                                                        className="p-1.5 rounded-md text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors"
+                                                        className="p-1.5 rounded-lg text-slate-500 bg-slate-50 hover:bg-slate-100 transition-colors shadow-sm"
                                                         title="Edit Invoice"
                                                     >
                                                         <Edit size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => setDeleteInvoiceId(inv.id)}
-                                                        className="p-1.5 rounded-md text-red-500 bg-red-50 hover:bg-red-100 transition-colors"
+                                                        className="p-1.5 rounded-lg text-red-500 bg-red-50 hover:bg-red-100 transition-colors shadow-sm"
                                                         title="Delete Invoice"
                                                     >
                                                         <Trash2 size={16} />
@@ -583,61 +627,209 @@ const Invoices = () => {
                                     ))}
                                     {filteredInvoices.length === 0 && (
                                         <tr>
-                                            <td colSpan={6} className="px-6 py-12 text-center">
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center">
-                                                        <FileText size={24} className="text-slate-300" />
+                                            <td colSpan={6} className="px-6 py-24 text-center">
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center">
+                                                        <FileText size={28} className="text-slate-300" />
                                                     </div>
-                                                    <div className="font-bold text-slate-400">No {statusFilter === 'all' ? '' : statusFilter} invoices found</div>
-                                                    <div className="text-xs text-slate-300">Try a different filter or create a new invoice</div>
+                                                    <div className="font-black text-slate-400 uppercase tracking-widest text-sm">No {statusFilter === 'all' ? '' : statusFilter} invoices found</div>
                                                 </div>
                                             </td>
                                         </tr>
                                     )}
                                 </tbody>
                             </table>
-                            {/* Pagination Controls */}
-                            {filteredInvoices.length > 0 && (
-                                <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 bg-white">
-                                    <div className="flex items-center gap-3">
-                                        <span className="text-sm text-slate-500">Rows per page:</span>
-                                        <select
-                                            className="text-sm border-slate-200 rounded-lg outline-none font-medium text-slate-700 bg-slate-50 px-2 py-1.5 focus:ring-2 focus:ring-delaval-blue/20"
-                                            value={itemsPerPage}
-                                            onChange={(e) => {
-                                                setItemsPerPage(Number(e.target.value));
-                                                setCurrentPage(1);
-                                            }}
-                                        >
-                                            <option value={10}>10</option>
-                                            <option value={20}>20</option>
-                                            <option value={50}>50</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex items-center gap-6">
-                                        <span className="text-sm font-medium text-slate-500">
-                                            {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredInvoices.length)} of {filteredInvoices.length}
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden space-y-5 px-5 pb-32">
+                            {paginatedInvoices.map(inv => (
+                                <div key={inv.id} className="bg-white rounded-[1.5rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100/50 flex flex-col gap-5">
+                                    <div className="flex justify-between items-start">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{inv.invoice_number}</span>
+                                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{inv.date_issued}</span>
+                                            </div>
+                                            <h3 className="text-[17px] font-black text-slate-900 leading-tight">
+                                                {inv.customers?.name || inv.guest_name || 'One-Time Customer'}
+                                            </h3>
+                                        </div>
+                                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm border
+                                                ${inv.status === 'paid' ? 'bg-green-50 text-green-700 border-green-100' :
+                                                inv.status === 'partial' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                    inv.status === 'overdue' ? 'bg-red-50 text-red-700 border-red-100' :
+                                                        'bg-orange-50 text-orange-700 border-orange-100'}`}>
+                                            {inv.status}
                                         </span>
-                                        <div className="flex gap-1">
-                                            <button
-                                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                                disabled={currentPage === 1}
-                                                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    </div>
+
+                                    <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100/80 space-y-4">
+                                        <div className="flex justify-between items-end">
+                                            <div>
+                                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Total Amount</div>
+                                                <div className="text-2xl font-black text-slate-900 leading-none">€{inv.total_amount.toFixed(2)}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1.5">Paid</div>
+                                                <div className="text-lg font-black text-emerald-700 leading-none">€{(inv.amount_paid || 0).toFixed(2)}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="space-y-2 pt-1">
+                                            <div className="w-full bg-slate-200/60 rounded-full h-2.5 shadow-inner overflow-hidden border border-slate-100">
+                                                <div
+                                                    className={`h-full rounded-full transition-all duration-700 ease-out shadow-sm ${inv.amount_paid && inv.amount_paid >= inv.total_amount ? 'bg-emerald-500' : inv.amount_paid && inv.amount_paid > 0 ? 'bg-blue-500' : 'bg-slate-300'}`}
+                                                    style={{ width: `${Math.min(100, ((inv.amount_paid || 0) / inv.total_amount) * 100)}%` }}
+                                                />
+                                            </div>
+                                            {(inv.amount_paid || 0) < inv.total_amount && (
+                                                <div className="flex justify-center flex-col items-center gap-1 mt-2">
+                                                    <span className="text-[11px] font-black text-red-500 uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full border border-red-100/50">
+                                                        €{(inv.total_amount - (inv.amount_paid || 0)).toFixed(2)} Remaining
+                                                    </span>
+                                                    {inv.due_date && (
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Due: {new Date(inv.due_date).toLocaleDateString()}</span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-3 pt-3 border-t border-slate-50 mt-1">
+                                        {/* Secondary Actions Grid */}
+                                        <div className="grid grid-cols-4 gap-2">
+                                            <button 
+                                                onClick={() => handlePreviewInvoice(inv)} 
+                                                className="flex flex-col items-center gap-1.5 p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 active:scale-95 transition-all"
+                                                title="Preview"
                                             >
-                                                <ChevronLeft size={18} />
+                                                <Eye size={16} />
+                                                <span className="text-[9px] font-black uppercase tracking-tighter">View</span>
                                             </button>
-                                            <button
-                                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                                disabled={currentPage === totalPages || totalPages === 0}
-                                                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                            <button 
+                                                onClick={() => handleDownloadInvoice(inv, 'download')} 
+                                                className="flex flex-col items-center gap-1.5 p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 active:scale-95 transition-all"
+                                                title="Download"
                                             >
-                                                <ChevronRight size={18} />
+                                                <Download size={16} />
+                                                <span className="text-[9px] font-black uppercase tracking-tighter">Save</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => handleSendReminder(inv)} 
+                                                className="flex flex-col items-center gap-1.5 p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 active:scale-95 transition-all"
+                                                title="Send"
+                                            >
+                                                <Mail size={16} />
+                                                <span className="text-[9px] font-black uppercase tracking-tighter">Send</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => openEditModal(inv)} 
+                                                className="flex flex-col items-center gap-1.5 p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 active:scale-95 transition-all"
+                                                title="Edit"
+                                            >
+                                                <Edit size={16} />
+                                                <span className="text-[9px] font-black uppercase tracking-tighter">Edit</span>
+                                            </button>
+                                        </div>
+                                        
+                                        {/* Primary & Danger Actions */}
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setPaymentInvoice(inv);
+                                                    setPaymentAmount((inv.total_amount - (inv.amount_paid || 0)).toFixed(2));
+                                                }}
+                                                className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-delaval-blue text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
+                                            >
+                                                <CreditCard size={16} /> Record Payment
+                                            </button>
+                                            <button 
+                                                onClick={() => setDeleteInvoiceId(inv.id)} 
+                                                className="w-14 h-[46px] flex items-center justify-center bg-red-50 text-red-500 rounded-xl border border-red-100/50 active:scale-95 transition-all" 
+                                                title="Delete"
+                                            >
+                                                <Trash2 size={18} />
                                             </button>
                                         </div>
                                     </div>
+
+
+                                    {/* Inline Payment Popover for Mobile */}
+                                    {paymentInvoice?.id === inv.id && (
+                                        <div className="absolute inset-x-5 bottom-20 bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border-2 border-delaval-blue/20 p-4 z-[100] animate-in slide-in-from-bottom-4 duration-300">
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Record Payment</h4>
+                                                <button onClick={() => setPaymentInvoice(null)} className="p-1 text-slate-400"><X size={20} /></button>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div className="flex gap-2">
+                                                    <button onClick={() => setPaymentAmount((inv.total_amount - (inv.amount_paid || 0)).toFixed(2))} className="flex-1 py-2.5 bg-violet-50 text-violet-600 font-black rounded-xl text-[10px] uppercase tracking-widest border border-violet-100">FULL AMOUNT</button>
+                                                    <button onClick={() => setPaymentAmount(((inv.total_amount - (inv.amount_paid || 0)) * 0.5).toFixed(2))} className="flex-1 py-2.5 bg-slate-50 text-slate-600 font-black rounded-xl text-[10px] uppercase tracking-widest border border-slate-100">HALF (50%)</button>
+                                                </div>
+                                                <div className="relative">
+                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-black text-xl">€</span>
+                                                    <input
+                                                        type="number"
+                                                        value={paymentAmount}
+                                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                                        className="w-full pl-10 pr-4 py-4 border-2 border-slate-100 rounded-2xl text-2xl font-black text-slate-900 focus:border-delaval-blue focus:ring-4 focus:ring-blue-100 outline-none transition-all"
+                                                        placeholder="0.00"
+                                                        step="0.01"
+                                                    />
+                                                </div>
+                                                <button onClick={() => handlePaymentSubmit()} className="w-full bg-green-500 text-white py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg shadow-green-900/10 active:scale-95 transition-all">
+                                                    Confirm Payment
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            ))}
                         </div>
+
+                        {/* Pagination Controls */}
+                        {filteredInvoices.length > 0 && (
+                            <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-6 border-t border-slate-100 bg-white gap-4">
+                                <div className="hidden sm:flex items-center gap-3">
+                                    <span className="text-sm text-slate-500">Rows per page:</span>
+                                    <select
+                                        className="text-sm border-slate-200 rounded-lg outline-none font-medium text-slate-700 bg-slate-50 px-2 py-1.5 focus:ring-2 focus:ring-delaval-blue/20"
+                                        value={itemsPerPage}
+                                        onChange={(e) => {
+                                            setItemsPerPage(Number(e.target.value));
+                                            setCurrentPage(1);
+                                        }}
+                                    >
+                                        <option value={10}>10</option>
+                                        <option value={20}>20</option>
+                                        <option value={50}>50</option>
+                                    </select>
+                                </div>
+                                <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                                    <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
+                                        {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredInvoices.length)} of {filteredInvoices.length}
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                            disabled={currentPage === 1}
+                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-slate-100"
+                                        >
+                                            <ChevronLeft size={20} />
+                                        </button>
+                                        <button
+                                            onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                                            disabled={currentPage === totalPages || totalPages === 0}
+                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-all border border-slate-100"
+                                        >
+                                            <ChevronRight size={20} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </>
                 )}
 
@@ -645,11 +837,12 @@ const Invoices = () => {
                 {activeTab === 'statements' && (
                     <>
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-blue-50/50">
-                            <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                            <h2 className="hidden md:flex text-lg font-bold text-slate-900 flex items-center gap-2">
                                 <FileText size={20} className="text-blue-600" /> Statements of Work
                             </h2>
                         </div>
-                        <div className="overflow-x-auto">
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead className="bg-[#F8FAFB] border-b border-slate-100">
                                     <tr>
@@ -658,41 +851,41 @@ const Invoices = () => {
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Generated Date</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Job Ref</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Total Value</th>
-                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
                                     {statements.map(stmt => (
                                         <tr key={stmt.id} className="hover:bg-slate-50/50 transition-colors">
-                                            <td className="px-6 py-4 font-bold text-slate-900">{stmt.statement_number}</td>
-                                            <td className="px-6 py-4 font-medium text-slate-700">{stmt.customers?.name}</td>
-                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                            <td className="px-6 py-4 font-bold text-slate-900 whitespace-nowrap">{stmt.statement_number}</td>
+                                            <td className="px-6 py-4 font-medium text-slate-700 whitespace-nowrap">{stmt.customers?.name}</td>
+                                            <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                                                 {new Date(stmt.date_generated).toLocaleDateString()}
                                             </td>
-                                            <td className="px-6 py-4 text-sm text-slate-600">
+                                            <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">
                                                 {stmt.jobs ? `Job #${stmt.jobs.job_number}` : 'N/A'}
                                             </td>
-                                            <td className="px-6 py-4 font-bold text-slate-900">€{stmt.total_amount.toFixed(2)}</td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex gap-2">
+                                            <td className="px-6 py-4 font-bold text-slate-900 whitespace-nowrap">€{stmt.total_amount.toFixed(2)}</td>
+                                            <td className="px-6 py-4 text-right">
+                                                <div className="flex justify-end gap-2">
                                                     <button
                                                         onClick={() => handlePreviewStatement(stmt)}
-                                                        className="text-slate-400 hover:text-delaval-blue transition-colors p-1.5 rounded-lg hover:bg-blue-50"
-                                                        title="Preview Statement"
+                                                        className="text-slate-400 hover:text-delaval-blue transition-colors p-2 rounded-xl hover:bg-blue-50 border border-transparent hover:border-blue-100"
+                                                        title="Preview"
                                                     >
                                                         <Eye size={18} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDownloadStatement(stmt, 'download')}
-                                                        className="text-slate-400 hover:text-delaval-blue transition-colors p-1.5 rounded-lg hover:bg-blue-50"
-                                                        title="Download Statement"
+                                                        className="text-slate-400 hover:text-delaval-blue transition-colors p-2 rounded-xl hover:bg-blue-50 border border-transparent hover:border-blue-100"
+                                                        title="Download"
                                                     >
                                                         <Download size={18} />
                                                     </button>
                                                     <button
                                                         onClick={() => setDeleteStatementId(stmt.id)}
-                                                        className="text-slate-400 hover:text-red-500 transition-colors p-1.5 rounded-lg hover:bg-red-50"
-                                                        title="Delete Statement"
+                                                        className="text-slate-400 hover:text-red-500 transition-colors p-2 rounded-xl hover:bg-red-50 border border-transparent hover:border-red-100"
+                                                        title="Delete"
                                                     >
                                                         <Trash2 size={18} />
                                                     </button>
@@ -702,10 +895,63 @@ const Invoices = () => {
                                     ))}
 
                                     {statements.length === 0 && (
-                                        <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">No statements found. Generate one from a job.</td></tr>
+                                        <tr><td colSpan={6} className="px-6 py-24 text-center">
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="w-16 h-16 rounded-3xl bg-slate-100 flex items-center justify-center">
+                                                    <FileText size={28} className="text-slate-300" />
+                                                </div>
+                                                <div className="font-black text-slate-400 uppercase tracking-widest text-sm italic">No statements found. Generate one from a job.</div>
+                                            </div>
+                                        </td></tr>
                                     )}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Mobile Card View */}
+                        <div className="md:hidden divide-y divide-slate-100">
+                            {statements.map(stmt => (
+                                <div key={stmt.id} className="p-5 space-y-4">
+                                    <div className="flex justify-between items-start">
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{stmt.statement_number}</span>
+                                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">{new Date(stmt.date_generated).toLocaleDateString()}</span>
+                                            </div>
+                                            <h3 className="text-base font-black text-slate-900 leading-tight">
+                                                {stmt.customers?.name}
+                                            </h3>
+                                            {stmt.jobs && <p className="text-[10px] text-delaval-blue font-bold uppercase tracking-wider">Job #{stmt.jobs.job_number}</p>}
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Value</div>
+                                            <div className="text-lg font-black text-slate-900 leading-none">€{stmt.total_amount.toFixed(2)}</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2 pt-2">
+                                        <button
+                                            onClick={() => handlePreviewStatement(stmt)}
+                                            className="flex-1 flex items-center justify-center gap-2 bg-delaval-blue text-white py-3.5 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
+                                        >
+                                            <Eye size={18} /> Preview
+                                        </button>
+                                        <button
+                                            onClick={() => handleDownloadStatement(stmt, 'download')}
+                                            className="w-12 h-12 flex items-center justify-center bg-slate-100 text-slate-600 rounded-xl active:scale-95 transition-all"
+                                        >
+                                            <Download size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => setDeleteStatementId(stmt.id)}
+                                            className="w-12 h-12 flex items-center justify-center bg-red-50 text-red-500 rounded-xl active:scale-95 transition-all"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </>
                 )}

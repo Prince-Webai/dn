@@ -1,4 +1,4 @@
-import { Bell, Plug as Plus, Users, FileText, Calendar, Filter, CircleDollarSign as RupeeIcon, Wrench, AlertCircle, Package } from 'lucide-react';
+import { Bell, Plug as Plus, Users, FileText, Calendar, Filter, Euro, Wrench, AlertCircle, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Job } from '../types';
@@ -206,7 +206,7 @@ const Dashboard = () => {
         {
             label: 'Total Revenue',
             value: formatCurrency(stats.totalRevenue),
-            icon: RupeeIcon,
+            icon: Euro,
             color: 'bg-[#F0FDF4] text-[#16A34A]',
             change: filterType === 'all' ? 'All Time' : filterType === 'year' ? 'This Year' : filterType === 'month' ? 'This Month' : 'Custom Period',
             changeType: 'positive',
@@ -215,7 +215,7 @@ const Dashboard = () => {
         {
             label: 'Outstanding Balance',
             value: formatCurrency(stats.outstandingBalance),
-            icon: RupeeIcon,
+            icon: Euro,
             color: 'bg-[#E6F0FF] text-[#0051A5]',
             change: `${stats.overdueInvoices} overdue`,
             changeType: stats.overdueInvoices > 0 ? 'negative' : 'positive',
@@ -446,12 +446,14 @@ const Dashboard = () => {
 
                 {/* Fixed App Header */}
                 <div className="bg-[#0051A5] text-white pt-10 pb-20 px-6 relative w-full">
-                    <div
-                        onClick={() => setIsNotificationsOpen(true)}
-                        className="absolute top-10 right-6 opacity-80 backdrop-blur border border-white/20 rounded-full p-2 bg-white/10 z-10 w-9 h-9 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
-                    >
-                        <Bell size={18} />
-                        {notifications.length > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full border border-[#0051A5]"></span>}
+                    <div className="flex justify-end items-start mb-6">
+                        <div
+                            onClick={() => setIsNotificationsOpen(true)}
+                            className="bg-white/10 backdrop-blur-md border border-white/20 rounded-full p-2 z-10 w-10 h-10 flex items-center justify-center cursor-pointer active:scale-95 transition-transform"
+                        >
+                            <Bell size={20} className="text-[#a0c5ea]" />
+                            {notifications.length > 0 && <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#0051A5]"></span>}
+                        </div>
                     </div>
 
                     <p className="text-[#a0c5ea] text-xs font-semibold mb-1 uppercase tracking-wider opacity-90">{formattedDate}</p>

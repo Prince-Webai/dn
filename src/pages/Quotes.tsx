@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Download, ArrowRight, Pencil, Eye, Trash2 } from 'lucide-react';
+import { Plus, Download, ArrowRight, Pencil, Eye, Trash2, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Quote } from '../types';
@@ -153,22 +153,50 @@ const Quotes = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold font-display text-slate-900">Quotes & Estimates</h1>
-                    <p className="text-slate-500">Manage and track customer quotes</p>
+            {/* Standardized Mobile Header */}
+            <div className="md:hidden bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-10 -mx-4 mobile-header-safe-bleed mb-4">
+                <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-delaval-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                            <FileText size={20} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <h1 className="text-[22px] font-black text-slate-900 tracking-tight leading-tight truncate">Quotes</h1>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mt-1 truncate">Estimates & Bids</p>
+                        </div>
+                    </div>
+                    <Link
+                        to="/documents/new?type=quote"
+                        className="w-10 h-10 bg-delaval-blue text-white rounded-full flex items-center justify-center shadow-lg shadow-blue-900/20 active:scale-95 transition-transform shrink-0"
+                    >
+                        <Plus size={20} />
+                    </Link>
+                </div>
+            </div>
+
+            {/* Desktop Header - Hidden on Mobile */}
+            <div className="hidden md:flex justify-between items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-delaval-blue text-white rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                        <FileText size={24} className="md:w-6 md:h-6" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-black font-display text-slate-900 leading-tight">Quotes & Estimates</h1>
+                        <p className="text-sm text-slate-500 font-medium">Manage and track customer quotes</p>
+                    </div>
                 </div>
                 <Link
                     to="/documents/new?type=quote"
-                    className="btn btn-primary shadow-lg shadow-blue-900/20 flex items-center gap-2 w-fit"
+                    className="px-5 py-2.5 bg-delaval-blue hover:bg-blue-600 text-white rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95 shrink-0"
                 >
-                    <Plus size={20} /> Create Quote
+                    <Plus size={20} />
+                    <span className="font-bold text-sm">Create Quote</span>
                 </Link>
             </div>
 
             <div className="section-card">
                 <div className="p-6 border-b border-slate-100">
-                    <h2 className="text-lg font-bold text-slate-900">Recent Quotes</h2>
+                    <h2 className="hidden md:block text-lg font-bold text-slate-900">Recent Quotes</h2>
                 </div>
                 
                 {/* Desktop Table View */}
@@ -258,34 +286,93 @@ const Quotes = () => {
                 </div>
 
                 {/* Mobile Card View */}
-                <div className="md:hidden divide-y divide-slate-100">
+                <div className="md:hidden space-y-5 pb-32 mt-4 px-5">
                     {quotes.length === 0 ? (
-                        <div className="p-12 text-center text-slate-500 italic">
+                        <div className="p-12 text-center text-slate-500 italic bg-white rounded-2xl border border-dashed border-slate-300">
                             No quotes found.
                         </div>
                     ) : (
                         quotes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((quote) => (
-                            <div key={quote.id} className="p-4 space-y-3">
+                            <div key={quote.id} className="bg-white rounded-[1.5rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100/50 flex flex-col gap-5">
                                 <div className="flex justify-between items-start">
-                                    <div>
-                                        <div className="font-bold text-slate-900">{quote.quote_number}</div>
-                                        <div className="text-sm font-medium text-slate-700">{quote.customers?.name}</div>
+                                    <div className="space-y-1">
+                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                                            {quote.quote_number}
+                                        </div>
+                                        <h3 className="text-[17px] font-black text-slate-900 leading-tight">
+                                            {quote.customers?.name || 'Unknown Customer'}
+                                        </h3>
                                     </div>
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${getStatusStyle(quote.status)}`}>
+                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider shadow-sm border ${getStatusStyle(quote.status)}`}>
                                         {quote.status}
                                     </span>
                                 </div>
-                                <div className="text-sm text-slate-500 line-clamp-1">{quote.description}</div>
-                                <div className="flex justify-between items-center pt-1">
-                                    <div className="font-bold text-delaval-blue">€{quote.total_amount.toLocaleString()}</div>
-                                    <div className="flex gap-4">
-                                        <button onClick={() => handleGeneratePDF(quote, 'preview')} className="text-slate-400 p-1"><Eye size={20} /></button>
-                                        <button onClick={() => handleGeneratePDF(quote, 'download')} className="text-slate-400 p-1"><Download size={20} /></button>
-                                        {quote.status !== 'accepted' && (
-                                            <button onClick={() => convertToInvoice(quote)} className="text-green-600 p-1"><ArrowRight size={20} /></button>
-                                        )}
-                                        <button onClick={() => setDeleteQuoteId(quote.id)} className="text-red-500 p-1"><Trash2 size={20} /></button>
+                                
+                                <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100/80">
+                                    <div className="flex justify-between items-center">
+                                        <div>
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Amount</div>
+                                            <div className="text-xl font-black text-delaval-blue">€{quote.total_amount.toLocaleString()}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Date</div>
+                                            <div className="text-xs font-bold text-slate-600">{new Date(quote.created_at).toLocaleDateString()}</div>
+                                        </div>
                                     </div>
+                                </div>
+
+                                <div className="text-[13px] text-slate-500 line-clamp-2 px-1 leading-relaxed">
+                                    {quote.description || 'No description provided'}
+                                </div>
+
+                                <div className="space-y-3 pt-3 border-t border-slate-50 mt-1">
+                                    {/* Secondary Actions Grid */}
+                                    <div className="grid grid-cols-4 gap-2">
+                                        <button 
+                                            onClick={() => handleGeneratePDF(quote, 'preview')} 
+                                            className="flex flex-col items-center gap-1.5 p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 active:scale-95 transition-all"
+                                            title="Preview"
+                                        >
+                                            <Eye size={16} />
+                                            <span className="text-[9px] font-black uppercase tracking-tighter">View</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => handleGeneratePDF(quote, 'download')} 
+                                            className="flex flex-col items-center gap-1.5 p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 active:scale-95 transition-all"
+                                            title="Download"
+                                        >
+                                            <Download size={16} />
+                                            <span className="text-[9px] font-black uppercase tracking-tighter">Save</span>
+                                        </button>
+                                        {quote.status !== 'accepted' && (
+                                            <Link 
+                                                to={`/documents/new?type=quote&id=${quote.id}`} 
+                                                className="flex flex-col items-center gap-1.5 p-2.5 bg-slate-50 text-slate-500 rounded-xl border border-slate-100 active:scale-95 transition-all"
+                                                title="Edit"
+                                            >
+                                                <Pencil size={16} />
+                                                <span className="text-[9px] font-black uppercase tracking-tighter">Edit</span>
+                                            </Link>
+                                        )}
+                                        <button 
+                                            onClick={() => setDeleteQuoteId(quote.id)} 
+                                            className="flex flex-col items-center gap-1.5 p-2.5 bg-red-50 text-red-500 rounded-xl border border-red-100/50 active:scale-95 transition-all" 
+                                            title="Delete"
+                                        >
+                                            <Trash2 size={16} />
+                                            <span className="text-[9px] font-black uppercase tracking-tighter">Delete</span>
+                                        </button>
+                                    </div>
+                                    
+                                    {/* Primary Action (Convert to Invoice) */}
+                                    {quote.status !== 'accepted' && (
+                                        <button
+                                            onClick={() => convertToInvoice(quote)}
+                                            className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-900/10 active:scale-95 transition-all"
+                                        >
+                                            <ArrowRight size={16} /> Accept & Invoice
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))

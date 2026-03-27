@@ -615,20 +615,41 @@ const Inventory = () => {
                 {/* Consolidated Mobile Sticky Header */}
                 <div className="sticky top-0 z-30 bg-[#F8FAFB]/95 backdrop-blur-md border-b border-slate-100/50">
                     {/* Modern Mobile Header with safe area bleed */}
-                    <div className="bg-white/90 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-12">
-                        <div className="flex justify-between items-center mb-5">
-                            <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Parts</h1>
+                    <div className="bg-white/90 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-10 -mx-4">
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="w-10 h-10 bg-delaval-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                                <Package size={20} />
+                            </div>
+                            <div className="flex-1 flex justify-between items-center">
+                                <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Parts</h1>
+                                <button
+                                    onClick={() => {
+                                        setEditingId(null);
+                                        setNewItem({ sku: '', name: '', category: '', cost_price: 0, sell_price: 0, stock_level: 0, low_stock_threshold: 5, location: '' });
+                                        setIsNewCategory(false);
+                                        setNewCategoryName('');
+                                        setIsModalOpen(true);
+                                    }}
+                                    className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                                >
+                                    <Plus size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Mobile Tab Switcher */}
+                        <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 mb-5">
                             <button
-                                onClick={() => {
-                                    setEditingId(null);
-                                    setNewItem({ sku: '', name: '', category: '', cost_price: 0, sell_price: 0, stock_level: 0, low_stock_threshold: 5, location: '' });
-                                    setIsNewCategory(false);
-                                    setNewCategoryName('');
-                                    setIsModalOpen(true);
-                                }}
-                                className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                                onClick={() => setActiveTab('inventory')}
+                                className={`flex-1 py-2 rounded-lg text-[11px] font-black uppercase tracking-tight transition-all ${activeTab === 'inventory' ? 'bg-white text-delaval-blue shadow-sm' : 'text-slate-500'}`}
                             >
-                                <Plus size={20} />
+                                Inventory
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('allocation')}
+                                className={`flex-1 py-2 rounded-lg text-[11px] font-black uppercase tracking-tight transition-all ${activeTab === 'allocation' ? 'bg-white text-delaval-blue shadow-sm' : 'text-slate-500'}`}
+                            >
+                                Allocations
                             </button>
                         </div>
 
@@ -637,7 +658,7 @@ const Inventory = () => {
                             <Search size={18} className="text-slate-400 mr-3 shrink-0" />
                             <input
                                 type="text"
-                                placeholder="Search parts catalog..."
+                                placeholder={activeTab === 'inventory' ? "Search parts catalog..." : "Search allocations..."}
                                 className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -645,113 +666,193 @@ const Inventory = () => {
                         </div>
                     </div>
 
-                    {/* Category Pills Scroll Area */}
-                    <div className="pt-4 pb-3">
-                        <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5 items-center">
-                            <select
-                                className="bg-white border text-sm font-bold text-slate-700 outline-none border-slate-200 rounded-[1rem] px-3 py-2.5 shadow-sm min-w-[max-content]"
-                                value={categoryFilter}
-                                onChange={(e) => setCategoryFilter(e.target.value)}
-                            >
-                                <option value="all">Categories</option>
-                                {categories.map(cat => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
-                            <button
-                                onClick={() => setCategoryFilter('all')}
-                                className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'all' || (!['all', 'low_stock', 'out_of_stock'].includes(categoryFilter) && categoryFilter) ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
-                            >
-                                All Parts
-                            </button>
-                            <button
-                                onClick={() => setCategoryFilter('low_stock')}
-                                className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'low_stock' ? 'bg-amber-500 text-white shadow-[0_4px_12px_rgba(245,158,11,0.2)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
-                            >
-                                Low Stock
-                            </button>
-                            <button
-                                onClick={() => setCategoryFilter('out_of_stock')}
-                                className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'out_of_stock' ? 'bg-red-500 text-white shadow-[0_4px_12px_rgba(239,68,68,0.2)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
-                            >
-                                Unavailable
-                            </button>
+                    {/* Category Pills Scroll Area - Only for Inventory Tab */}
+                    {activeTab === 'inventory' && (
+                        <div className="pt-4 pb-3">
+                            <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar px-5 items-center">
+                                <select
+                                    className="bg-white border text-sm font-bold text-slate-700 outline-none border-slate-200 rounded-[1rem] px-3 py-2.5 shadow-sm min-w-[max-content]"
+                                    value={categoryFilter}
+                                    onChange={(e) => setCategoryFilter(e.target.value)}
+                                >
+                                    <option value="all">Categories</option>
+                                    {categories.map(cat => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                                <button
+                                    onClick={() => setCategoryFilter('all')}
+                                    className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'all' || (!['all', 'low_stock', 'out_of_stock'].includes(categoryFilter) && categoryFilter) ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
+                                >
+                                    All Parts
+                                </button>
+                                <button
+                                    onClick={() => setCategoryFilter('low_stock')}
+                                    className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'low_stock' ? 'bg-amber-500 text-white shadow-[0_4px_12px_rgba(245,158,11,0.2)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
+                                >
+                                    Low Stock
+                                </button>
+                                <button
+                                    onClick={() => setCategoryFilter('out_of_stock')}
+                                    className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap shadow-sm transition-all active:scale-95 ${categoryFilter === 'out_of_stock' ? 'bg-red-500 text-white shadow-[0_4px_12px_rgba(239,68,68,0.2)]' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'}`}
+                                >
+                                    Unavailable
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
-                {/* Parts List */}
+                {/* Content Area */}
                 <div className="pt-2 px-5 pb-8 space-y-4">
-                    <div className="flex items-center justify-between px-1">
-                        <h2 className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">{filteredItems.length} Parts Available</h2>
-                    </div>
+                    {activeTab === 'inventory' ? (
+                        <>
+                            <div className="flex items-center justify-between px-1">
+                                <h2 className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">{filteredItems.length} Parts Available</h2>
+                            </div>
 
-                    {loading ? (
-                        <div className="text-center py-12 text-slate-400 font-medium text-sm flex flex-col items-center">
-                            <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[#0051A5] animate-spin mb-3"></div>
-                            Loading catalog...
-                        </div>
-                    ) : filteredItems.length === 0 ? (
-                        <div className="text-center py-12 text-slate-400 font-medium bg-white rounded-2xl border border-dashed border-slate-300">
-                            No parts found matching your criteria.
-                        </div>
+                            {loading ? (
+                                <div className="text-center py-12 text-slate-400 font-medium text-sm flex flex-col items-center">
+                                    <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-[#0051A5] animate-spin mb-3"></div>
+                                    Loading catalog...
+                                </div>
+                            ) : filteredItems.length === 0 ? (
+                                <div className="text-center py-12 text-slate-400 font-medium bg-white rounded-2xl border border-dashed border-slate-300">
+                                    No parts found matching your criteria.
+                                </div>
+                            ) : (
+                                paginatedItems.map(item => (
+                                    <div key={item.id} onClick={() => handleEditClick(item)} className="bg-white rounded-[1.5rem] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100/50 active:scale-[0.98] transition-transform cursor-pointer flex flex-col gap-4">
+                                        <div className="flex justify-between items-start">
+                                            <div className="pr-3">
+                                                <h3 className="font-bold text-slate-900 text-[16px] leading-snug mb-1">{item.name}</h3>
+                                                <div className="text-[13px] font-medium text-slate-400 font-mono bg-slate-50 inline-flex px-2 py-0.5 rounded-md mt-1">{item.sku}</div>
+                                            </div>
+                                            <div className="text-right shrink-0 mt-0.5">
+                                                <div className="text-[18px] font-black text-slate-900">€{item.sell_price.toFixed(2)}</div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            {item.stock_level > (item.low_stock_threshold || 5) ? (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[0.5rem] bg-emerald-50 text-emerald-700 text-[12px] font-bold tracking-wide">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+                                                    {item.stock_level} in stock
+                                                </span>
+                                            ) : item.stock_level > 0 ? (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[0.5rem] bg-orange-50 text-orange-700 text-[12px] font-bold tracking-wide">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]"></div>
+                                                    Low stock ({item.stock_level})
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[0.5rem] bg-rose-50 text-rose-700 text-[12px] font-bold tracking-wide">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
+                                                    Out of stock
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+
+                            {/* Mobile Pagination for Inventory */}
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between pt-4 px-1">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 active:scale-95 transition-all shadow-sm"
+                                    >
+                                        <ArrowRight size={20} className="rotate-180" />
+                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-slate-900">Page {currentPage}</span>
+                                        <span className="text-sm font-medium text-slate-400">of {totalPages}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                        disabled={currentPage === totalPages}
+                                        className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 active:scale-95 transition-all shadow-sm"
+                                    >
+                                        <ArrowRight size={20} />
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     ) : (
-                        paginatedItems.map(item => (
-                            <div key={item.id} onClick={() => handleEditClick(item)} className="bg-white rounded-[1.5rem] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100/50 active:scale-[0.98] transition-transform cursor-pointer flex flex-col gap-4">
-                                <div className="flex justify-between items-start">
-                                    <div className="pr-3">
-                                        <h3 className="font-bold text-slate-900 text-[16px] leading-snug mb-1">{item.name}</h3>
-                                        <div className="text-[13px] font-medium text-slate-400 font-mono bg-slate-50 inline-flex px-2 py-0.5 rounded-md mt-1">{item.sku}</div>
-                                    </div>
-                                    <div className="text-right shrink-0 mt-0.5">
-                                        <div className="text-[18px] font-black text-slate-900">€{item.sell_price.toFixed(2)}</div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    {item.stock_level > (item.low_stock_threshold || 5) ? (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[0.5rem] bg-emerald-50 text-emerald-700 text-[12px] font-bold tracking-wide">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
-                                            {item.stock_level} in stock
-                                        </span>
-                                    ) : item.stock_level > 0 ? (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[0.5rem] bg-orange-50 text-orange-700 text-[12px] font-bold tracking-wide">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.5)]"></div>
-                                            Low stock ({item.stock_level})
-                                        </span>
-                                    ) : (
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[0.5rem] bg-rose-50 text-rose-700 text-[12px] font-bold tracking-wide">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]"></div>
-                                            Out of stock
-                                        </span>
-                                    )}
-                                </div>
+                        <>
+                            <div className="flex items-center justify-between px-1">
+                                <h2 className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">{allocations.length} Allocations</h2>
                             </div>
-                        ))
-                    )}
 
-                    {/* Mobile Pagination */}
-                    {totalPages > 1 && (
-                        <div className="flex items-center justify-between pt-4 px-1">
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                disabled={currentPage === 1}
-                                className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 active:scale-95 transition-all shadow-sm"
-                            >
-                                <ArrowRight size={20} className="rotate-180" />
-                            </button>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm font-bold text-slate-900">Page {currentPage}</span>
-                                <span className="text-sm font-medium text-slate-400">of {totalPages}</span>
-                            </div>
-                            <button
-                                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                                disabled={currentPage === totalPages}
-                                className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 active:scale-95 transition-all shadow-sm"
-                            >
-                                <ArrowRight size={20} />
-                            </button>
-                        </div>
+                            {allocations.length === 0 ? (
+                                <div className="text-center py-12 text-slate-400 font-medium bg-white rounded-2xl border border-dashed border-slate-300">
+                                    No parts allocated yet.
+                                </div>
+                            ) : (
+                                paginatedAllocations.map(alloc => (
+                                    <div key={alloc.id} className="bg-white rounded-[1.5rem] p-5 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100/50 flex flex-col gap-4">
+                                        <div className="flex justify-between items-start">
+                                            <div className="pr-3">
+                                                <h3 className="font-bold text-slate-900 text-[15px] leading-snug mb-1">{alloc.inventory?.sku || 'N/A'}</h3>
+                                                <p className="text-[13px] font-medium text-slate-500 line-clamp-1">{alloc.inventory?.name || alloc.description}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                <div className="font-black text-slate-900 text-[16px]">€{(alloc.total || 0).toFixed(2)}</div>
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{alloc.quantity} units</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                                            <div className="flex flex-col gap-0.5">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Customer</div>
+                                                <div className="text-[12px] font-bold text-slate-700">{alloc.jobs?.customers?.name || 'Unknown'}</div>
+                                            </div>
+                                            <div className="flex flex-col gap-0.5 text-right">
+                                                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Job ID</div>
+                                                <div className="text-[12px] font-bold text-slate-900">{alloc.jobs?.job_number ? `#JOB-${alloc.jobs.job_number}` : 'N/A'}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between pt-1">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider 
+                                                ${alloc.jobs?.status === 'completed' ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'}`}>
+                                                {alloc.jobs?.status === 'completed' ? 'Used / Invoiced' : 'Reserved'}
+                                            </span>
+                                            <div className="text-[11px] font-bold text-slate-400">
+                                                {alloc.jobs?.date_completed 
+                                                    ? new Date(alloc.jobs.date_completed).toLocaleDateString() 
+                                                    : (alloc.jobs?.date_scheduled ? new Date(alloc.jobs.date_scheduled).toLocaleDateString() : 'N/A')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+
+                            {/* Mobile Pagination for Allocations */}
+                            {totalAllocationPages > 1 && (
+                                <div className="flex items-center justify-between pt-4 px-1">
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                        disabled={currentPage === 1}
+                                        className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 active:scale-95 transition-all shadow-sm"
+                                    >
+                                        <ArrowRight size={20} className="rotate-180" />
+                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-bold text-slate-900">Page {currentPage}</span>
+                                        <span className="text-sm font-medium text-slate-400">of {totalAllocationPages}</span>
+                                    </div>
+                                    <button
+                                        onClick={() => setCurrentPage(prev => Math.min(totalAllocationPages, prev + 1))}
+                                        disabled={currentPage === totalAllocationPages}
+                                        className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 disabled:opacity-30 active:scale-95 transition-all shadow-sm"
+                                    >
+                                        <ArrowRight size={20} />
+                                    </button>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
             </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, FileText, AlertCircle, CircleDollarSign as RupeeIcon, Clock, CheckCircle2, ArrowRight, Layers, Target } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText, AlertCircle, Euro, Clock, CheckCircle2, ArrowRight, Layers, Target, CalendarDays } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { dataService } from '../services/dataService';
 import { Invoice } from '../types';
@@ -17,6 +17,7 @@ const Payments = () => {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+    const [mobileView, setMobileView] = useState<'calendar' | 'list'>('calendar');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -96,9 +97,60 @@ const Payments = () => {
     const selectedTotalDue = selectedInvoices.reduce((sum, inv) => sum + (inv.total_amount - (inv.amount_paid || 0)), 0);
 
     return (
-        <div className="max-w-7xl mx-auto space-y-6 pb-12">
+        <div className="max-w-7xl mx-auto px-5 md:px-0 space-y-6 pb-12 text-[#1a1a1a]">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            {/* Standardized Mobile Header */}
+            <div className="md:hidden bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-10 -mx-4 mobile-header-safe-bleed">
+                <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 bg-delaval-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                        <Euro size={20} />
+                    </div>
+                    <div className="flex-1">
+                        <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Payments</h1>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={jumpToToday}
+                            className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-[12px] font-bold text-slate-600 active:scale-95 transition-all shadow-sm"
+                        >
+                            Today
+                        </button>
+                        <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-0.5 shadow-inner">
+                            <button onClick={prevMonth} className="p-2 text-slate-400 hover:text-delaval-blue">
+                                <ChevronLeft size={18} />
+                            </button>
+                            <div className="px-3 text-[11px] font-black text-slate-800 min-w-[120px] text-center uppercase tracking-widest leading-none">
+                                {monthNames[month]} {year}
+                            </div>
+                            <button onClick={nextMonth} className="p-2 text-slate-400 hover:text-delaval-blue">
+                                <ChevronRight size={18} />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* View Toggle */}
+                    <div className="bg-slate-100/80 rounded-xl p-1 flex shrink-0">
+                        <button
+                            onClick={() => setMobileView('list')}
+                            className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${mobileView === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                        >
+                            List
+                        </button>
+                        <button
+                            onClick={() => setMobileView('calendar')}
+                            className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all ${mobileView === 'calendar' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                        >
+                            Grid
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop Header - Hidden on Mobile */}
+            <div className="hidden md:flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-4">
                         <div className="p-3 bg-gradient-to-br from-delaval-blue to-delaval-dark-blue text-white rounded-2xl shadow-xl shadow-delaval-blue/20">
@@ -135,12 +187,12 @@ const Payments = () => {
 
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
                 {/* Main Calendar Grid */}
-                <div className="xl:col-span-3">
+                <div className={`xl:col-span-3 ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
                     <div className="bg-white rounded-[2rem] border-2 border-slate-100 shadow-xl overflow-hidden">
                         {/* Day headers */}
                         <div className="grid grid-cols-7 bg-slate-50 border-b-2 border-slate-100">
                             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                                <div key={d} className="py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{d}</div>
+                                <div key={d} className="py-2 md:py-4 text-center text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">{d}</div>
                             ))}
                         </div>
 
@@ -161,39 +213,34 @@ const Payments = () => {
                                     <button
                                         key={idx}
                                         onClick={() => setSelectedDate(dateObj)}
-                                        className={`relative h-28 p-3 border-r border-b border-slate-100 text-left transition-all group
+                                        className={`relative h-16 md:h-28 p-1.5 md:p-3 border-r border-b border-slate-100 text-left transition-all group
                                             ${!date.currentMonth ? 'bg-slate-50/30 opacity-30' : 'bg-white'}
                                             ${isSelected ? 'ring-2 ring-inset ring-delaval-blue bg-delaval-light-blue/20' : 'hover:bg-slate-50/50'}
                                         `}
                                     >
-                                        <div className="flex justify-between items-start mb-1">
-                                            <span className={`text-[11px] font-black
-                                                ${isToday ? 'bg-delaval-blue text-white h-6 w-6 rounded-lg flex items-center justify-center shadow-lg shadow-delaval-blue/20' :
+                                        <div className="flex justify-between items-start mb-0.5 md:mb-1">
+                                            <span className={`text-[9px] md:text-[11px] font-black
+                                                ${isToday ? 'bg-delaval-blue text-white h-4 w-4 md:h-6 md:w-6 rounded-md md:rounded-lg flex items-center justify-center shadow-lg shadow-delaval-blue/20' :
                                                     isSelected ? 'text-delaval-blue' : 'text-slate-400'}
                                             `}>
                                                 {date.day}
                                             </span>
 
                                             {invs.length > 0 && (
-                                                <div className="flex gap-1">
-                                                    {hasOverdue && <div className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />}
-                                                    {hasUnpaid && !hasOverdue && <div className="h-2 w-2 rounded-full bg-amber-400" />}
-                                                    {allPaid && <div className="h-2 w-2 rounded-full bg-emerald-500" />}
+                                                <div className="flex gap-0.5 md:gap-1">
+                                                    {hasOverdue && <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-rose-500 animate-pulse" />}
+                                                    {hasUnpaid && !hasOverdue && <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-amber-400" />}
+                                                    {allPaid && <div className="h-1.5 w-1.5 md:h-2 md:w-2 rounded-full bg-emerald-500" />}
                                                 </div>
                                             )}
                                         </div>
 
                                         {invs.length > 0 && (
-                                            <div className="mt-2">
-                                                <div className="text-[10px] font-black text-slate-900 truncate">
+                                            <div className="mt-0.5 md:mt-2">
+                                                <div className="text-[7px] md:text-[10px] font-black text-slate-900 truncate uppercase tracking-tighter md:tracking-normal">
                                                     {(invs[0].customers?.name || invs[0].guest_name || 'Unknown').split(' ')[0]}
                                                 </div>
-                                                {invs.length > 1 && (
-                                                    <div className="text-[8px] font-black text-slate-400 uppercase mt-0.5">
-                                                        + {invs.length - 1} other{invs.length > 2 ? 's' : ''}
-                                                    </div>
-                                                )}
-                                                <div className="mt-2 text-[9px] font-bold text-delaval-blue">
+                                                <div className="hidden md:block mt-1 text-[9px] font-bold text-delaval-blue">
                                                     €{invs.reduce((sum, i) => i.total_amount - (i.amount_paid || 0) + sum, 0).toLocaleString()}
                                                 </div>
                                             </div>
@@ -205,25 +252,60 @@ const Payments = () => {
                     </div>
 
                     {/* Legend */}
-                    <div className="mt-6 flex flex-wrap gap-6 items-center px-4">
+                    <div className="mt-6 flex flex-wrap gap-4 md:gap-6 items-center px-5">
                         <div className="flex items-center gap-2">
-                            <div className="h-2.5 w-2.5 rounded-full bg-rose-500" />
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Overdue</span>
+                            <div className="h-2 w-2 md:h-2.5 md:w-2.5 rounded-full bg-rose-500" />
+                            <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Overdue</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending</span>
+                            <div className="h-2 w-2 md:h-2.5 md:w-2.5 rounded-full bg-amber-400" />
+                            <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Pending</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Settled</span>
+                            <div className="h-2 w-2 md:h-2.5 md:w-2.5 rounded-full bg-emerald-500" />
+                            <span className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Settled</span>
                         </div>
                     </div>
                 </div>
 
+                {/* Mobile Agenda View (List Mode) */}
+                <div className={`md:hidden space-y-4 ${mobileView === 'list' ? 'block' : 'hidden'}`}>
+                    <h3 className="text-xs font-black text-[#0051A5] uppercase tracking-widest px-1">Upcoming Collections</h3>
+                    <div className="space-y-3">
+                        {invoices
+                            .filter(inv => {
+                                const d = inv.due_date || inv.date_issued;
+                                if (!d) return false;
+                                const dateObj = new Date(d);
+                                return dateObj.getMonth() === month && dateObj.getFullYear() === year;
+                            })
+                            .sort((a, b) => new Date(a.due_date || '').getTime() - new Date(b.due_date || '').getTime())
+                            .map(inv => (
+                                <Link key={inv.id} to={`/invoices`} className="block bg-white border border-slate-100 rounded-2xl p-4 shadow-sm active:scale-[0.98] transition-all">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <div>
+                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{inv.invoice_number}</span>
+                                            <h4 className="font-bold text-slate-900 leading-tight">{inv.customers?.name || inv.guest_name || 'Guest'}</h4>
+                                        </div>
+                                        <div className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${getPaymentStatus(inv) === 'settled' ? 'bg-emerald-50 text-emerald-600' : getPaymentStatus(inv) === 'overdue' ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>
+                                            {getPaymentStatus(inv)}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-2 text-slate-500">
+                                            <CalendarDays size={14} className="text-delaval-blue" />
+                                            {new Date(inv.due_date || '').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                        </div>
+                                        <div className="font-black text-slate-900">€{inv.total_amount.toLocaleString()}</div>
+                                    </div>
+                                </Link>
+                            ))}
+                    </div>
+                </div>
+
                 {/* Dark Sidebar - Tony Condon Manager Branding Style */}
-                <div className="xl:col-span-1">
-                    <div className="bg-black rounded-[2.5rem] p-8 shadow-2xl h-full flex flex-col border border-white/5 relative overflow-hidden">
+                <div className={`xl:col-span-1 ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
+                    <div className="bg-black rounded-[2.5rem] p-8 shadow-2xl h-full min-h-[400px] flex flex-col border border-white/5 relative overflow-hidden">
                         {/* Decorative glow */}
                         <div className="absolute top-0 right-0 h-40 w-40 bg-delaval-blue/10 rounded-full blur-3xl -mr-20 -mt-20" />
 
@@ -273,7 +355,7 @@ const Payments = () => {
                                                         {inv.customers?.name || inv.guest_name || 'Guest Customer'}
                                                     </span>
                                                     <div className="flex items-center gap-2 mt-1">
-                                                        <RupeeIcon size={12} className="text-delaval-blue" />
+                                                        <Euro size={12} className="text-delaval-blue" />
                                                         <span className="text-xs font-bold text-slate-400">
                                                             €{(inv.total_amount - (inv.amount_paid || 0)).toLocaleString()} Due
                                                         </span>
@@ -287,7 +369,7 @@ const Payments = () => {
 
                                             <div className="flex items-center justify-between pt-4 border-t border-white/5">
                                                 <div className="flex items-center gap-2">
-                                                    <RupeeIcon size={12} className="text-delaval-blue" />
+                                                    <Euro size={12} className="text-delaval-blue" />
                                                     <span className="text-sm font-black text-white">{formatCurrency(remaining)}</span>
                                                 </div>
                                                 <Link to={`/invoices`} className="p-2 bg-white/10 rounded-lg text-slate-400 hover:text-white hover:bg-delaval-blue transition-all">

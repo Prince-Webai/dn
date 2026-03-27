@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Search, Trash2, Mail, Phone, Pencil, ShieldCheck, UserCheck } from 'lucide-react';
+import { Plus, Search, Trash2, Mail, Phone, Pencil, ShieldCheck, UserCheck, Users } from 'lucide-react';
 import SearchableSelect from '../components/SearchableSelect';
 import { supabase } from '../lib/supabase';
 import Modal from '../components/Modal';
@@ -149,8 +149,42 @@ const Team = () => {
 
     return (
         <div className="space-y-6">
-            {/* ... Header and Search ... */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            {/* Standardized Mobile Header */}
+            <div className="md:hidden bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20_rgba(0,0,0,0.02)] pt-10 -mx-4 mobile-header-safe-bleed">
+                <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 bg-delaval-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                        <Users size={20} />
+                    </div>
+                    <div className="flex-1 flex justify-between items-center">
+                        <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Team</h1>
+                        <button
+                            onClick={() => {
+                                setEditingId(null);
+                                setNewEngineer({ name: '', email: '', phone: '', role: 'Engineer', status: 'active' });
+                                setIsModalOpen(true);
+                            }}
+                            className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                        >
+                            <Plus size={20} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Integrated Search Bar */}
+                <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
+                    <Search size={18} className="text-slate-400 mr-3 shrink-0" />
+                    <input
+                        type="text"
+                        placeholder="Search team members..."
+                        className="w-full bg-transparent border-none outline-none text-[15px] font-medium text-slate-900 placeholder-slate-400"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            {/* Desktop Header - Hidden on Mobile */}
+            <div className="hidden md:flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-0">
                 <div>
                     <h1 className="text-2xl font-bold font-display text-slate-900">Team Management</h1>
                     <p className="text-slate-500">Manage engineers and staff members</p>
@@ -168,7 +202,7 @@ const Team = () => {
             </div>
 
             <div className="section-card p-6">
-                <div className="relative mb-6 max-w-md">
+                <div className="hidden md:block relative mb-6 max-w-md">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                     <input
                         type="text"

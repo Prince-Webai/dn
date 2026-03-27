@@ -4,7 +4,7 @@ import {
     PieChart, Pie, Cell
 } from 'recharts';
 import {
-    BarChart2, TrendingUp, Users, CircleDollarSign as RupeeIcon, Package, Calendar,
+    BarChart2, TrendingUp, Users, CircleDollarSign as Euro, Package, Calendar,
     Clock, Send, Activity, User, Phone, Mail, CheckCircle2, FileText
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -360,7 +360,62 @@ const Reports = () => {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Standardized Mobile Header */}
+            <div className="md:hidden bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-10 -mx-4 mobile-header-safe-bleed">
+                <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 bg-delaval-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                        <TrendingUp size={20} />
+                    </div>
+                    <div className="flex-1">
+                        <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Analytics</h1>
+                    </div>
+                </div>
+
+                {/* Filter Row Tabs */}
+                <div className="flex gap-2.5 overflow-x-auto pb-1 no-scrollbar">
+                    {[
+                        { value: 'all', label: 'All Time' },
+                        { value: 'month', label: 'This Month' },
+                        { value: 'year', label: 'This Year' },
+                        { value: 'custom', label: 'Custom' }
+                    ].map((tab) => (
+                        <button
+                            key={tab.value}
+                            onClick={() => setFilterType(tab.value as any)}
+                            className={`px-5 py-2.5 rounded-[1rem] text-[13px] font-bold whitespace-nowrap transition-all shadow-sm
+                                ${filterType === tab.value
+                                    ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95'
+                                    : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300'
+                                }`}
+                        >
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
+
+                {filterType === 'custom' && (
+                    <div className="mt-4 flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="flex-1 h-[42px]">
+                            <DatePicker
+                                value={customRange.start}
+                                onChange={(date) => setCustomRange({ ...customRange, start: date })}
+                                placeholder="Start"
+                            />
+                        </div>
+                        <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest">to</span>
+                        <div className="flex-1 h-[42px]">
+                            <DatePicker
+                                value={customRange.end}
+                                onChange={(date) => setCustomRange({ ...customRange, end: date })}
+                                placeholder="End"
+                            />
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Desktop Header - Hidden on Mobile */}
+            <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold font-display text-slate-900">Analytics & Reports</h1>
                     <p className="text-slate-500 text-sm">Overview of business performance and metrics</p>
@@ -646,14 +701,16 @@ const Reports = () => {
             </div>
 
             {/* Bottom Row: Top Customers */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden mb-8 md:mb-0">
                 <div className="p-6 border-b border-slate-100">
                     <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <RupeeIcon size={20} className="text-slate-400" />
+                        <Euro size={20} className="text-slate-400" />
                         Top Customers by Spend
                     </h3>
                 </div>
-                <div className="overflow-x-auto">
+
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-left">
                         <thead className="bg-slate-50">
                             <tr>
@@ -684,6 +741,40 @@ const Reports = () => {
                             })}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Mobile View */}
+                <div className="md:hidden divide-y divide-slate-100">
+                    {topCustomers.map((customer, index) => {
+                        const totalRevenue = revenueData.reduce((acc, curr) => acc + curr.revenue, 0);
+                        const percentage = totalRevenue > 0 ? (customer.value / totalRevenue) * 100 : 0;
+
+                        return (
+                            <div key={index} className="p-5 space-y-3 bg-white active:bg-slate-50 transition-colors">
+                                <div className="flex justify-between items-start">
+                                    <div className="font-bold text-slate-900 text-sm leading-tight pr-4">
+                                        {customer.name}
+                                    </div>
+                                    <div className="text-right shrink-0">
+                                        <div className="font-black text-slate-900 text-base">€{customer.value.toLocaleString()}</div>
+                                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Total Spend</div>
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5 pt-1">
+                                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                        <span>Contribution</span>
+                                        <span className="text-delaval-blue">{percentage.toFixed(1)}%</span>
+                                    </div>
+                                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                        <div 
+                                            className="h-full bg-delaval-blue shadow-[0_0_8px_rgba(0,81,165,0.2)]" 
+                                            style={{ width: `${percentage}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabase';
-import { ClipboardCheck, Eye, Loader2, Plus, ShieldCheck, Save, FileText, CheckCircle2, Download } from 'lucide-react';
+import { Plus, Download, FileText, ShieldCheck, ClipboardCheck, Loader2, Save, CheckCircle2, Eye } from 'lucide-react';
 import { Customer, Job, WarrantyReport } from '../types';
 import Modal from '../components/Modal';
 import SearchableSelect from '../components/SearchableSelect';
@@ -371,25 +371,24 @@ const WarrantyForms: React.FC = () => {
             <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="flex items-center justify-between gap-4 px-4 md:px-0"
             >
-                <div>
-                    <h1 className="text-2xl md:text-3xl font-black font-display text-slate-900 flex items-center gap-3">
-                        <div className="w-10 h-10 md:w-12 md:h-12 bg-delaval-blue text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20">
-                            <ShieldCheck size={22} className="md:w-6 md:h-6" />
-                        </div>
-                        Warranty Forms
-                    </h1>
-                    <p className="text-slate-500 mt-1 font-medium">Digital machine warranty & commissioning logs</p>
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 md:w-12 md:h-12 bg-delaval-blue text-white rounded-xl md:rounded-2xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                        <ShieldCheck size={22} className="md:w-6 md:h-6" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl md:text-2xl font-black font-display text-slate-900 leading-tight">Warranty Forms</h1>
+                        <p className="text-[11px] md:text-sm text-slate-500 font-medium">Digital machine warranty & logs</p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3 self-end sm:self-auto">
-                    <button
-                        onClick={() => setIsStartModalOpen(true)}
-                        className="flex items-center gap-2 bg-delaval-blue hover:bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95"
-                    >
-                        <Plus size={18} /> New Warranty Form
-                    </button>
-                </div>
+                <button
+                    onClick={() => setIsStartModalOpen(true)}
+                    className="w-10 h-10 md:w-auto md:px-5 md:py-2.5 bg-delaval-blue hover:bg-blue-600 text-white rounded-full md:rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-900/20 transition-all hover:scale-105 active:scale-95 shrink-0"
+                >
+                    <Plus size={20} />
+                    <span className="hidden md:block font-bold text-sm">New Warranty Form</span>
+                </button>
             </motion.div>
 
             {/* List */}
@@ -411,10 +410,11 @@ const WarrantyForms: React.FC = () => {
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="section-card overflow-hidden shadow-2xl shadow-slate-200/50 border-slate-200"
+                    className="space-y-4"
                 >
-                    <div className="overflow-x-auto -mx-4 sm:mx-0">
-                        <table className="w-full text-left border-collapse min-w-[800px]">
+                    {/* Desktop Table */}
+                    <div className="hidden md:block section-card overflow-hidden shadow-2xl shadow-slate-200/50 border-slate-200">
+                        <table className="w-full text-left border-collapse">
                             <thead className="bg-slate-50/50 border-b border-slate-200">
                                 <tr>
                                     <th className="px-6 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest">Date</th>
@@ -456,10 +456,7 @@ const WarrantyForms: React.FC = () => {
                                                     <Download size={14} />
                                                 </button>
                                                 <button
-                                                    onClick={async () => {
-                                                        const cust = customers.find(c => c.id === report.customer_id);
-                                                        generateWarrantyReport(report, cust || { name: report.customers?.name || 'Customer' } as any, 'preview');
-                                                    }}
+                                                    onClick={() => setViewingReport(report)}
                                                     className="inline-flex items-center gap-2 bg-white border border-slate-200 text-delaval-blue shadow-sm hover:shadow-md hover:bg-slate-50 px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-95 whitespace-nowrap"
                                                 >
                                                     <Eye size={16} />
@@ -471,6 +468,62 @@ const WarrantyForms: React.FC = () => {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Mobile Card List */}
+                    <div className="md:hidden flex-1 overflow-y-auto pb-6 space-y-8">
+                        {reports.map((report) => (
+                            <div key={report.id} className="bg-white rounded-[1.5rem] p-6 shadow-[0_8px_30px_rgba(0,0,0,0.03)] border border-slate-100/50 flex flex-col gap-5">
+                                <div className="flex justify-between items-start">
+                                    <div className="space-y-1">
+                                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">
+                                            {new Date(report.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </div>
+                                        <h3 className="text-[17px] font-black text-slate-900 leading-tight">
+                                            {report.customers?.name || '---'}
+                                        </h3>
+                                        {report.jobs && (
+                                            <div className="inline-flex items-center px-2 py-0.5 mt-1 bg-blue-50 text-delaval-blue rounded-md text-[10px] font-black uppercase tracking-wider">
+                                                Job #{report.jobs.job_number}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider whitespace-nowrap shadow-sm ${report.form_type.includes('Commissioning') ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'bg-blue-50 text-delaval-blue border border-blue-100'}`}>
+                                        {report.form_type.includes('Commissioning') ? 'Comm.' : 'Inst.'}
+                                    </span>
+                                </div>
+                                
+                                <div className="bg-slate-50/50 p-4 rounded-2xl border border-slate-100/80">
+                                    <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Equipment Details</div>
+                                    <div className="text-sm font-bold text-slate-700 leading-snug">{report.machine_model || '---'}</div>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <div className="text-[10px] font-black text-slate-400 tracking-wider">S/N:</div>
+                                        <div className="text-[11px] font-black text-slate-600 uppercase">{report.serial_number || '---'}</div>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-1">
+                                    <button
+                                        onClick={async () => {
+                                            const cust = customers.find(c => c.id === report.customer_id);
+                                            generateWarrantyReport(report, cust || { name: report.customers?.name || 'Customer' } as any, 'preview');
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 bg-delaval-blue text-white py-3.5 rounded-xl text-[13px] font-black shadow-lg shadow-blue-900/10 active:scale-95 transition-all"
+                                    >
+                                        <Eye size={18} /> View Report
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            const cust = customers.find(c => c.id === report.customer_id);
+                                            generateWarrantyReport(report, cust || { name: report.customers?.name || 'Customer' } as any, 'download');
+                                        }}
+                                        className="w-14 flex items-center justify-center bg-slate-100/80 text-slate-600 py-3.5 rounded-xl active:scale-95 transition-all border border-slate-200/50 hover:bg-slate-200"
+                                    >
+                                        <Download size={18} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
                     </div>
                 </motion.div>
             )}

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Search, Plus, Trash2, ArrowLeft, Eye, Wrench, FileText, Briefcase, Euro, Package, Download, Upload, ShieldCheck } from 'lucide-react';
+import { Search, Plus, Trash2, ArrowLeft, Eye, Wrench, FileText, Briefcase, Euro, Package, Download, Upload, ShieldCheck, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer } from '../types';
@@ -1079,32 +1079,37 @@ const Customers = () => {
                 ) : (
                     <>
                         {/* Modern Mobile Header with safe area bleed */}
-                        <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-6">
-                            <div className="flex justify-between items-center mb-5">
-                                <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Customers</h1>
-                                <button
-                                    onClick={() => {
-                                        setEditingId(null);
-                                        setNewCustomer({
-                                            name: '',
-                                            address: '',
-                                            contact_person: '',
-                                            email: '',
-                                            phone: '',
-                                            payment_terms: 'Net 30',
-                                            machine_model: '',
-                                            plant_type: ''
-                                        });
-                                        setIsModalOpen(true);
-                                    }}
-                                    className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
-                                >
-                                    <Plus size={20} />
-                                </button>
+                        <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-10 -mx-4">
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className="w-10 h-10 bg-delaval-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                                    <Users size={20} />
+                                </div>
+                                <div className="flex-1 flex justify-between items-center">
+                                    <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Customers</h1>
+                                    <button
+                                        onClick={() => {
+                                            setEditingId(null);
+                                            setNewCustomer({
+                                                name: '',
+                                                address: '',
+                                                contact_person: '',
+                                                email: '',
+                                                phone: '',
+                                                payment_terms: 'Net 30',
+                                                machine_model: '',
+                                                plant_type: ''
+                                            });
+                                            setIsModalOpen(true);
+                                        }}
+                                        className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                                    >
+                                        <Plus size={20} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Integrated Search Bar */}
-                            <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
+                            <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-5 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
                                 <Search size={18} className="text-slate-400 mr-3 shrink-0" />
                                 <input
                                     type="text"
@@ -1121,7 +1126,7 @@ const Customers = () => {
                                 <div className="text-center py-10 text-slate-400 font-medium text-sm">Loading customers...</div>
                             ) : filteredCustomers.map((customer) => {
                                 return (
-                                    <div key={customer.id} onClick={() => setSelectedCustomer(customer)} className="bg-white border border-slate-100 rounded-[1.25rem] p-4 shadow-[0_2px_12px_rgba(0,0,0,0.02)] active:scale-[0.99] transition-transform cursor-pointer">
+                                    <div key={customer.id} onClick={() => setSelectedCustomer(customer)} className="bg-white border border-slate-100 rounded-[1.25rem] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.02)] active:scale-[0.99] transition-transform cursor-pointer">
                                         <div className="flex items-start justify-between mb-3">
                                             <div className="flex items-start gap-3">
                                                 <div className="w-10 h-10 shrink-0 bg-[#E6F0FF] text-[#0051A5] rounded-full flex items-center justify-center font-bold text-sm">

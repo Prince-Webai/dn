@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Customer, InventoryItem } from '../types';
 import { useToast } from '../context/ToastContext';
-import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download, CircleDollarSign as RupeeIcon } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ShoppingBag, FileDiff, UserPlus, Users, Eye, CheckCircle, Download, CircleDollarSign as Euro } from 'lucide-react';
 import DatePicker from '../components/DatePicker';
 import { generateInvoice, generateQuote } from '../lib/pdfGenerator';
 import { dataService } from '../services/dataService';
@@ -583,7 +583,7 @@ const DocumentBuilder = () => {
                                         ]}
                                         value={vatRate.toString()}
                                         onChange={(val) => setVatRate(parseFloat(val))}
-                                        icon={<RupeeIcon size={16} />}
+                                        icon={<Euro size={16} />}
                                     />
                                 </div>
                             </div>

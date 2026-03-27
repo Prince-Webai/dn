@@ -382,31 +382,36 @@ const Jobs = () => {
             {/* MOBILE VIEW */}
             <div className="block md:hidden pb-24 bg-[#F8FAFB] min-h-screen text-[#1a1a1a]">
                 {/* Modern Mobile Header without extra pt-12, reduced to pt-6 for tighter look */}
-                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-6">
-                    <div className="flex justify-between items-center mb-5">
-                        <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Jobs</h1>
-                        <button
-                            onClick={() => {
-                                setEditingId(null);
-                                setNewJob({
-                                    customer_id: '',
-                                    engineer_name: '',
-                                    service_type: '',
-                                    status: 'scheduled',
-                                    date_scheduled: new Date().toISOString().split('T')[0],
-                                    notes: ''
-                                });
-                                setModalItems([]);
-                                setIsModalOpen(true);
-                            }}
-                            className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
-                        >
-                            <Plus size={20} />
-                        </button>
+                <div className="bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] mobile-header-safe-bleed pt-10 -mx-4">
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="w-10 h-10 bg-delaval-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                            <Wrench size={20} />
+                        </div>
+                        <div className="flex-1 flex justify-between items-center">
+                            <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Jobs</h1>
+                            <button
+                                onClick={() => {
+                                    setEditingId(null);
+                                    setNewJob({
+                                        customer_id: '',
+                                        engineer_name: '',
+                                        service_type: '',
+                                        status: 'scheduled',
+                                        date_scheduled: new Date().toISOString().split('T')[0],
+                                        notes: ''
+                                    });
+                                    setModalItems([]);
+                                    setIsModalOpen(true);
+                                }}
+                                className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                            >
+                                <Plus size={20} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Integrated Search Bar */}
-                    <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-4 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
+                    <div className="bg-[#F8FAFB] rounded-2xl flex items-center px-5 py-3 border border-slate-200/60 focus-within:border-slate-300 focus-within:bg-white transition-all shadow-inner">
                         <Search size={18} className="text-slate-400 mr-3 shrink-0" />
                         <input
                             type="text"
@@ -500,14 +505,14 @@ const Jobs = () => {
                                 onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
                                 className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors"
                             >
-                                {isAddingNewCustomer ? 'Select Existing Site' : '+ Add New Site'}
+                                {isAddingNewCustomer ? 'Select Existing Customer' : '+ Add New Customer'}
                             </button>
                         </div>
 
                         {isAddingNewCustomer ? (
                             <div className="grid grid-cols-1 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Installation Site Name / Customer *</label>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Customer Name / Installation Site *</label>
                                     <input
                                         type="text"
                                         required
@@ -537,7 +542,7 @@ const Jobs = () => {
                             </div>
                         ) : (
                             <SearchableSelect
-                                label="Select Existing Site *"
+                                label="Select Existing Customer *"
                                 options={customers.map(c => ({ value: c.id, label: c.name }))}
                                 value={newJob.customer_id || ''}
                                 onChange={val => setNewJob({ ...newJob, customer_id: val })}
@@ -794,20 +799,20 @@ const Jobs = () => {
                             {/* Mobile Form content from original if needed, or simplified versions */}
                              <div className="space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="font-bold text-slate-900">Site Information</h3>
+                                    <h3 className="font-bold text-slate-900">Customer Details</h3>
                                     <button
                                         type="button"
                                         onClick={() => setIsAddingNewCustomer(!isAddingNewCustomer)}
                                         className="text-xs font-bold text-blue-600"
                                     >
-                                        {isAddingNewCustomer ? 'Select Existing' : '+ New Site'}
+                                        {isAddingNewCustomer ? 'Select Existing' : '+ New Customer'}
                                     </button>
                                 </div>
 
                                 {isAddingNewCustomer ? (
                                     <div className="space-y-4 bg-white p-4 rounded-2xl border border-slate-100">
                                         <input
-                                            placeholder="Site Name *"
+                                            placeholder="Customer Name *"
                                             className="w-full px-4 py-3 rounded-xl bg-slate-50 border-none text-[15px]"
                                             value={newCustomerData.name}
                                             onChange={e => setNewCustomerData({ ...newCustomerData, name: e.target.value })}
@@ -831,7 +836,7 @@ const Jobs = () => {
                                         options={customers.map(c => ({ value: c.id, label: c.name }))}
                                         value={newJob.customer_id || ''}
                                         onChange={val => setNewJob({ ...newJob, customer_id: val })}
-                                        placeholder="Choose a site..."
+                                        placeholder="Choose a customer..."
                                     />
                                 )}
                             </div>

@@ -130,31 +130,75 @@ const CalendarPage = () => {
 
     return (
         <div className="space-y-4 md:space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            {/* Standardized Mobile Header */}
+            <div className="md:hidden bg-white/90 backdrop-blur-md sticky top-0 z-30 px-5 pb-4 border-b border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] pt-10 -mx-4 mobile-header-safe-bleed">
+                <div className="flex items-center gap-3 mb-5">
+                    <div className="w-10 h-10 bg-delaval-blue text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20 shrink-0">
+                        <CalendarDays size={20} />
+                    </div>
+                    <div className="flex-1 flex justify-between items-center">
+                        <h1 className="text-[26px] font-black text-slate-900 tracking-tight">Calendar</h1>
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="w-10 h-10 bg-[#0051A5] hover:bg-[#003875] rounded-full flex items-center justify-center text-white shadow-md active:scale-95 transition-all"
+                        >
+                            <Plus size={20} />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    {/* View Toggle */}
+                    <div className="bg-slate-100/80 rounded-xl p-1 flex">
+                        <button
+                            onClick={() => setMobileView('list')}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${mobileView === 'list' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                        >
+                            List
+                        </button>
+                        <button
+                            onClick={() => setMobileView('calendar')}
+                            className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${mobileView === 'calendar' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                        >
+                            Grid
+                        </button>
+                    </div>
+
+                    {/* Quick navigation */}
+                    <div className="flex items-center gap-2">
+                        {mobileView === 'calendar' && (
+                            <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-0.5 shadow-inner">
+                                <button onClick={prevMonth} className="p-2 text-slate-400">
+                                    <ChevronLeft size={16} />
+                                </button>
+                                <div className="px-2 text-[10px] font-black text-slate-800 min-w-[80px] text-center uppercase tracking-tighter">
+                                    {monthNames[month]}
+                                </div>
+                                <button onClick={nextMonth} className="p-2 text-slate-400">
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        )}
+                        <button
+                            onClick={goToday}
+                            className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-600 active:scale-95 transition-all shadow-sm"
+                        >
+                            Today
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop Header - Hidden on Mobile */}
+            <div className="hidden md:flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                     <h1 className="text-xl md:text-2xl font-bold font-display text-slate-900">Calendar</h1>
                     <p className="text-sm text-slate-500">Scheduled jobs and service appointments</p>
                 </div>
-                <div className="flex items-center gap-2 w-full sm:w-auto">
-                    {/* Mobile view toggle */}
-                    <div className="md:hidden bg-white rounded-lg border border-slate-200 p-0.5 flex">
-                        <button
-                            onClick={() => setMobileView('list')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${mobileView === 'list' ? 'bg-delaval-blue text-white shadow-sm' : 'text-slate-500'}`}
-                        >
-                            Jobs
-                        </button>
-                        <button
-                            onClick={() => setMobileView('calendar')}
-                            className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${mobileView === 'calendar' ? 'bg-delaval-blue text-white shadow-sm' : 'text-slate-500'}`}
-                        >
-                            Calendar
-                        </button>
-                    </div>
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => setIsCreateModalOpen(true)}
-                        className="ml-auto sm:ml-0 flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-delaval-blue to-[#003875] text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 hover:-translate-y-0.5 transition-all"
+                        className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-br from-delaval-blue to-[#003875] text-white rounded-xl text-sm font-bold shadow-lg shadow-blue-900/20 hover:-translate-y-0.5 transition-all"
                     >
                         <Plus size={18} /> New Job
                     </button>
